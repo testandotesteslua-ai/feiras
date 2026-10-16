@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plataforma de Feiras</title>
+<meta name="theme-color" content="#1B1B1F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --fundo:#F6F5F2; --cartao:#FFFFFF; --borda:#E6E4DF; --borda-forte:#DDDBD5;
+  --texto:#1B1B1F; --texto-2:#45454D; --texto-3:#55555E;
+  --escuro:#1B1B1F; --destaque:#C2410C; --destaque-escuro:#9A3412;
+  --ok-fundo:#E7EBD3; --ok-texto:#3D441A; --aviso-fundo:#FDEBD9; --aviso-texto:#7C2D12;
+  --erro-fundo:#FDE8E8; --erro-texto:#9B1C1C;
+  --raio:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--fundo);color:var(--texto);font-family:'DM Sans',system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:'Space Grotesk',system-ui,sans-serif;line-height:1.1;margin:0}
+a{color:var(--destaque)} a:hover{color:var(--destaque-escuro)}
+button,input,select,textarea{font:inherit;color:inherit}
+.container{max-width:1100px;margin:0 auto;padding:0 16px}
+
+/* topo */
+.topo{background:var(--cartao);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:10}
+.topo .container{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;flex-wrap:wrap}
+.marca{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--texto);text-decoration:none}
+.nav{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.nav a{padding:10px 12px;border-radius:10px;color:var(--texto);text-decoration:none;font-size:15px}
+.nav a:hover{background:var(--fundo)}
+.nav a.ativo{font-weight:700}
+
+/* botões */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:12px;border:0;cursor:pointer;font-weight:700;font-size:15px;text-decoration:none;white-space:nowrap}
+.btn-escuro{background:var(--escuro);color:#fff} .btn-escuro:hover{background:#000;color:#fff}
+.btn-destaque{background:var(--destaque);color:#fff} .btn-destaque:hover{background:var(--destaque-escuro);color:#fff}
+.btn-contorno{background:transparent;border:1.5px solid var(--escuro);color:var(--escuro)} .btn-contorno:hover{background:var(--escuro);color:#fff}
+.btn-leve{background:var(--cartao);border:1px solid var(--borda-forte);color:var(--texto);font-weight:500}
+.btn-pequeno{min-height:40px;padding:0 14px;font-size:14px}
+.btn:disabled{opacity:.55;cursor:default}
+
+/* blocos */
+main{padding-bottom:64px}
+.secao{padding-top:40px;padding-bottom:40px}
+.hero{padding-top:56px;padding-bottom:32px;display:flex;flex-direction:column;gap:20px}
+.rotulo{font-size:13px;font-weight:700;letter-spacing:.1em;color:var(--destaque);text-transform:uppercase}
+.hero h1{font-size:clamp(34px,6vw,60px);max-width:820px}
+.hero p{margin:0;font-size:18px;color:var(--texto-2);max-width:620px}
+.acoes{display:flex;gap:12px;flex-wrap:wrap}
+.titulo-secao{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.titulo-secao h2{font-size:26px}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.cartao{background:var(--cartao);border:1px solid var(--borda);border-radius:var(--raio);padding:18px;display:flex;flex-direction:column;gap:10px}
+.cartao-feira{padding:0;overflow:hidden;text-decoration:none;color:var(--texto)}
+.cartao-feira:hover{border-color:var(--borda-forte);color:var(--texto)}
+.cartao-feira .faixa{height:120px;display:flex;align-items:flex-end;padding:14px;background-size:cover;background-position:center}
+.cartao-feira .corpo{padding:16px;display:flex;flex-direction:column;gap:4px}
+.selo{display:inline-block;font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;background:#fff;color:var(--texto)}
+.selo-ok{background:var(--ok-fundo);color:var(--ok-texto)}
+.selo-aviso{background:var(--aviso-fundo);color:var(--aviso-texto)}
+.selo-erro{background:var(--erro-fundo);color:var(--erro-texto)}
+.nome{font-weight:700;font-size:17px}
+.sub{font-size:14px;color:var(--texto-3)}
+.vazio{background:var(--cartao);border:1px dashed var(--borda-forte);border-radius:var(--raio);padding:28px;text-align:center;color:var(--texto-2)}
+
+/* formulários */
+.form-caixa{max-width:440px;margin:40px auto 0;background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.abas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;background:var(--fundo);padding:4px;border-radius:12px}
+.abas button{min-height:42px;border:0;border-radius:9px;background:transparent;cursor:pointer;font-weight:500}
+.abas button.ativa{background:var(--cartao);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:14px;font-weight:700}
+.campo input,.campo textarea{min-height:48px;border-radius:12px;border:1px solid var(--borda-forte);background:#fff;padding:0 14px;font-size:16px}
+.campo input:focus,.campo textarea:focus{outline:2px solid var(--escuro);outline-offset:1px}
+.campo .ajuda{font-size:13px;color:var(--texto-3)}
+.prefixo{display:flex;align-items:center;border:1px solid var(--borda-forte);border-radius:12px;background:#fff;padding-left:14px;min-height:48px}
+.prefixo span{color:var(--texto-3);font-size:15px;white-space:nowrap}
+.prefixo input{border:0;min-height:46px;padding-left:2px;flex:1;min-width:0}
+.prefixo input:focus{outline:none}
+.prefixo:focus-within{outline:2px solid var(--escuro);outline-offset:1px}
+.msg{border-radius:12px;padding:12px 14px;font-size:14px}
+.msg-erro{background:var(--erro-fundo);color:var(--erro-texto)}
+.msg-ok{background:var(--ok-fundo);color:var(--ok-texto)}
+.link-botao{background:none;border:0;padding:0;color:var(--destaque);cursor:pointer;text-decoration:underline;font-size:14px;align-self:flex-start}
+
+/* feira pública */
+.feira-topo{color:#fff;padding:36px 0}
+.feira-topo .container{display:flex;flex-direction:column;gap:18px}
+.feira-id{display:flex;gap:16px;align-items:center}
+.feira-logo{width:76px;height:76px;border-radius:38px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;flex-shrink:0;overflow:hidden;background:#fff}
+.feira-logo img{width:100%;height:100%;object-fit:cover}
+.feira-topo h1{font-size:clamp(28px,5vw,40px)}
+.numeros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:480px}
+.numeros div{background:rgba(0,0,0,.22);border-radius:12px;padding:10px;text-align:center;display:flex;flex-direction:column}
+.numeros b{font-size:20px}
+.numeros span{font-size:12px;opacity:.9}
+.marcas{display:flex;flex-wrap:wrap;gap:10px}
+.marca-bola{width:56px;height:56px;border-radius:28px;background:var(--borda);display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden}
+.marca-bola img{width:100%;height:100%;object-fit:cover}
+
+/* listas de gestão */
+.linha{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.pilha{display:flex;flex-direction:column;gap:12px}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filtros button{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--borda-forte);background:#fff;cursor:pointer;font-size:14px}
+.filtros button.ativo{background:var(--escuro);color:#fff;border-color:var(--escuro);font-weight:700}
+
+.rodape{border-top:1px solid var(--borda);padding:28px 0;font-size:14px;color:var(--texto-3)}
+.carregando{padding:48px 0;text-align:center;color:var(--texto-3)}
+.oculto{display:none!important}
+@media (max-width:560px){
+  .topo .container{padding-top:8px;padding-bottom:8px}
+  .nav a{padding:8px 10px;font-size:14px}
+  .hero{padding-top:36px}
+}
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="container">
+    <a href="#/" class="marca" id="marca">Plataforma de Feiras</a>
+    <nav class="nav" id="nav" aria-label="Menu principal"></nav>
+  </div>
+</header>
+<main id="app"><div class="carregando">Carregando…</div></main>
+<footer class="rodape"><div class="container linha"><span id="rodape-nome">Plataforma de Feiras</span><span>Feito para feiras autorais</span></div></footer>
+
+<script>
+// =====================================================================
+// CONFIGURAÇÃO — troque o nome aqui quando decidir a marca
+// =====================================================================
+const CONFIG = {
+  nome: 'Plataforma de Feiras',
+  supabaseUrl: 'https://guiieswqphjixidbtzvs.supabase.co',
+  supabaseKey: 'sb_publishable_BMKDottWt_NP_8qaUV_X5Q_9qEhMREi',
+};
+
+const sb = supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+const app = document.getElementById('app');
+const estado = { sessao: null, admin: false, emRecuperacao: false };
+
+// ---------------------------------------------------------------------
+// Ajudantes para montar a tela com segurança (texto nunca vira HTML)
+// ---------------------------------------------------------------------
+function el(tag, attrs, ...filhos) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k === 'style' && typeof v === 'object') Object.assign(n.style, v);
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === 'html') continue;
+    else n.setAttribute(k, v === true ? '' : v);
+  }
+  for (const f of filhos.flat()) {
+    if (f === null || f === undefined || f === false) continue;
+    n.append(f instanceof Node ? f : document.createTextNode(String(f)));
+  }
+  return n;
+}
+function tela(...filhos) { app.replaceChildren(...filhos); window.scrollTo(0, 0); }
+function carregando() { tela(el('div', { class: 'carregando' }, 'Carregando…')); }
+function caixaMsg(tipo, texto) { return el('div', { class: 'msg msg-' + tipo, role: tipo === 'erro' ? 'alert' : 'status' }, texto); }
+function corSegura(c, padrao) { return /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : padrao; }
+function urlSegura(u) { try { const x = new URL(u); return x.protocol === 'https:' ? x.href : null; } catch { return null; } }
+function inicial(t) { return (t || '?').trim().charAt(0).toUpperCase(); }
+function dataBR(d) {
+  if (!d) return '';
+  const [a, m, dia] = d.split('-');
+  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return `${dia} ${meses[+m - 1]} ${a}`;
+}
+function periodo(e) { return e.data_fim && e.data_fim !== e.data ? `${dataBR(e.data)} a ${dataBR(e.data_fim)}` : dataBR(e.data); }
+function hojeISO() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+function gerarSlug(t) {
+  return (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
+}
+function traduzErro(e) {
+  const m = (e && (e.message || e.error_description)) || 'Algo deu errado. Tente de novo.';
+  const mapa = {
+    'Invalid login credentials': 'E-mail ou senha incorretos.',
+    'Email not confirmed': 'Confirme seu e-mail antes de entrar. Procure a mensagem na sua caixa de entrada (e no spam).',
+    'User already registered': 'Já existe uma conta com esse e-mail. Tente entrar.',
+    'Password should be at least 6 characters.': 'A senha precisa ter pelo menos 6 caracteres.',
+    'Unable to validate email address: invalid format': 'Esse e-mail não parece válido.',
+  };
+  if (mapa[m]) return mapa[m];
+  if (/rate limit/i.test(m)) return 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.';
+  if (/Failed to fetch|NetworkError/i.test(m)) return 'Sem conexão com o servidor. Confira sua internet.';
+  return m;
+}
+function botaoOcupado(btn, ocupado, texto) {
+  btn.disabled = ocupado;
+  if (ocupado) { btn.dataset.txt = btn.textContent; btn.textContent = texto || 'Aguarde…'; }
+  else if (btn.dataset.txt) btn.textContent = btn.dataset.txt;
+}
+
+// ---------------------------------------------------------------------
+// Sessão
+// ---------------------------------------------------------------------
+async function carregarPerfil() {
+  estado.admin = false;
+  if (!estado.sessao) return;
+  const { data } = await sb.from('perfis').select('eh_admin').eq('id', estado.sessao.user.id).maybeSingle();
+  estado.admin = !!(data && data.eh_admin);
+}
+
+function montarNav() {
+  const nav = document.getElementById('nav');
+  const rota = location.hash || '#/';
+  const link = (href, txt) => el('a', { href, class: rota === href ? 'ativo' : null }, txt);
+  const itens = [link('#/', 'Feiras')];
+  if (estado.sessao) {
+    itens.push(link('#/minhas', 'Minhas feiras'));
+    if (estado.admin) itens.push(link('#/admin', 'Admin'));
+    itens.push(el('a', { href: '#/sair' }, 'Sair'));
+  } else {
+    itens.push(link('#/para-organizadores', 'Para organizadores'));
+    itens.push(el('a', { href: '#/entrar', class: 'btn btn-escuro btn-pequeno', style: { color: '#fff' } }, 'Entrar'));
+  }
+  nav.replaceChildren(...itens);
+}
+
+// ---------------------------------------------------------------------
+// Rotas
+// ---------------------------------------------------------------------
+const rotas = [
+  [/^#?\/?$/, telaInicio],
+  [/^#\/entrar$/, () => telaEntrar('entrar')],
+  [/^#\/criar-conta$/, () => telaEntrar('criar')],
+  [/^#\/nova-senha$/, telaNovaSenha],
+  [/^#\/sair$/, sair],
+  [/^#\/para-organizadores$/, telaParaOrganizadores],
+  [/^#\/nova-feira$/, telaNovaFeira],
+  [/^#\/minhas$/, telaMinhas],
+  [/^#\/admin$/, telaAdmin],
+  [/^#\/f\/([a-z0-9-]+)$/, (m) => telaFeira(m[1])],
+];
+
+async function rotear() {
+  if (estado.emRecuperacao && location.hash !== '#/nova-senha') { location.hash = '#/nova-senha'; return; }
+  montarNav();
+  const h = location.hash || '#/';
+  for (const [re, fn] of rotas) {
+    const m = h.match(re);
+    if (m) { try { await fn(m); } catch (e) { console.error(e); tela(el('div', { class: 'container secao' }, caixaMsg('erro', traduzErro(e)))); } return; }
+  }
+  tela(el('div', { class: 'container secao pilha' }, el('h1', {}, 'Página não encontrada'), el('a', { href: '#/' }, 'Voltar para o início')));
+}
+
+function exigirLogin(destino) {
+  if (estado.sessao) return true;
+  sessionStorage.setItem('voltarPara', destino);
+  location.hash = '#/entrar';
+  return false;
+}
+
+// ---------------------------------------------------------------------
+// INÍCIO
+// ---------------------------------------------------------------------
+function cartaoEdicao(e) {
+  const o = e.organizacoes || {};
+  const cor = corSegura(o.cor_primaria, '#1B1B1F');
+  const capa = urlSegura(e.capa_url || o.capa_url);
+  const aberta = e.inscricoes_abertas;
+  const breve = !aberta && e.abre_inscricoes_em;
+  return el('a', { href: '#/f/' + o.slug, class: 'cartao cartao-feira' },
+    el('div', { class: 'faixa', style: { backgroundColor: cor, backgroundImage: capa ? `url("${capa}")` : null } },
+      el('span', { class: 'selo' }, periodo(e))),
+    el('div', { class: 'corpo' },
+      el('span', { class: 'nome' }, e.titulo || o.nome),
+      el('span', { class: 'sub' }, [o.nome !== (e.titulo || o.nome) ? o.nome : null, e.local, o.cidade].filter(Boolean).join(' · ')),
+      el('span', {}, aberta ? el('span', { class: 'selo selo-ok' }, 'Inscrições abertas')
+        : breve ? el('span', { class: 'selo selo-aviso' }, 'Abre em ' + new Date(e.abre_inscricoes_em).toLocaleDateString('pt-BR'))
+        : el('span', { class: 'selo' }, 'Em breve'))));
+}
+
+async function telaInicio() {
+  const hero = el('section', { class: 'container hero' },
+    el('span', { class: 'rotulo' }, 'Feiras autorais'),
+    el('h1', {}, 'Ache a próxima feira. Ou organize a sua sem planilha.'),
+    el('p', {}, 'Expositores se inscrevem em várias feiras com um perfil só. Organizadores recebem inscrições, fazem a curadoria e montam o mapa de vagas no mesmo lugar.'),
+    el('div', { class: 'acoes' },
+      el('a', { href: '#lista', class: 'btn btn-destaque', onclick: (ev) => { ev.preventDefault(); document.getElementById('lista').scrollIntoView({ behavior: 'smooth' }); } }, 'Ver feiras'),
+      el('a', { href: '#/para-organizadores', class: 'btn btn-contorno' }, 'Organizo uma feira')));
+  const lista = el('div', { class: 'grade' }, el('div', { class: 'carregando' }, 'Carregando feiras…'));
+  tela(hero, el('section', { class: 'container', id: 'lista' },
+    el('div', { class: 'titulo-secao' }, el('h2', {}, 'Próximas edições')), lista));
+
+  const { data, error } = await sb.from('edicoes')
+    .select('id,titulo,data,data_fim,local,capa_url,inscricoes_abertas,abre_inscricoes_em,organizacoes!inner(nome,slug,cidade,cor_primaria,capa_url,status)')
+    .eq('organizacoes.status', 'ativa')
+    .gte('data', hojeISO())
+    .order('data', { ascending: true })
+    .limit(60);
+  if (error) { lista.replaceChildren(caixaMsg('erro', traduzErro(error))); return; }
+  // Uma edição por feira já aparece; abertas primeiro
+  const ordenadas = (data || []).sort((a, b) => (b.inscricoes_abertas - a.inscricoes_abertas) || a.data.localeCompare(b.data));
+  lista.replaceChildren(...(ordenadas.length ? ordenadas.map(cartaoEdicao)
+    : [el('div', { class: 'vazio' }, 'Ainda não tem edições marcadas. Volte em breve!')]));
+}
+
+// ---------------------------------------------------------------------
+// PARA ORGANIZADORES
+// ---------------------------------------------------------------------
+function telaParaOrganizadores() {
+  const item = (t, d) => el('div', { class: 'cartao' }, el('span', { class: 'nome' }, t), el('span', { class: 'sub' }, d));
+  tela(el('section', { class: 'container hero' },
+    el('span', { class: 'rotulo' }, 'Para organizadores'),
+    el('h1', {}, 'Sua feira com página própria, curadoria e mapa de vagas.'),
+    el('p', {}, 'Cadastre sua feira, receba as inscrições num lugar só e acompanhe pagamento, montagem e feedback de cada edição.'),
+    el('div', { class: 'acoes' }, el('a', { href: '#/nova-feira', class: 'btn btn-destaque' }, 'Quero cadastrar minha feira'))),
+    el('section', { class: 'container' }, el('div', { class: 'grade' },
+      item('Página com a sua cara', 'Logo, cores e link próprio para divulgar no Instagram.'),
+      item('Curadoria e cotas', 'Limite por segmento, lista de reserva e resposta em um toque.'),
+      item('Mapa de vagas', 'O expositor escolhe o espaço e o mapa se atualiza sozinho.'),
+      item('Feedback com números', 'Faturamento, público e movimento de cada edição.'))));
+}
+
+// ---------------------------------------------------------------------
+// ENTRAR / CRIAR CONTA / ESQUECI A SENHA
+// ---------------------------------------------------------------------
+function telaEntrar(modo) {
+  if (estado.sessao) { location.hash = '#/minhas'; return; }
+  let aba = modo === 'criar' ? 'criar' : 'entrar';
+  const area = el('div', { class: 'pilha' });
+  const caixa = el('div', { class: 'form-caixa' });
+
+  function desenhar() {
+    const abas = el('div', { class: 'abas', role: 'tablist' },
+      el('button', { type: 'button', role: 'tab', class: aba === 'entrar' ? 'ativa' : null, 'aria-selected': String(aba === 'entrar'), onclick: () => { aba = 'entrar'; desenhar(); } }, 'Entrar'),
+      el('button', { type: 'button', role: 'tab', class: aba === 'criar' ? 'ativa' : null, 'aria-selected': String(aba === 'criar'), onclick: () => { aba = 'criar'; desenhar(); } }, 'Criar conta'));
+    const msg = el('div');
+    const email = el('input', { id: 'email', type: 'email', autocomplete: 'email', required: true });
+    const senha = el('input', { id: 'senha', type: 'password', autocomplete: aba === 'criar' ? 'new-password' : 'current-password', required: true, minlength: '6' });
+    const btn = el('button', { type: 'submit', class: 'btn btn-escuro' }, aba === 'criar' ? 'Criar conta' : 'Entrar');
+    const esqueci = el('button', { type: 'button', class: 'link-botao' }, 'Esqueci minha senha');
+
+    const form = el('form', { class: 'pilha', novalidate: true },
+      el('div', { class: 'campo' }, el('label', { for: 'email' }, 'E-mail'), email),
+      el('div', { class: 'campo' }, el('label', { for: 'senha' }, 'Senha'), senha,
+        aba === 'criar' ? el('span', { class: 'ajuda' }, 'Pelo menos 6 caracteres.') : null),
+      msg, btn, aba === 'entrar' ? esqueci : null);
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      msg.replaceChildren();
+      if (!email.value.trim() || senha.value.length < 6) { msg.append(caixaMsg('erro', 'Preencha o e-mail e uma senha de pelo menos 6 caracteres.')); return; }
+      botaoOcupado(btn, true);
+      if (aba === 'entrar') {
+        const { error } = await sb.auth.signInWithPassword({ email: email.value.trim(), password: senha.value });
+        botaoOcupado(btn, false);
+        if (error) msg.append(caixaMsg('erro', traduzErro(error)));
+        // o resto acontece em onAuthStateChange
+      } else {
+        const { data, error } = await sb.auth.signUp({ email: email.value.trim(), password: senha.value,
+          options: { emailRedirectTo: location.origin + location.pathname } });
+        botaoOcupado(btn, false);
+        if (error) { msg.append(caixaMsg('erro', traduzErro(error))); return; }
+        if (!data.session) {
+          area.replaceChildren(el('h1', { style: { fontSize: '26px' } }, 'Confira seu e-mail'),
+            caixaMsg('ok', `Mandamos um link de confirmação para ${email.value.trim()}. Abra o link para ativar a conta e depois volte aqui para entrar.`),
+            el('span', { class: 'sub' }, 'Não chegou? Olhe no spam ou em Promoções.'));
+        }
+      }
+    });
+
+    esqueci.addEventListener('click', async () => {
+      msg.replaceChildren();
+      if (!email.value.trim()) { msg.append(caixaMsg('erro', 'Escreva seu e-mail acima e clique de novo em "Esqueci minha senha".')); email.focus(); return; }
+      esqueci.disabled = true;
+      const { error } = await sb.auth.resetPasswordForEmail(email.value.trim(), { redirectTo: location.origin + location.pathname });
+      esqueci.disabled = false;
+      msg.append(error ? caixaMsg('erro', traduzErro(error)) : caixaMsg('ok', 'Se existir uma conta com esse e-mail, enviamos um link para criar uma senha nova.'));
+    });
+
+    area.replaceChildren(el('h1', { style: { fontSize: '26px' } }, aba === 'criar' ? 'Criar sua conta' : 'Entrar'), abas, form);
+  }
+  caixa.append(area);
+  desenhar();
+  tela(el('div', { class: 'container' }, caixa));
+}
+
+function telaNovaSenha() {
+  if (!estado.sessao) { location.hash = '#/entrar'; return; }
+  const msg = el('div');
+  const senha = el('input', { id: 'nova', type: 'password', autocomplete: 'new-password', minlength: '6' });
+  const btn = el('button', { type: 'submit', class: 'btn btn-escuro' }, 'Salvar nova senha');
+  const form = el('form', { class: 'form-caixa' },
+    el('h1', { style: { fontSize: '26px' } }, 'Criar nova senha'),
+    el('div', { class: 'campo' }, el('label', { for: 'nova' }, 'Nova senha'), senha, el('span', { class: 'ajuda' }, 'Pelo menos 6 caracteres.')),
+    msg, btn);
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault(); msg.replaceChildren();
+    if (senha.value.length < 6) { msg.append(caixaMsg('erro', 'A senha precisa ter pelo menos 6 caracteres.')); return; }
+    botaoOcupado(btn, true);
+    const { error } = await sb.auth.updateUser({ password: senha.value });
+    botaoOcupado(btn, false);
+    if (error) { msg.append(caixaMsg('erro', traduzErro(error))); return; }
+    estado.emRecuperacao = false;
+    form.replaceChildren(el('h1', { style: { fontSize: '26px' } }, 'Senha atualizada'), caixaMsg('ok', 'Pronto! Sua senha nova já está valendo.'),
+      el('a', { href: '#/minhas', class: 'btn btn-escuro' }, 'Continuar'));
+  });
+  tela(el('div', { class: 'container' }, form));
+}
+
+async function sair() {
+  await sb.auth.signOut();
+  location.hash = '#/';
+}
+
+// ---------------------------------------------------------------------
+// CADASTRAR FEIRA
+// ---------------------------------------------------------------------
+function telaNovaFeira() {
+  if (!exigirLogin('#/nova-feira')) return;
+  const msg = el('div');
+  const nome = el('input', { id: 'nome-feira', maxlength: '80', autocomplete: 'off' });
+  const slug = el('input', { id: 'link-feira', maxlength: '40', autocomplete: 'off', inputmode: 'url', spellcheck: 'false' });
+  let slugEditado = false;
+  nome.addEventListener('input', () => { if (!slugEditado) slug.value = gerarSlug(nome.value); });
+  slug.addEventListener('input', () => { slugEditado = true; slug.value = slug.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
+  const btn = el('button', { type: 'submit', class: 'btn btn-escuro' }, 'Enviar pedido de cadastro');
+  const base = location.origin + location.pathname.replace(/index\.html$/, '') + '#/f/';
+  const form = el('form', { class: 'form-caixa' },
+    el('h1', { style: { fontSize: '26px' } }, 'Cadastrar minha feira'),
+    el('span', { class: 'sub' }, 'Depois de enviar, a gente confere e libera sua página. Logo, cores e edições você configura em seguida.'),
+    el('div', { class: 'campo' }, el('label', { for: 'nome-feira' }, 'Nome da feira'), nome),
+    el('div', { class: 'campo' }, el('label', { for: 'link-feira' }, 'Link da sua página'),
+      el('div', { class: 'prefixo' }, el('span', {}, '…/f/'), slug),
+      el('span', { class: 'ajuda' }, 'Só letras minúsculas, números e hífen. Não dá para mudar depois sem falar com a plataforma.')),
+    msg, btn);
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault(); msg.replaceChildren();
+    if (!nome.value.trim()) { msg.append(caixaMsg('erro', 'Dê um nome para a feira.')); nome.focus(); return; }
+    if (!/^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/.test(slug.value)) { msg.append(caixaMsg('erro', 'O link deve ter de 3 a 40 letras minúsculas, números ou hífen, sem hífen no começo ou no fim.')); slug.focus(); return; }
+    botaoOcupado(btn, true, 'Enviando…');
+    const { error } = await sb.rpc('criar_organizacao', { p_nome: nome.value.trim(), p_slug: slug.value });
+    botaoOcupado(btn, false);
+    if (error) { msg.append(caixaMsg('erro', traduzErro(error))); return; }
+    form.replaceChildren(el('h1', { style: { fontSize: '26px' } }, 'Pedido enviado!'),
+      caixaMsg('ok', `Recebemos o cadastro da ${nome.value.trim()}. Assim que for aprovada, a página fica no ar em ${base}${slug.value}`),
+      el('a', { href: '#/minhas', class: 'btn btn-escuro' }, 'Ver minhas feiras'));
+  });
+  tela(el('div', { class: 'container' }, form));
+}
+
+// ---------------------------------------------------------------------
+// MINHAS FEIRAS
+// ---------------------------------------------------------------------
+const STATUS = {
+  pendente: ['selo-aviso', 'Esperando aprovação'],
+  ativa: ['selo-ok', 'No ar'],
+  suspensa: ['selo-erro', 'Suspensa'],
+};
+
+async function telaMinhas() {
+  if (!exigirLogin('#/minhas')) return;
+  carregando();
+  const { data, error } = await sb.rpc('minhas_organizacoes');
+  if (error) { tela(el('div', { class: 'container secao' }, caixaMsg('erro', traduzErro(error)))); return; }
+  const lista = (data || []).map((o) => {
+    const [cls, txt] = STATUS[o.status] || ['', o.status];
+    return el('div', { class: 'cartao' },
+      el('div', { class: 'linha' },
+        el('div', { class: 'pilha', style: { gap: '2px' } }, el('span', { class: 'nome' }, o.nome), el('span', { class: 'sub' }, '/f/' + o.slug + ' · ' + (o.papel === 'dona' ? 'Dona' : 'Equipe'))),
+        el('span', { class: 'selo ' + cls }, txt)),
+      o.status === 'ativa' ? el('div', { class: 'acoes' },
+        el('a', { href: '#/f/' + o.slug, class: 'btn btn-leve btn-pequeno' }, 'Ver página'),
+        el('span', { class: 'sub', style: { alignSelf: 'center' } }, 'Painel da feira chega na próxima versão'))
+      : o.status === 'pendente' ? el('span', { class: 'sub' }, 'A plataforma vai conferir o cadastro e liberar a página.') : null);
+  });
+  tela(el('section', { class: 'container secao' },
+    el('div', { class: 'titulo-secao' }, el('h1', { style: { fontSize: '30px' } }, 'Minhas feiras'),
+      el('a', { href: '#/nova-feira', class: 'btn btn-escuro btn-pequeno' }, '+ Cadastrar feira')),
+    lista.length ? el('div', { class: 'pilha' }, lista)
+      : el('div', { class: 'vazio pilha', style: { alignItems: 'center' } },
+          el('span', {}, 'Você ainda não organiza nenhuma feira por aqui.'),
+          el('a', { href: '#/nova-feira', class: 'btn btn-destaque' }, 'Cadastrar minha feira'))));
+}
+
+// ---------------------------------------------------------------------
+// ADMIN
+// ---------------------------------------------------------------------
+async function telaAdmin() {
+  if (!exigirLogin('#/admin')) return;
+  if (!estado.admin) { tela(el('div', { class: 'container secao' }, caixaMsg('erro', 'Essa área é só da plataforma.'))); return; }
+  let filtro = 'pendente';
+  const lista = el('div', { class: 'pilha' });
+  const filtros = el('div', { class: 'filtros', role: 'group', 'aria-label': 'Filtrar por status' });
+  const msg = el('div');
+
+  async function carregar() {
+    filtros.replaceChildren(...['pendente', 'ativa', 'suspensa', 'todas'].map((f) =>
+      el('button', { type: 'button', class: f === filtro ? 'ativo' : null, 'aria-pressed': String(f === filtro), onclick: () => { filtro = f; carregar(); } },
+        { pendente: 'Esperando', ativa: 'No ar', suspensa: 'Suspensas', todas: 'Todas' }[f])));
+    lista.replaceChildren(el('div', { class: 'carregando' }, 'Carregando…'));
+    let q = sb.from('organizacoes').select('id,nome,slug,status,cidade,criado_em').order('criado_em', { ascending: false });
+    if (filtro !== 'todas') q = q.eq('status', filtro);
+    const { data, error } = await q;
+    if (error) { lista.replaceChildren(caixaMsg('erro', traduzErro(error))); return; }
+    if (!data.length) { lista.replaceChildren(el('div', { class: 'vazio' }, 'Nada por aqui.')); return; }
+    lista.replaceChildren(...data.map((o) => {
+      const [cls, txt] = STATUS[o.status] || ['', o.status];
+      const acao = (rot, novo, estilo) => el('button', { type: 'button', class: 'btn btn-pequeno ' + estilo, onclick: async (ev) => {
+        if (novo === 'suspensa' && !confirm(`Suspender a ${o.nome}? A página sai do ar.`)) return;
+        botaoOcupado(ev.currentTarget, true);
+        const { error } = await sb.rpc('definir_status_organizacao', { p_org: o.id, p_status: novo });
+        msg.replaceChildren(error ? caixaMsg('erro', traduzErro(error)) : caixaMsg('ok', `${o.nome}: ${STATUS[novo][1].toLowerCase()}.`));
+        carregar();
+      } }, rot);
+      return el('div', { class: 'cartao' },
+        el('div', { class: 'linha' },
+          el('div', { class: 'pilha', style: { gap: '2px' } }, el('span', { class: 'nome' }, o.nome),
+            el('span', { class: 'sub' }, ['/f/' + o.slug, o.cidade, 'pedido em ' + new Date(o.criado_em).toLocaleDateString('pt-BR')].filter(Boolean).join(' · '))),
+          el('span', { class: 'selo ' + cls }, txt)),
+        el('div', { class: 'acoes' },
+          o.status !== 'ativa' ? acao('Aprovar', 'ativa', 'btn-escuro') : null,
+          o.status === 'ativa' ? el('a', { href: '#/f/' + o.slug, class: 'btn btn-leve btn-pequeno' }, 'Ver página') : null,
+          o.status !== 'suspensa' ? acao('Suspender', 'suspensa', 'btn-leve') : null,
+          o.status === 'suspensa' ? acao('Voltar para pendente', 'pendente', 'btn-leve') : null));
+    }));
+  }
+  tela(el('section', { class: 'container secao' },
+    el('div', { class: 'titulo-secao' }, el('h1', { style: { fontSize: '30px' } }, 'Feiras cadastradas')),
+    msg, filtros, lista));
+  carregar();
+}
+
+// ---------------------------------------------------------------------
+// PÁGINA PÚBLICA DA FEIRA
+// ---------------------------------------------------------------------
+async function telaFeira(slug) {
+  carregando();
+  const { data: o, error } = await sb.from('organizacoes')
+    .select('id,nome,slug,descricao,logo_url,capa_url,cor_primaria,cor_destaque,cidade,instagram,whatsapp,status')
+    .eq('slug', slug).maybeSingle();
+  if (error) { tela(el('div', { class: 'container secao' }, caixaMsg('erro', traduzErro(error)))); return; }
+  if (!o) { tela(el('div', { class: 'container secao pilha' }, el('h1', {}, 'Feira não encontrada'), el('a', { href: '#/' }, 'Ver todas as feiras'))); return; }
+  document.title = `${o.nome} · ${CONFIG.nome}`;
+
+  const cor = corSegura(o.cor_primaria, '#1B1B1F');
+  const destaque = corSegura(o.cor_destaque, '#C2410C');
+  const logo = urlSegura(o.logo_url);
+  const numeros = el('div', { class: 'numeros' });
+  const topo = el('section', { class: 'feira-topo', style: { background: cor } },
+    el('div', { class: 'container' },
+      o.status !== 'ativa' ? el('span', { class: 'selo selo-aviso', style: { alignSelf: 'flex-start' } }, 'Prévia: só a equipe vê esta página até a aprovação') : null,
+      el('div', { class: 'feira-id' },
+        el('div', { class: 'feira-logo', style: { color: cor } }, logo ? el('img', { src: logo, alt: 'Logo da ' + o.nome }) : inicial(o.nome)),
+        el('div', { class: 'pilha', style: { gap: '4px' } }, el('h1', {}, o.nome), o.cidade ? el('span', {}, o.cidade) : null)),
+      o.descricao ? el('p', { style: { margin: 0, maxWidth: '640px' } }, o.descricao) : null,
+      numeros));
+
+  const edicoesBox = el('div', { class: 'pilha' }, el('div', { class: 'carregando' }, 'Carregando edições…'));
+  const marcasBox = el('div', { class: 'marcas' });
+  const contato = [];
+  if (o.instagram) contato.push(el('a', { href: 'https://instagram.com/' + o.instagram.replace(/^@/, '').replace(/[^a-zA-Z0-9._]/g, ''), target: '_blank', rel: 'noopener' }, 'Instagram'));
+  if (o.whatsapp) contato.push(el('a', { href: 'https://wa.me/' + o.whatsapp.replace(/\D/g, ''), target: '_blank', rel: 'noopener' }, 'WhatsApp da organização'));
+
+  tela(topo, el('section', { class: 'container secao pilha', style: { gap: '28px' } },
+    el('div', { class: 'pilha' }, el('h2', {}, 'Próximas edições'), edicoesBox),
+    el('div', { class: 'pilha', id: 'bloco-marcas' }, el('h2', {}, 'Quem já expôs'), marcasBox),
+    contato.length ? el('div', { class: 'acoes' }, contato) : null));
+
+  const [eds, nums, marcas] = await Promise.all([
+    sb.from('edicoes').select('id,titulo,data,data_fim,local,endereco,inscricoes_abertas,abre_inscricoes_em')
+      .eq('organizacao_id', o.id).gte('data', hojeISO()).order('data'),
+    sb.rpc('numeros_feira', { p_org: o.id }),
+    sb.rpc('marcas_da_feira', { p_org: o.id }),
+  ]);
+
+  const n = nums.data || {};
+  if (nums.data) numeros.replaceChildren(
+    el('div', {}, el('b', {}, String(n.edicoes ?? 0)), el('span', {}, 'edições')),
+    el('div', {}, el('b', {}, String(n.expositores ?? 0)), el('span', {}, 'expositores')),
+    el('div', {}, el('b', {}, n.voltariam_pct == null ? '–' : n.voltariam_pct + '%'), el('span', {}, 'voltariam')));
+  else numeros.remove();
+
+  if (eds.error) edicoesBox.replaceChildren(caixaMsg('erro', traduzErro(eds.error)));
+  else if (!eds.data.length) edicoesBox.replaceChildren(el('div', { class: 'vazio' }, 'Nenhuma edição marcada por enquanto.'));
+  else edicoesBox.replaceChildren(...eds.data.map((e) => el('div', { class: 'cartao' },
+    el('div', { class: 'linha' },
+      el('div', { class: 'pilha', style: { gap: '2px' } }, el('span', { class: 'nome' }, periodo(e)),
+        el('span', { class: 'sub' }, [e.titulo, e.local, e.endereco].filter(Boolean).join(' · '))),
+      e.inscricoes_abertas ? el('span', { class: 'selo selo-ok' }, 'Inscrições abertas')
+        : e.abre_inscricoes_em ? el('span', { class: 'selo selo-aviso' }, 'Abre em ' + new Date(e.abre_inscricoes_em).toLocaleDateString('pt-BR'))
+        : el('span', { class: 'selo' }, 'Em breve')),
+    e.inscricoes_abertas ? el('button', { type: 'button', class: 'btn', style: { background: destaque, color: '#fff', alignSelf: 'flex-start' },
+      onclick: () => alert('A inscrição pelo app chega na próxima versão.') }, 'Quero me inscrever') : null)));
+
+  const ms = marcas.data || [];
+  if (!ms.length) document.getElementById('bloco-marcas')?.remove();
+  else marcasBox.replaceChildren(...ms.slice(0, 24).map((m) => {
+    const lg = urlSegura(m.logo_url);
+    return el('div', { class: 'marca-bola', title: m.nome }, lg ? el('img', { src: lg, alt: m.nome }) : inicial(m.nome));
+  }));
+}
+
+// ---------------------------------------------------------------------
+// INÍCIO DO APP
+// ---------------------------------------------------------------------
+document.title = CONFIG.nome;
+document.getElementById('marca').textContent = CONFIG.nome;
+document.getElementById('rodape-nome').textContent = CONFIG.nome;
+
+let iniciado = false;
+sb.auth.onAuthStateChange(async (evento, sessao) => {
+  const antes = estado.sessao && estado.sessao.user.id;
+  estado.sessao = sessao;
+  if (evento === 'PASSWORD_RECOVERY') estado.emRecuperacao = true;
+  if (!iniciado) return;
+  if (evento === 'SIGNED_IN' && antes !== (sessao && sessao.user.id)) {
+    await carregarPerfil();
+    const volta = sessionStorage.getItem('voltarPara');
+    sessionStorage.removeItem('voltarPara');
+    if (estado.emRecuperacao) location.hash = '#/nova-senha';
+    else if (location.hash === '#/entrar' || location.hash === '#/criar-conta' || !location.hash.startsWith('#/')) location.hash = volta || '#/minhas';
+    else rotear();
+  } else if (evento === 'SIGNED_OUT') {
+    estado.admin = false;
+    rotear();
+  } else if (evento === 'PASSWORD_RECOVERY') {
+    location.hash = '#/nova-senha';
+  }
+});
+
+(async () => {
+  const { data } = await sb.auth.getSession();
+  estado.sessao = data.session;
+  await carregarPerfil();
+  iniciado = true;
+  // links de e-mail voltam com tokens no endereço; limpa para não confundir as rotas
+  if (!location.hash.startsWith('#/')) history.replaceState(null, '', location.pathname + (estado.emRecuperacao ? '#/nova-senha' : '#/'));
+  window.addEventListener('hashchange', rotear);
+  rotear();
+})();
+</script>
+</body>
+</html>
