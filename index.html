@@ -611,11 +611,17 @@ document.getElementById('marca').textContent = CONFIG.nome;
 document.getElementById('rodape-nome').textContent = CONFIG.nome;
 
 let iniciado = false;
-sb.auth.onAuthStateChange(async (evento, sessao) => {
+// Importante: não chamar o banco direto dentro do aviso de login (trava o Supabase).
+// Por isso o trabalho roda logo depois, com setTimeout.
+sb.auth.onAuthStateChange((evento, sessao) => {
   const antes = estado.sessao && estado.sessao.user.id;
   estado.sessao = sessao;
   if (evento === 'PASSWORD_RECOVERY') estado.emRecuperacao = true;
   if (!iniciado) return;
+  setTimeout(() => aposMudancaDeLogin(evento, sessao, antes), 0);
+});
+
+async function aposMudancaDeLogin(evento, sessao, antes) {
   if (evento === 'SIGNED_IN' && antes !== (sessao && sessao.user.id)) {
     await carregarPerfil();
     const volta = sessionStorage.getItem('voltarPara');
@@ -629,7 +635,7 @@ sb.auth.onAuthStateChange(async (evento, sessao) => {
   } else if (evento === 'PASSWORD_RECOVERY') {
     location.hash = '#/nova-senha';
   }
-});
+}
 
 (async () => {
   const { data } = await sb.auth.getSession();
