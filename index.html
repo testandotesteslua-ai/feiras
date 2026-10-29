@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#2E3532">
-<meta name="app-versao" content="202610291300">
+<meta name="app-versao" content="202610291600">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plataforma de Feiras</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Feiras"><meta name="application-name" content="Feiras">
@@ -452,7 +452,8 @@ input,select,textarea{font-size:16px}
   .toast{bottom:32px}
   .recorte-fundo{align-items:center;padding:24px}
   .recorte-folha{border-radius:26px;padding-bottom:20px}
-  .hero,#tela[data-tela="auth"]>.painel,#tela[data-tela="auth"]>.xadrez{max-width:460px}
+  #tela.wrap[data-tela="auth"],#tela.wrap[data-tela="novasenha"],#tela.wrap[data-tela="proposta"]{max-width:520px!important;margin-left:auto!important;margin-right:auto!important;padding-left:20px!important;padding-right:20px!important}
+  #tela[data-tela="auth"]>*,#tela[data-tela="novasenha"]>*,#tela[data-tela="proposta"]>*{max-width:none!important;margin-left:0!important;margin-right:0!important}
 }
 
 /* ===== trocar perfil ===== */
@@ -566,7 +567,7 @@ async function carregarUsuario(){
   render();
 }
 async function escolherModo(){let modo='',oid='';try{modo=localStorage.getItem(chaveU('pf-modo'))||'';oid=localStorage.getItem(chaveU('pf-org'))||''}catch{}
-  if(S.orgs.length&&modo!=='expositor'){const o=S.orgs.find(x=>x.id===oid)||S.orgs[0];const {data}=await sb.from('organizacoes').select('*').eq('id',o.id).maybeSingle();S.org=data?{...data,papel:o.papel}:null}else S.org=null;
+  if(S.orgs.length&&modo!=='expositor'){const o=S.orgs.find(x=>x.id===oid)||S.orgs[0];const {data,error}=await sb.from('organizacoes').select('*').eq('id',o.id).maybeSingle();if(error)toast(erroMsg(error));S.org=data?{...data,papel:o.papel}:{...o}}else S.org=null;
   S.papel=S.org?'organizadora':'expositor';nomeConta(S.marca?.nome||'')}
 async function trocarModo(modo,orgId){try{localStorage.setItem(chaveU('pf-modo'),modo);if(orgId)localStorage.setItem(chaveU('pf-org'),orgId)}catch{}
   if(S.canalComp){sb.removeChannel(S.canalComp);S.canalComp=null}S.edicoes=null;S.orgEdicao=null;S.mapaSel=null;S.mapaEdSel=null;S.fbEd=null;S.compNovos=0;S.insNovas=0;S.novasEd={};
@@ -922,7 +923,18 @@ TELAS['org-config']=()=>{const o=S.org;if(!o)return TELAS.conta();if(S.cfgDe!==o
   <div class="cor-linha"><input type="color" id="cfg-p" value="${hexOk(c.cor_primaria)?c.cor_primaria:'#2E3532'}" aria-label="Cor principal"><span>Cor principal (cabeçalho)</span></div>
   <div class="cor-linha"><input type="color" id="cfg-d" value="${hexOk(c.cor_destaque)?c.cor_destaque:'#3F6B5E'}" aria-label="Cor de destaque"><span>Cor de destaque (botões e toldo)</span></div>
   <div class="cardfeira" style="margin:12px 0 0">${toldo({data:new Date().toISOString().slice(0,10)},null)}<div class="c"><p style="font-family:var(--display);font-size:20px;font-weight:700;margin:0">Prévia</p><button class="btn pri" type="button" tabindex="-1" style="margin-top:8px">Botão da feira</button></div></div></div>
-  <p class="erro" id="cfg-err"></p><button class="btn pri" id="cfg-ok">Salvar dados da feira</button>`};
+  <p class="erro" id="cfg-err"></p><button class="btn pri" id="cfg-ok">Salvar dados da feira</button>${o.papel==='dona'||S.admin?`<div class="painel" style="margin-top:24px;border-color:var(--tomate-soft)"><b class="secao" style="color:var(--tomate)">Excluir esta feira</b><p class="sub" style="margin:4px 0 10px;font-size:13px">Apaga a feira com todas as edições, inscrições, mapas e a equipe. Não dá pra desfazer.</p><button class="btn sec" id="org-excluir" style="color:var(--tomate);border-color:var(--tomate-soft)">Excluir ${esc(o.nome)}</button></div>`:''}`};
+async function abrirExcluirFeira(){const o=S.org;if(!o)return;const {data:r,error}=await sb.rpc('resumo_feira',{p_org:o.id});if(error){toast(erroMsg(error));return}
+  const f=document.createElement('div');f.className='recorte-fundo';f.id='excluir-fundo';
+  f.innerHTML=`<div class="recorte-folha" role="dialog" aria-modal="true" aria-labelledby="exf-t" style="text-align:left"><h2 id="exf-t" style="margin:0 0 6px">Excluir ${esc(o.nome)}?</h2>
+    <p class="sub" style="margin:0 0 10px">Vai junto: <b>${r.edicoes}</b> ${r.edicoes===1?'edição':'edições'}, <b>${r.inscricoes}</b> ${r.inscricoes===1?'inscrição':'inscrições'} e <b>${r.mapas}</b> ${r.mapas===1?'mapa':'mapas'}.</p>
+    ${r.pagas?`<div class="painel" style="background:var(--tomate-soft);border-color:var(--tomate)"><b>${r.pagas} ${r.pagas===1?'expositor já pagou':'expositores já pagaram'}</b><p style="margin:4px 0 0;font-size:14px">Antes de excluir, combine com eles a devolução: depois os dados das inscrições somem.</p></div>`:''}
+    <label for="exf-nome">Pra confirmar, digite o nome da feira: <b>${esc(o.nome)}</b></label><input id="exf-nome" autocomplete="off"><p class="erro" id="exf-err"></p>
+    <div class="row" style="margin-top:6px"><button class="btn sec" id="exf-cancela">Cancelar</button><button class="btn" id="exf-ok" style="background:var(--tomate);color:#fff">Excluir feira</button></div></div>`;
+  document.body.appendChild(f);f.querySelector('#exf-nome').focus();const fecha=()=>f.remove();f.querySelector('#exf-cancela').onclick=fecha;f.addEventListener('click',ev=>{if(ev.target===f)fecha()});
+  f.querySelector('#exf-ok').onclick=async ev=>{const bt=ev.currentTarget;bt.disabled=true;const rr=await sb.rpc('excluir_organizacao',{p_org:o.id,p_nome:f.querySelector('#exf-nome').value});bt.disabled=false;
+    if(rr.error){f.querySelector('#exf-err').textContent=erroMsg(rr.error);return}fecha();toast('Feira excluída');try{localStorage.removeItem(chaveU('pf-org'))}catch{}const {data:og}=await sb.rpc('minhas_organizacoes');const resto=og||[];
+    if(resto.length)await trocarModo('organizacao',resto[0].id);else await trocarModo('expositor')}}
 function previaCores(){const p=$('#cfg-p')?.value,d=$('#cfg-d')?.value;if(!p||!d)return;S.cfg.cor_primaria=p;S.cfg.cor_destaque=d;aplicarTema({cor_primaria:p,cor_destaque:d});
   document.querySelectorAll('[data-paleta]').forEach(b=>{const [pp,dd]=PALETAS[+b.dataset.paleta];b.setAttribute('aria-pressed',pp.toLowerCase()===p.toLowerCase()&&dd.toLowerCase()===d.toLowerCase())})}
 
@@ -1001,7 +1013,7 @@ TELAS['org-edicoes']=async()=>{const ed=await listaEdicoes();S.edicoes=ed;await 
   const idsEd=ed.map(e=>e.id);const [{data:ins},{data:preA}]=idsEd.length?await Promise.all([sb.from('inscricoes').select('edicao_id,status,pago,pago_sinal,valor_pago,tamanho,dia_unico,isento,valor_combinado').in('edicao_id',idsEd),sb.from('pre_inscricoes').select('edicao_id,valor_pago').in('edicao_id',idsEd).is('inscricao_id',null)]):[{data:[]},{data:[]}];const cnt={};(ins||[]).forEach(x=>{const c=cnt[x.edicao_id]=cnt[x.edicao_id]||{t:0,c:0,p:0};c.t++;if(x.status==='confirmada'){c.c++;if(x.pago)c.p++}});
   const fin={};ed.forEach(e=>{fin[e.id]=resumoFin((ins||[]).filter(x=>x.edicao_id===e.id),e,(preA||[]).filter(x=>x.edicao_id===e.id))});
   const hoje=new Date().toISOString().slice(0,10);
-  return `${S.org.status!=='ativa'?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b>${S.org.status==='suspensa'?'Feira suspensa':'Esperando aprovação'}</b><p style="margin:4px 0 0;font-size:14px">${S.org.status==='suspensa'?'A feira está fora do ar. Fale com a plataforma.':'Você já pode preparar edições e mapas. Os expositores só veem a feira depois que a plataforma aprovar.'}</p></div>`:''}${bannerPush()}<div class="topo"><h1>Edições</h1><button class="mini pri" data-editar="nova" style="min-height:44px;padding:0 16px">+ Nova</button></div><p class="sub">Suas edições, das mais novas pras mais antigas.</p>
+  return `${S.org.status!=='ativa'?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b>${S.org.status==='suspensa'?'Feira suspensa':'Esperando aprovação'}</b><p style="margin:4px 0 0;font-size:14px">${S.org.status==='suspensa'?'A feira está fora do ar. Fale com a plataforma.':'A feira ainda não aparece pros expositores. Enquanto isso, prepare tudo: dados e cores, mapa e edições. Quando estiver pronta, a plataforma aprova e ela entra no ar.'}</p>${S.org.status==='pendente'?`<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="mini" data-go="org-config" style="min-height:44px">Dados e cores</button><button class="mini" data-go="org-mapas" style="min-height:44px">Mapa</button><button class="mini pri" data-editar="nova" style="min-height:44px">Criar edição</button>${S.admin?`<button class="mini pri" data-admst="ativa" data-id="${S.org.id}" style="min-height:44px">Aprovar agora</button>`:''}</div>`:''}</div>`:''}${bannerPush()}<div class="topo"><h1>Edições</h1><button class="mini pri" data-editar="nova" style="min-height:44px;padding:0 16px">+ Nova</button></div><p class="sub">Suas edições, das mais novas pras mais antigas.</p>
   ${(ed.length?'<div class="grade-cards">':'')+ed.map(e=>{const c=cnt[e.id]||{t:0,c:0,p:0};const passou=fimEd(e)<hoje;const st=passou?['Encerrada','n']:abertaJa(e)?['Inscrições abertas','ok']:agendada(e)?['Abre '+quandoAbre(e),'']:['Inscrições fechadas','n'];
     return `<div class="edcard">${toldo(e,st[0])}<div class="c"><p style="font-family:var(--display);font-size:22px;font-weight:700;margin:0">${esc(nomeEd(e))}</p><p class="sub" style="margin:2px 0 0">${periodo(e)}${e.local?' · '+esc(e.local):''}</p>
     <div class="nums"><div style="position:relative"><b>${c.t}</b><span>Inscrições</span>${S.novasEd?.[e.id]?`<i class="badge nv" title="Inscrições novas pra decidir">${S.novasEd[e.id]}</i>`:''}</div><div><b>${c.c}</b><span>Confirmadas</span></div><div><b>${c.p}</b><span>Pagas</span></div></div>
@@ -1602,6 +1614,7 @@ document.addEventListener('click',async ev=>{
   if(d.perfil&&!ev.target.closest('button')){S.perfilId=d.perfil;go('org-inscrito');return}
   try{
   if(b.id==='trocar-perfil'||b.id==='trocar-perfil-2'){abrirPerfis();return}
+  if(b.id==='org-excluir'){b.disabled=true;await abrirExcluirFeira();b.disabled=false;return}
   if(d.pmodo){fechaPerfis();if(d.pmodo==='admin'){go('admin');return}if(d.pmodo==='expositor'){if(S.papel==='expositor')go('inicio');else await trocarModo('expositor');return}if(S.papel==='organizadora'&&S.org?.id===d.pmodo){go('org-edicoes');return}await trocarModo('organizacao',d.pmodo);return}
   if(d.usarconta){b.disabled=true;await usarConta(d.usarconta);b.disabled=false;return}
   if(d.rmconta){removeConta(d.rmconta);toast('Conta tirada deste aparelho');if(document.getElementById('perfis-fundo'))abrirPerfis();else render();return}
