@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#2E3532">
-<meta name="app-versao" content="202610191800">
+<meta name="app-versao" content="202610291200">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plataforma de Feiras</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Feiras"><meta name="application-name" content="Feiras">
@@ -188,7 +188,7 @@ button.tile[aria-pressed="true"]{border-color:var(--laranja)}
 .tbesc td:first-child{white-space:nowrap;color:var(--ink-2);font-size:13px}
 .tbesc td:nth-child(2){font-weight:700}.tm{padding:12px 14px}.tm-lin{display:flex;align-items:center;gap:12px}.tm-n{font-family:var(--display);font-weight:900;font-size:40px;line-height:1;color:var(--tomate)}.tm-lin small{display:block;font-size:12px;color:var(--ink-2)}.tm-pad{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:14px;line-height:1.6}.tm-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.tm-c{background:var(--ground);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}.tm-c b{font-family:var(--display);font-weight:900;font-size:26px;line-height:1;color:var(--tomate)}.tm-c small{font-size:11px;color:var(--ink-2);line-height:1.25}.tm-t{align-self:flex-start;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#fff}.tm-t.t3{background:var(--laranja-soft);color:var(--tomate)}
 .lin-falta{color:var(--tomate)!important;font-weight:700}.lin-ok{color:var(--oliva)!important;font-weight:700}
-.cb-dias{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.cb-d{margin:0;cursor:pointer}.cb-d input{position:absolute;opacity:0;pointer-events:none}.cb-d span{display:flex;flex-direction:column;align-items:center;justify-content:center;width:52px;height:56px;border-radius:12px;background:var(--ground);border:2px solid transparent;line-height:1.1}.cb-d small{font-size:11px;color:var(--ink-2)}.cb-d b{font-size:18px}.cb-d input:checked+span{background:var(--oliva);color:var(--ground);border-color:var(--oliva-esc)}.cb-d input:checked+span small{color:var(--ground)}.cb-d input:focus-visible+span{outline:3px solid var(--tomate)}
+.cb-dias{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.cb-d{margin:0;cursor:pointer}.cb-d input{position:absolute;opacity:0;pointer-events:none}.cb-d span{display:flex;flex-direction:column;align-items:center;justify-content:center;width:52px;height:56px;border-radius:12px;background:var(--ground);border:2px solid transparent;line-height:1.1}.cb-d small{font-size:11px;color:var(--ink-2)}.cb-d b{font-size:18px}.cb-d input:checked+span{background:var(--oliva);color:var(--on-oliva);border-color:var(--oliva-esc)}.cb-d input:checked+span small{color:var(--ground)}.cb-d input:focus-visible+span{outline:3px solid var(--tomate)}
 .tb-seg{display:block;font-weight:400;font-size:12px;color:var(--ink-2);margin-top:2px}.tb-tam{display:inline-block;font-size:12px;font-weight:700;padding:2px 6px;border-radius:999px;background:var(--ground);white-space:nowrap}.tb-tam.t3{background:var(--laranja-soft);color:var(--tomate)}
 .tile[aria-pressed="true"]{border-color:var(--verde);background:linear-gradient(160deg,var(--card),var(--verde-soft))}
 details.segs{background:var(--card);border-radius:20px;padding:4px 16px;margin-bottom:14px;box-shadow:0 2px 4px color-mix(in srgb,var(--oliva) 4%,transparent),0 8px 18px color-mix(in srgb,var(--verde) 6%,transparent)}
@@ -288,8 +288,8 @@ h2{font-size:18px}
 .tile[aria-pressed="true"]{border-color:var(--verde);background:var(--verde-soft)}
 .edcard .nums div{background:var(--ground)}
 nav.baixo{background:rgba(251,247,239,.88);border-color:var(--line)}
-nav.baixo button[aria-current="page"]{background:var(--oliva);color:var(--ground)}
-.passos .feito .bola{background:var(--oliva);color:var(--ground)}
+nav.baixo button[aria-current="page"]{background:var(--oliva);color:var(--on-oliva)}
+.passos .feito .bola{background:var(--oliva);color:var(--on-oliva)}
 .passos .agora .bola{background:var(--laranja);color:var(--ink)}
 .sel.conf{border-left-color:var(--oliva)}
 .vg.minha{background:var(--oliva);border-color:var(--oliva-esc);color:var(--ground)}
@@ -349,12 +349,12 @@ nav.baixo button[aria-current="page"]{background:var(--oliva);color:var(--ground
 .recorte img{position:absolute;max-width:none;user-select:none;-webkit-user-drag:none;pointer-events:none}
 .recorte-folha input[type=range]{width:100%;accent-color:var(--verde);min-height:36px;padding:0;border:0;background:transparent}
 .area{position:absolute;transform:translate(-50%,-50%);border:2.5px dashed var(--oliva);background:color-mix(in srgb,var(--oliva) 10%,transparent);border-radius:8px;z-index:1;pointer-events:none}
-.area i{position:absolute;bottom:-9px;right:-9px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--oliva);color:var(--ground);font-style:normal;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(30,34,32,.3)}
+.area i{position:absolute;bottom:-9px;right:-9px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--oliva);color:var(--on-oliva);font-style:normal;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(30,34,32,.3)}
 .area.minha{border:3px solid var(--verde);background:color-mix(in srgb,var(--verde) 18%,transparent)}
 .area.minha i{background:var(--verde);color:var(--ink)}
 .abas{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:5px;margin:4px 0 16px}
 .abas button{border:0;background:transparent;border-radius:14px;min-height:46px;font-weight:700;font-size:14px;color:var(--ink-2)}
-.abas button[aria-pressed="true"]{background:var(--oliva);color:var(--ground)}
+.abas button[aria-pressed="true"]{background:var(--oliva);color:var(--on-oliva)}
 .abas small{display:inline-block;min-width:20px;margin-left:6px;padding:0 6px;border-radius:999px;background:color-mix(in srgb,var(--verde) 18%,transparent);color:inherit;font-size:12px}
 .cardfeira.passada{opacity:.62;filter:saturate(.55)}
 .cardfeira.fechada .toldo{filter:grayscale(.85) brightness(1.08)}.cardfeira.fechada{border:2px dashed var(--line);box-shadow:none}
@@ -423,7 +423,38 @@ nav.baixo{left:0!important;right:0!important;bottom:0!important;border-radius:0!
 .cores button[aria-pressed="true"]{border-color:var(--ink)}
 .cor-linha{display:flex;align-items:center;gap:10px;margin-top:8px}.cor-linha input[type=color]{width:56px;min-height:44px;padding:2px;border-radius:12px}
 .org-it{display:flex;align-items:center;gap:12px}.org-it img,.org-it .org-ph{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--verde-soft)}
-.org-it .org-ph{display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--verde)}</style>
+.org-it .org-ph{display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--verde)}
+/* ===== celular ===== */
+input,select,textarea{font-size:16px}
+.wm.grande b{max-width:none;white-space:normal;overflow:visible}
+.grade-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-bottom:14px}
+.grade-cards>.cardfeira,.grade-cards>.edcard{margin:0}
+@media (max-width:370px){.wrap{padding-left:12px!important;padding-right:12px!important}.cabeca{margin-left:-12px;margin-right:-12px}nav.baixo button{font-size:10px}.tiles{gap:6px}.wm b{font-size:19px}}
+/* ===== tablet ===== */
+@media (min-width:640px){.grade-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ===== computador: menu na lateral e conteúdo centralizado ===== */
+@media (min-width:1000px){
+  html body nav.baixo{top:0!important;bottom:0!important;left:0!important;right:auto!important;width:232px;flex-direction:column;justify-content:flex-start;align-items:stretch;padding:28px 14px!important;border-top:0!important;border-right:1px solid var(--line)!important;box-shadow:none!important}
+  nav.baixo .in{flex-direction:column;gap:4px;max-width:none}
+  nav.baixo button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;min-height:48px;padding:0 14px;font-size:14px;position:relative;text-align:left}
+  nav.baixo button:hover:not([aria-current="page"]){background:var(--ground)}
+  nav.baixo .badge{position:static;margin-left:auto}
+  body:has(nav.baixo:not([hidden])) .wrap{margin-left:232px}
+  .wrap{max-width:none!important;padding:24px 40px 56px!important}
+  #tela>*{max-width:820px;margin-left:auto;margin-right:auto}
+  #tela>.mini[data-go]{display:flex;width:max-content;margin-left:max(0px,calc((100% - 820px)/2))}
+  #tela[data-tela="inicio"]>.mini[data-go],#tela[data-tela="org-selecao"]>.mini[data-go],#tela[data-tela="org-mapas"]>.mini[data-go],#tela[data-tela="admin"]>.mini[data-go]{margin-left:max(0px,calc((100% - 1100px)/2))}
+  #tela>.cabeca{max-width:none;margin:-24px -40px 28px}
+  .cabeca .linha1,.cabeca .ola{max-width:1100px;margin-left:auto;margin-right:auto}
+  #tela[data-tela="inicio"]>*:not(.cabeca),#tela[data-tela="org-edicoes"]>*:not(.cabeca),#tela[data-tela="org-selecao"]>*:not(.cabeca),#tela[data-tela="org-mapas"]>*:not(.cabeca),#tela[data-tela="org-lista"]>*:not(.cabeca),#tela[data-tela="admin"]>*:not(.cabeca){max-width:1100px}
+  .grade-cards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .cardfeira:hover,.edcard:hover{box-shadow:0 2px 4px color-mix(in srgb,var(--oliva) 6%,transparent),0 18px 36px color-mix(in srgb,var(--verde) 16%,transparent)}
+  .toast{bottom:32px}
+  .recorte-fundo{align-items:center;padding:24px}
+  .recorte-folha{border-radius:26px;padding-bottom:20px}
+  .hero,#tela[data-tela="auth"]>.painel,#tela[data-tela="auth"]>.xadrez{max-width:460px}
+}
+</style>
 </head>
 <body>
 <div class="wrap" id="tela"><p class="sub">Carregando…</p></div>
@@ -557,7 +588,7 @@ function nav(){
   $('#navin').innerHTML=itens.map(([t,l])=>`<button data-go="${t}" ${S.tela===t||(t==='inicio'&&['edicao','mapa','montagem','feedback'].includes(S.tela))||(t==='org-selecao'&&S.tela==='org-inscrito')||(t==='org-edicoes'&&S.tela==='org-edicao-form')?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true">${NI[t]||''}</svg>${l}${t==='org-selecao'&&S.compNovos?`<i class="badge">${S.compNovos}</i>`:''}${t==='org-edicoes'&&S.insNovas?`<i class="badge">${S.insNovas}</i>`:''}</button>`).join('');
 }
 async function render(){
-  temaDaTela();nav();const T=TELAS[S.tela]||TELAS.inicio;
+  temaDaTela();nav();const T=TELAS[S.tela]||TELAS.inicio;$('#tela').dataset.tela=S.tela;
   try{const h=await T();$('#tela').innerHTML=(S.sessao&&!['auth','novasenha'].includes(S.tela)?topo():'')+h}catch(e){$('#tela').innerHTML=`<h1>Ops</h1><p class="sub">${esc(erroMsg(e))}</p><button class="btn sec" data-go="inicio">Voltar</button>`}
   window.scrollTo(0,0);enfeitaDatas();if(AFTER[S.tela])AFTER[S.tela]();
 }
@@ -787,11 +818,11 @@ TELAS.inicio=async()=>{
   const abas=`<div class="abas" role="group" aria-label="Feiras"><button data-aba="minhas" aria-pressed="${S.abaExp==='minhas'}">Minhas feiras<small>${futuras.length}</small></button><button data-aba="disponiveis" aria-pressed="${S.abaExp==='disponiveis'}">Disponíveis<small>${disponiveis.length}</small></button></div>`;
   let corpo='';
   if(S.abaExp==='minhas'){
-    corpo=(futuras.length?futuras.map(x=>card(x.edicoes,x,false)).join(''):`<div class="vazio">${berg(64)}<p class="sub">Você ainda não está inscrita em nenhuma feira que vem por aí.</p><button class="btn pri" data-aba="disponiveis" style="max-width:300px;margin:0 auto">Ver feiras disponíveis</button></div>`)
-      +(passadas.length?`<h2>Histórico</h2><p class="sub" style="margin-top:-6px">Toque pra ver fotos e detalhes.</p>${passadas.map(x=>card(x.edicoes,x,true)).join('')}`:'');
+    corpo=(futuras.length?'<div class="grade-cards">'+futuras.map(x=>card(x.edicoes,x,false)).join('')+'</div>':`<div class="vazio">${berg(64)}<p class="sub">Você ainda não está inscrita em nenhuma feira que vem por aí.</p><button class="btn pri" data-aba="disponiveis" style="max-width:300px;margin:0 auto">Ver feiras disponíveis</button></div>`)
+      +(passadas.length?`<h2>Histórico</h2><p class="sub" style="margin-top:-6px">Toque pra ver fotos e detalhes.</p><div class="grade-cards">${passadas.map(x=>card(x.edicoes,x,true)).join('')}</div>`:'');
   }else{
     const abertasD=disponiveis.filter(e=>abertaJa(e)),embreveD=disponiveis.filter(e=>!abertaJa(e));
-    corpo=disponiveis.length?(abertasD.length?`<h2 class="gr-ed">Inscrições abertas</h2>${abertasD.map(e=>card(e,null,false)).join('')}`:'')+(embreveD.length?`<h2 class="gr-ed">Em breve</h2><p class="sub" style="margin:-6px 0 10px">Ainda não dá pra se inscrever. Já dá pra ver as informações e deixar a marca pronta.</p>${embreveD.map(e=>card(e,null,false)).join('')}`:''):`<div class="vazio">${berg(64)}<p class="sub">Nenhuma feira aberta agora. Assim que a próxima abrir, ela aparece aqui.</p></div>`;
+    corpo=disponiveis.length?(abertasD.length?`<h2 class="gr-ed">Inscrições abertas</h2><div class="grade-cards">${abertasD.map(e=>card(e,null,false)).join('')}</div>`:'')+(embreveD.length?`<h2 class="gr-ed">Em breve</h2><p class="sub" style="margin:-6px 0 10px">Ainda não dá pra se inscrever. Já dá pra ver as informações e deixar a marca pronta.</p><div class="grade-cards">${embreveD.map(e=>card(e,null,false)).join('')}</div>`:''):`<div class="vazio">${berg(64)}<p class="sub">Nenhuma feira aberta agora. Assim que a próxima abrir, ela aparece aqui.</p></div>`;
   }
   S.avisoRest=futuras.find(x=>x.status==='confirmada'&&x.pago_sinal&&!x.pago)||null;
   S.avisoVaga=futuras.find(x=>x.status==='confirmada'&&garantiu(x)&&!x.vaga_id&&x.edicoes?.mapa_id&&!vagaFechada(x.edicoes))||null;
@@ -931,10 +962,10 @@ TELAS['org-edicoes']=async()=>{const ed=await listaEdicoes();S.edicoes=ed;await 
   const fin={};ed.forEach(e=>{fin[e.id]=resumoFin((ins||[]).filter(x=>x.edicao_id===e.id),e,(preA||[]).filter(x=>x.edicao_id===e.id))});
   const hoje=new Date().toISOString().slice(0,10);
   return `${S.org.status!=='ativa'?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b>${S.org.status==='suspensa'?'Feira suspensa':'Esperando aprovação'}</b><p style="margin:4px 0 0;font-size:14px">${S.org.status==='suspensa'?'A feira está fora do ar. Fale com a plataforma.':'Você já pode preparar edições e mapas. Os expositores só veem a feira depois que a plataforma aprovar.'}</p></div>`:''}${bannerPush()}<div class="topo"><h1>Edições</h1><button class="mini pri" data-editar="nova" style="min-height:44px;padding:0 16px">+ Nova</button></div><p class="sub">Suas edições, das mais novas pras mais antigas.</p>
-  ${ed.map(e=>{const c=cnt[e.id]||{t:0,c:0,p:0};const passou=fimEd(e)<hoje;const st=passou?['Encerrada','n']:abertaJa(e)?['Inscrições abertas','ok']:agendada(e)?['Abre '+quandoAbre(e),'']:['Inscrições fechadas','n'];
+  ${(ed.length?'<div class="grade-cards">':'')+ed.map(e=>{const c=cnt[e.id]||{t:0,c:0,p:0};const passou=fimEd(e)<hoje;const st=passou?['Encerrada','n']:abertaJa(e)?['Inscrições abertas','ok']:agendada(e)?['Abre '+quandoAbre(e),'']:['Inscrições fechadas','n'];
     return `<div class="edcard">${toldo(e,st[0])}<div class="c"><p style="font-family:var(--display);font-size:22px;font-weight:700;margin:0">${esc(nomeEd(e))}</p><p class="sub" style="margin:2px 0 0">${periodo(e)}${e.local?' · '+esc(e.local):''}</p>
     <div class="nums"><div style="position:relative"><b>${c.t}</b><span>Inscrições</span>${S.novasEd?.[e.id]?`<i class="badge nv" title="Inscrições novas pra decidir">${S.novasEd[e.id]}</i>`:''}</div><div><b>${c.c}</b><span>Confirmadas</span></div><div><b>${c.p}</b><span>Pagas</span></div></div>
-    ${fin[e.id]?.rec?`<p class="fin-ed">Recebido <b>${money(fin[e.id].rec)}</b>${fin[e.id].falta?` · falta ${money(fin[e.id].falta)}`:''}</p>`:''}<div class="row"><button class="mini" data-editar="${e.id}" style="min-height:44px">Editar</button><button class="mini pri" data-selecionar="${e.id}" style="min-height:44px">${S.novasEd?.[e.id]?`Ver ${S.novasEd[e.id]} ${S.novasEd[e.id]===1?'nova':'novas'}`:'Ver inscrições'}</button></div></div></div>`}).join('')||`<div class="vazio">${berg(88)}<h2 style="margin:6px 0 4px">Nenhuma edição ainda</h2><p class="sub">Crie a primeira edição da ${esc(S.org.nome)} pra abrir as inscrições.</p><button class="btn pri" data-editar="nova" style="max-width:320px;margin:0 auto">Criar primeira edição</button></div>`}`};
+    ${fin[e.id]?.rec?`<p class="fin-ed">Recebido <b>${money(fin[e.id].rec)}</b>${fin[e.id].falta?` · falta ${money(fin[e.id].falta)}`:''}</p>`:''}<div class="row"><button class="mini" data-editar="${e.id}" style="min-height:44px">Editar</button><button class="mini pri" data-selecionar="${e.id}" style="min-height:44px">${S.novasEd?.[e.id]?`Ver ${S.novasEd[e.id]} ${S.novasEd[e.id]===1?'nova':'novas'}`:'Ver inscrições'}</button></div></div></div>`}).join('')+(ed.length?'</div>':'')||`<div class="vazio">${berg(88)}<h2 style="margin:6px 0 4px">Nenhuma edição ainda</h2><p class="sub">Crie a primeira edição da ${esc(S.org.nome)} pra abrir as inscrições.</p><button class="btn pri" data-editar="nova" style="max-width:320px;margin:0 auto">Criar primeira edição</button></div>`}`};
 
 TELAS['org-edicao-form']=async()=>{
   const todas=S.edicoes||await listaEdicoes();S.edicoes=todas;
