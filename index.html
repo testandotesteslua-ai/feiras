@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#2E3532">
-<meta name="app-versao" content="202610291200">
+<meta name="app-versao" content="202610291300">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plataforma de Feiras</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Feiras"><meta name="application-name" content="Feiras">
@@ -454,6 +454,21 @@ input,select,textarea{font-size:16px}
   .recorte-folha{border-radius:26px;padding-bottom:20px}
   .hero,#tela[data-tela="auth"]>.painel,#tela[data-tela="auth"]>.xadrez{max-width:460px}
 }
+
+/* ===== trocar perfil ===== */
+.folha-perfis{text-align:left;max-height:86vh;overflow:auto}
+.folha-perfis h3{font-size:14px;color:var(--ink-2);margin:16px 0 8px}
+.perfil-it{display:flex;align-items:center;gap:12px;width:100%;min-height:62px;padding:8px 12px;margin:0 0 8px;border:1.5px solid var(--line);border-radius:16px;background:var(--card);text-align:left;cursor:pointer}
+.perfil-it:hover{border-color:var(--verde)}
+.perfil-it.on{border-color:var(--verde);background:var(--verde-soft)}
+.perfil-it .av{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--oliva);color:var(--on-oliva);font-weight:800;font-size:18px;overflow:hidden}
+.perfil-it .av img{width:100%;height:100%;object-fit:cover}
+.perfil-it .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.perfil-it .tx b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.perfil-it .tx small{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.perfil-it .ok{color:var(--verde);font-weight:800;font-size:18px}
+.perfil-linha{display:flex;gap:8px;align-items:center;margin-bottom:8px}.perfil-linha .perfil-it{margin:0}.perfil-linha .mini{min-height:44px;min-width:44px}
+.cabeca .papel{cursor:pointer}
 </style>
 </head>
 <body>
@@ -494,7 +509,7 @@ function erroMsg(e){const m=(e&&e.message)||String(e);if(/Invalid login/i.test(m
 
 function berg(t=28){return `<svg class="berg" width="${t}" height="${t}" viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="17" width="24" height="17" rx="2" style="fill:var(--card);stroke:var(--oliva);stroke-width:2"/><path d="M5 11h30l-2 7H7z" style="fill:var(--verde)"/><path d="M11 11h6l-1 7h-5zM23 11h6l1 7h-6z" style="fill:var(--laranja)"/><path d="M7 18a2.5 2.5 0 0 0 5 0a2.5 2.5 0 0 0 5 0a2.5 2.5 0 0 0 6 0a2.5 2.5 0 0 0 5 0a2.5 2.5 0 0 0 5 0" style="fill:var(--verde)"/><rect x="14" y="25" width="12" height="9" style="fill:var(--laranja-soft)"/></svg>`}
 const wm=(c='')=>S.papel==='organizadora'&&S.org&&c!=='grande'?`<span class="wm ${c}"><small>PAINEL DA FEIRA</small><b>${esc(String(S.org.nome).toUpperCase())}</b></span>`:`<span class="wm ${c}"><small>${PLAT.peq}</small><b>${PLAT.grande}</b></span>`;
-const topo=()=>`<div class="cabeca"><span class="cacho" aria-hidden="true">${S.papel==='organizadora'&&S.org?.logo_url?`<img src="${esc(S.org.logo_url)}" alt="">`:`<span class="c1">${berg(46)}</span>`}</span><div class="linha1">${wm()}<button class="papel" data-go="conta" style="border:0;color:inherit">${S.papel==='organizadora'?'Conta':'Expositor · Conta'}</button><button class="atualiza" id="atualizar" aria-label="Atualizar a tela" title="Atualizar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button></div><div class="ola">${S.papel!=='organizadora'&&S.marca?.logo_url?`<img class="logo" src="${esc(S.marca.logo_url)}" alt="" width="26" height="26" style="width:26px;height:26px;border-width:1.5px">`:''}${S.papel==='organizadora'?'Painel da organização'+(S.compNovos&&S.tela!=='org-selecao'?`</div><button class="aviso-comp" data-vercomp="1">📎 ${S.compNovos} comprovante${S.compNovos>1?'s':''} novo${S.compNovos>1?'s':''} pra conferir ›</button><div style="display:none">`:''):S.marca?'Olá, '+esc(S.marca.nome)+'!':'Que bom te ver por aqui!'}</div></div>`;
+const topo=()=>`<div class="cabeca"><span class="cacho" aria-hidden="true">${S.papel==='organizadora'&&S.org?.logo_url?`<img src="${esc(S.org.logo_url)}" alt="">`:`<span class="c1">${berg(46)}</span>`}</span><div class="linha1">${wm()}<button class="papel" id="trocar-perfil" aria-haspopup="dialog" style="border:0;color:inherit">${S.tela==='admin'?'Admin':S.papel==='organizadora'?'Organização':'Expositor'} ▾</button><button class="atualiza" id="atualizar" aria-label="Atualizar a tela" title="Atualizar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button></div><div class="ola">${S.papel!=='organizadora'&&S.marca?.logo_url?`<img class="logo" src="${esc(S.marca.logo_url)}" alt="" width="26" height="26" style="width:26px;height:26px;border-width:1.5px">`:''}${S.papel==='organizadora'?'Painel da organização'+(S.compNovos&&S.tela!=='org-selecao'?`</div><button class="aviso-comp" data-vercomp="1">📎 ${S.compNovos} comprovante${S.compNovos>1?'s':''} novo${S.compNovos>1?'s':''} pra conferir ›</button><div style="display:none">`:''):S.marca?'Olá, '+esc(S.marca.nome)+'!':'Que bom te ver por aqui!'}</div></div>`;
 const S={sessao:null,papel:'expositor',marca:null,segs:[],tela:'inicio',edicao:null,orgEdicao:null,canal:null,mapaSel:null,vagaSel:null,orgs:[],org:null,admin:false,pushOk:false};
 /* ===== cores: a plataforma é neutra e cada feira usa as cores dela ===== */
 const hexOk=h=>/^#[0-9a-f]{6}$/i.test(h||'');
@@ -513,14 +528,14 @@ const varsOrg=o=>{const c=coresDe(o);return c?Object.entries(c).map(([k,v])=>k+'
 let temaAtual=null;function aplicarTema(o){const c=coresDe(o),chave=c?JSON.stringify(c):'';if(chave===temaAtual)return;temaAtual=chave;const r=document.documentElement.style;
   ['--oliva','--menta','--oliva-esc','--menta-soft','--on-oliva','--verde','--verde-esc','--verde-soft','--on-verde','--laranja','--laranja-esc','--laranja-soft','--on-laranja','--wm'].forEach(k=>r.removeProperty(k));
   if(c)Object.entries(c).forEach(([k,v])=>r.setProperty(k,v));const m=document.querySelector('meta[name=theme-color]');if(m)m.content=c?c['--oliva']:'#2E3532'}
-function temaDaTela(){if(S.papel==='organizadora'&&S.org)return aplicarTema(S.org);if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return aplicarTema(S.edicao.organizacoes);aplicarTema(null)}
+function temaDaTela(){if(S.tela==='admin')return aplicarTema(null);if(S.papel==='organizadora'&&S.org)return aplicarTema(S.org);if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return aplicarTema(S.edicao.organizacoes);aplicarTema(null)}
 const nomeEd=e=>e?.titulo||e?.organizacoes?.nome||S.org?.nome||'Edição';
 const ORGCOLS='id,nome,slug,cor_primaria,cor_destaque,logo_url,status';
 
 async function iniciar(){
   if(LINK.erro){try{history.replaceState(null,'',location.pathname)}catch{}}
-  const {data}=await sb.auth.getSession();S.sessao=data.session;
-  sb.auth.onAuthStateChange((ev,s)=>{const antes=!!S.sessao;S.sessao=s;if(ev==='PASSWORD_RECOVERY'){S.tela='novasenha';setTimeout(render,0);return}if(!!s!==antes)setTimeout(carregarUsuario,0)});
+  const {data}=await sb.auth.getSession();S.sessao=data.session;if(S.sessao)guardaConta(S.sessao);
+  sb.auth.onAuthStateChange((ev,s)=>{const antes=S.sessao?.user?.id||null;S.sessao=s;if(s)guardaConta(s);if(ev==='PASSWORD_RECOVERY'){S.tela='novasenha';setTimeout(render,0);return}if((s?.user?.id||null)!==antes){fechaPerfis();setTimeout(carregarUsuario,0)}});
   const r=await sb.from('segmentos').select('*').order('ordem');S.segs=r.data||[];
   await carregarUsuario();
 }
@@ -550,13 +565,38 @@ async function carregarUsuario(){
     if(ab){try{history.replaceState(null,'',location.pathname)}catch{}if(ab==='ed'&&abId){S.orgEdicao=abId;S.gAbertos=new Set();S.tela='org-selecao'}S.gAbertos=new Set();if(ab==='comprovantes'){S.irComp=true;S.tela='org-selecao'}else if(ab==='selecao'){const eN=Object.keys(S.novasEd||{})[0];if(eN)S.orgEdicao=eN;S.filtroSel='novas';S.tela='org-selecao'}}}
   render();
 }
-async function escolherModo(){let modo='',oid='';try{modo=localStorage.getItem('pf-modo')||'';oid=localStorage.getItem('pf-org')||''}catch{}
+async function escolherModo(){let modo='',oid='';try{modo=localStorage.getItem(chaveU('pf-modo'))||'';oid=localStorage.getItem(chaveU('pf-org'))||''}catch{}
   if(S.orgs.length&&modo!=='expositor'){const o=S.orgs.find(x=>x.id===oid)||S.orgs[0];const {data}=await sb.from('organizacoes').select('*').eq('id',o.id).maybeSingle();S.org=data?{...data,papel:o.papel}:null}else S.org=null;
-  S.papel=S.org?'organizadora':'expositor'}
-async function trocarModo(modo,orgId){try{localStorage.setItem('pf-modo',modo);if(orgId)localStorage.setItem('pf-org',orgId)}catch{}
+  S.papel=S.org?'organizadora':'expositor';nomeConta(S.marca?.nome||'')}
+async function trocarModo(modo,orgId){try{localStorage.setItem(chaveU('pf-modo'),modo);if(orgId)localStorage.setItem(chaveU('pf-org'),orgId)}catch{}
   if(S.canalComp){sb.removeChannel(S.canalComp);S.canalComp=null}S.edicoes=null;S.orgEdicao=null;S.mapaSel=null;S.mapaEdSel=null;S.fbEd=null;S.compNovos=0;S.insNovas=0;S.novasEd={};
   const {data:og}=await sb.rpc('minhas_organizacoes');S.orgs=og||[];await escolherModo();
   if(S.papel==='organizadora'){await contaComprovantes();ouveComprovantes();go('org-edicoes')}else go('inicio')}
+/* ===== contas salvas no aparelho e troca de perfil ===== */
+const chaveU=k=>k+':'+(S.sessao?.user?.id||'');
+const contasSalvas=()=>{try{return JSON.parse(localStorage.getItem('pf-contas')||'[]')}catch{return []}};
+const gravaContas=l=>{try{localStorage.setItem('pf-contas',JSON.stringify(l.slice(0,6)))}catch{}};
+function guardaConta(s){if(!lembrar()||!s?.user||!s.refresh_token)return;const l=contasSalvas();const a=l.find(c=>c.id===s.user.id);const novo={id:s.user.id,email:s.user.email,rt:s.refresh_token,nome:a?.nome||'',em:Date.now()};gravaContas([novo,...l.filter(c=>c.id!==s.user.id)])}
+function nomeConta(n){const id=S.sessao?.user?.id;if(!id)return;const l=contasSalvas();const a=l.find(c=>c.id===id);if(a&&n&&a.nome!==n){a.nome=n;gravaContas(l)}}
+function removeConta(id){gravaContas(contasSalvas().filter(c=>c.id!==id))}
+const iniciais=t=>esc(String(t||'?').trim().charAt(0).toUpperCase());
+const itPerfil=(attr,nome,sub,img,on)=>`<button class="perfil-it ${on?'on':''}" ${attr} ${on?'aria-current="true"':''}><span class="av">${img?`<img src="${esc(img)}" alt="">`:iniciais(nome)}</span><span class="tx"><b>${esc(nome)}</b><small>${esc(sub)}</small></span>${on?'<span class="ok" aria-hidden="true">✓</span>':''}</button>`;
+const blocoContas=()=>{const cs=contasSalvas();if(!cs.length)return '';return `<div class="painel" style="margin-top:12px"><b class="secao">Continuar como</b><div style="margin-top:8px">${cs.map(c=>`<div class="perfil-linha">${itPerfil(`data-usarconta="${c.id}"`,c.nome||c.email.split('@')[0],c.email,null,false)}<button class="mini" data-rmconta="${c.id}" aria-label="Tirar ${esc(c.email)} deste aparelho">✕</button></div>`).join('')}</div><p class="sub" style="margin:4px 0 0;font-size:13px">Ou entre com outro e-mail aqui embaixo.</p></div>`};
+function fechaPerfis(){document.getElementById('perfis-fundo')?.remove()}
+function abrirPerfis(){fechaPerfis();if(!S.sessao)return;const eu=S.sessao.user;
+  const perfis=[itPerfil('data-pmodo="expositor"',S.marca?.nome||'Perfil de expositor',S.marca?'Expositor':'Expositor · cadastre sua marca',S.marca?.logo_url,S.papel==='expositor'&&S.tela!=='admin'),
+    ...S.orgs.map(o=>itPerfil(`data-pmodo="${o.id}"`,o.nome,'Organização'+(o.status==='pendente'?' · esperando aprovação':o.status==='suspensa'?' · suspensa':''),S.org?.id===o.id?S.org.logo_url:null,S.papel==='organizadora'&&S.org?.id===o.id&&S.tela!=='admin')),
+    ...(S.admin?[itPerfil('data-pmodo="admin"','Administração','Plataforma',null,S.tela==='admin')]:[])];
+  const outras=contasSalvas().filter(c=>c.id!==eu.id);
+  const f=document.createElement('div');f.className='recorte-fundo';f.id='perfis-fundo';
+  f.innerHTML=`<div class="recorte-folha folha-perfis" role="dialog" aria-modal="true" aria-labelledby="pf-t"><div class="topo"><h2 id="pf-t" style="margin:0">Trocar de perfil</h2><button class="mini" id="pf-fecha" aria-label="Fechar">✕</button></div><p class="sub" style="margin:2px 0 12px">${esc(eu.email)}</p>${perfis.join('')}
+    ${outras.length?`<h3>Outras contas neste aparelho</h3>${outras.map(c=>`<div class="perfil-linha">${itPerfil(`data-usarconta="${c.id}"`,c.nome||c.email.split('@')[0],c.email,null,false)}<button class="mini" data-rmconta="${c.id}" aria-label="Tirar ${esc(c.email)} deste aparelho">✕</button></div>`).join('')}`:''}
+    <button class="btn sec" data-novaconta="1" style="margin-top:10px">+ Entrar com outra conta</button><button class="btn sec" data-go="conta" style="margin-top:8px">Conta e configurações</button></div>`;
+  document.body.appendChild(f);f.addEventListener('click',ev=>{if(ev.target===f||ev.target.closest('#pf-fecha'))fechaPerfis()});f.querySelector('.perfil-it.on,.perfil-it')?.focus()}
+async function usarConta(id){const c=contasSalvas().find(x=>x.id===id);if(!c)return;if(S.sessao?.user?.id===id){fechaPerfis();return}toast('Trocando de conta…');
+  const {error}=await sb.auth.refreshSession({refresh_token:c.rt});if(error){removeConta(id);fechaPerfis();toast('Essa conta precisa entrar de novo');if(!S.sessao){try{localStorage.setItem('pf-email',c.email)}catch{}render()}return}}
+function novaConta(){fechaPerfis();try{const ref=new URL(SUPABASE_URL).hostname.split('.')[0];guarda.removeItem(`sb-${ref}-auth-token`);localStorage.removeItem('pf-email');sessionStorage.setItem('pf-nova','1')}catch{}location.replace(location.pathname)}
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape')fechaPerfis()});
 /* ===== notificações (push) ===== */
 const pushSuporta=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
 const ehIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -593,13 +633,13 @@ async function render(){
   window.scrollTo(0,0);enfeitaDatas();if(AFTER[S.tela])AFTER[S.tela]();
 }
 document.addEventListener('toggle',ev=>{const d=ev.target;if(!d.dataset||!d.dataset.grupo)return;S.gAbertos=S.gAbertos||new Set();if(d.open)S.gAbertos.add(d.dataset.grupo);else S.gAbertos.delete(d.dataset.grupo)},true);
-function go(t){if(S.papel!=='organizadora'&&/^org-(?!config)/.test(t))t='inicio';if(t==='org-selecao')S.gAbertos=new Set();if(S.canal){sb.removeChannel(S.canal);S.canal=null}S.tela=t;render()}
+function go(t){fechaPerfis();if(S.papel!=='organizadora'&&/^org-(?!config)/.test(t))t='inicio';if(t==='org-selecao')S.gAbertos=new Set();if(S.canal){sb.removeChannel(S.canal);S.canal=null}S.tela=t;render()}
 
 /* ================= AUTENTICAÇÃO ================= */
 let modoAuth='entrar';
 const TELAS={};const AFTER={};
-TELAS.auth=()=>`${LINK.erro?`<div class="painel" style="background:var(--tomate-soft);border-color:var(--tomate);color:var(--ink)"><b>Esse link não vale mais</b><p style="margin:4px 0 0;font-size:14px">${/expired|otp/i.test(LINK.erro)?'Ele expirou ou já foi usado. Se você pediu pra redefinir a senha mais de uma vez, só o <b>último e-mail</b> funciona. Ou toque em "Esqueci minha senha" de novo e use o link novo.':'Tente de novo ou fale com a organização.'}</p></div>`:''}<div class="hero"><span class="b1">${berg(96)}</span>${wm('grande')}<div class="onda" style="margin:14px 0 10px"></div><p style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;opacity:1">Inscrições</p><p>${modoAuth==='entrar'?'Entre pra se inscrever nas feiras ou organizar a sua.':'Crie sua conta. Leva um minuto.'}</p></div><div class="painel" style="margin-top:12px">
-<label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" value="${esc(emailSalvo())}">
+TELAS.auth=()=>`${LINK.erro?`<div class="painel" style="background:var(--tomate-soft);border-color:var(--tomate);color:var(--ink)"><b>Esse link não vale mais</b><p style="margin:4px 0 0;font-size:14px">${/expired|otp/i.test(LINK.erro)?'Ele expirou ou já foi usado. Se você pediu pra redefinir a senha mais de uma vez, só o <b>último e-mail</b> funciona. Ou toque em "Esqueci minha senha" de novo e use o link novo.':'Tente de novo ou fale com a organização.'}</p></div>`:''}<div class="hero"><span class="b1">${berg(96)}</span>${wm('grande')}<div class="onda" style="margin:14px 0 10px"></div><p style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;opacity:1">Inscrições</p><p>${modoAuth==='entrar'?'Entre pra se inscrever nas feiras ou organizar a sua.':'Crie sua conta. Leva um minuto.'}</p></div>${blocoContas()}<div class="painel" style="margin-top:12px">
+${(()=>{try{if(sessionStorage.getItem('pf-nova')){sessionStorage.removeItem('pf-nova');return '<b class="secao" style="display:block;margin-bottom:4px">Entrar com outra conta</b>'}}catch{}return ''})()}<label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" value="${esc(emailSalvo())}">
 <label for="a-senha">Senha</label><div class="senha"><input id="a-senha" type="password" autocomplete="${modoAuth==='entrar'?'current-password':'new-password'}"><button type="button" class="olho" data-olho="a-senha" aria-label="Mostrar senha" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
 ${modoAuth==='criar'?'<p class="sub" style="margin:4px 0 0;font-size:12px">Mínimo de 6 caracteres.</p>':''}
 <label class="check" style="margin-top:12px"><input type="checkbox" id="a-lembrar" ${lembrar()?'checked':''}> Lembrar usuário</label>
@@ -855,7 +895,7 @@ AFTER.marca=desenhaFotos;
 TELAS.conta=()=>{const st={pendente:['Esperando aprovação',''],ativa:['No ar','ok'],suspensa:['Suspensa','t']};
   const minhas=S.orgs.length?`<h2>Feiras que você organiza</h2>${S.orgs.map(o=>{const [t,c]=st[o.status]||[o.status,'n'];const aqui=S.papel==='organizadora'&&S.org?.id===o.id;return `<div class="painel"><div class="topo"><b>${esc(o.nome)}</b><span class="status ${c}">${t}</span></div><p class="sub" style="margin:2px 0 10px">${o.papel==='dona'?'Você é a dona':'Você faz parte da equipe'}</p>${aqui?`<button class="btn sec" data-go="org-config">Dados, logo e cores da feira</button>`:`<button class="btn pri" data-abrirorg="${o.id}">Abrir painel da feira</button>`}</div>`}).join('')}`:'';
   return `<h1>Conta</h1><div class="painel"><div class="kv"><span>E-mail</span><b>${esc(S.sessao.user.email)}</b></div><div class="kv"><span>Usando como</span><b>${S.papel==='organizadora'?'Organização · '+esc(S.org.nome):'Expositor'}</b></div></div>
-  ${S.papel==='organizadora'?`<button class="btn sec" data-modo="expositor" style="margin-bottom:8px">Usar como expositor</button>`:''}${minhas}
+  <button class="btn pri" id="trocar-perfil-2" style="margin-bottom:8px">Trocar de perfil ou de conta</button>${minhas}
   <div class="painel" style="background:var(--laranja-soft);border-color:transparent;margin-top:12px"><b>Organiza uma feira?</b><p class="sub" style="margin:4px 0 10px">Cadastre a sua pra receber inscrições, montar o mapa e fazer a curadoria por aqui.</p><button class="btn sec" data-go="nova-feira">Cadastrar uma feira</button></div>
   ${S.admin?`<div class="painel"><b>Administração da plataforma</b><p class="sub" style="margin:4px 0 10px">Aprove feiras novas e suspenda quando precisar.</p><button class="btn pri" data-go="admin">Abrir administração</button></div>`:''}
   <h2>Sua conta</h2>${blocoPush()}<button class="btn sec" data-go="novasenha" style="margin-bottom:8px">Trocar minha senha</button><button class="btn sec" id="sair">Sair</button>`};
@@ -1561,6 +1601,11 @@ document.addEventListener('click',async ev=>{
   const b=ev.target.closest('button,[data-go],[data-perfil]');if(!b)return;const d=b.dataset;
   if(d.perfil&&!ev.target.closest('button')){S.perfilId=d.perfil;go('org-inscrito');return}
   try{
+  if(b.id==='trocar-perfil'||b.id==='trocar-perfil-2'){abrirPerfis();return}
+  if(d.pmodo){fechaPerfis();if(d.pmodo==='admin'){go('admin');return}if(d.pmodo==='expositor'){if(S.papel==='expositor')go('inicio');else await trocarModo('expositor');return}if(S.papel==='organizadora'&&S.org?.id===d.pmodo){go('org-edicoes');return}await trocarModo('organizacao',d.pmodo);return}
+  if(d.usarconta){b.disabled=true;await usarConta(d.usarconta);b.disabled=false;return}
+  if(d.rmconta){removeConta(d.rmconta);toast('Conta tirada deste aparelho');if(document.getElementById('perfis-fundo'))abrirPerfis();else render();return}
+  if(d.novaconta){novaConta();return}
   if(d.go){if(d.go==='proposta')location.hash='proposta';go(d.go);return}
   if(d.locsug!==undefined){const x=locRes[+d.locsug];if(x){$('#e-local').value=x.nome;$('#e-end').value=x.end;atualizaConferir()}const sg=$('#loc-sug');sg.hidden=true;$('#e-local').setAttribute('aria-expanded','false');return}
   if(d.olho){const inp=document.getElementById(d.olho);const ver=inp.type==='password';inp.type=ver?'text':'password';b.setAttribute('aria-pressed',ver);b.setAttribute('aria-label',ver?'Esconder senha':'Mostrar senha');b.style.color=ver?'var(--verde)':'';return}
@@ -1573,7 +1618,7 @@ document.addEventListener('click',async ev=>{
     if(modoAuth==='criar'&&!r.data.session){err.style.color='var(--menta)';err.textContent='Conta criada! Confirme pelo link que enviamos pro seu e-mail.'}return}
   if(b.id==='a-esqueci'){const email=$('#a-email').value.trim();if(!email){$('#a-err').textContent='Digite seu e-mail acima primeiro.';return}const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});$('#a-err').textContent=r.error?erroMsg(r.error):'Enviamos um link pra redefinir a senha.';return}
   if(b.id==='ns-ok'){const r=await sb.auth.updateUser({password:$('#ns').value});if(r.error){$('#ns-err').textContent=erroMsg(r.error);return}toast('Senha atualizada');carregarUsuario();return}
-  if(b.id==='sair'){await sb.auth.signOut();return}
+  if(b.id==='sair'){const id=S.sessao?.user?.id;await sb.auth.signOut();if(id)removeConta(id);render();return}
   if(d.abrirorg){b.disabled=true;await trocarModo('organizacao',d.abrirorg);return}
   if(d.modo==='expositor'){b.disabled=true;await trocarModo('expositor');return}
   if(d.admf){S.admFiltro=d.admf;render();return}
@@ -1582,7 +1627,7 @@ document.addEventListener('click',async ev=>{
   if(b.id==='nf-ok'){const nome=$('#nf-nome').value.trim(),slug=$('#nf-slug').value.trim(),err=$('#nf-err');err.textContent='';if(!nome){err.textContent='Dê um nome pra feira.';return}
     if(!/^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/.test(slug)){err.textContent='O link precisa ter de 3 a 40 letras minúsculas, números ou hífen, sem hífen no começo ou no fim.';return}
     b.disabled=true;const r=await sb.rpc('criar_organizacao',{p_nome:nome,p_slug:slug});b.disabled=false;if(r.error){err.textContent=erroMsg(r.error);return}
-    toast('Feira cadastrada! Agora é só esperar a aprovação.');try{localStorage.setItem('pf-modo','organizacao');localStorage.setItem('pf-org',r.data)}catch{}const {data:og}=await sb.rpc('minhas_organizacoes');S.orgs=og||[];await escolherModo();S.edicoes=null;go('org-config');return}
+    toast('Feira cadastrada! Agora é só esperar a aprovação.');try{localStorage.setItem(chaveU('pf-modo'),'organizacao');localStorage.setItem(chaveU('pf-org'),r.data)}catch{}const {data:og}=await sb.rpc('minhas_organizacoes');S.orgs=og||[];await escolherModo();S.edicoes=null;go('org-config');return}
   if(b.id==='cfg-ok'){const err=$('#cfg-err');err.textContent='';const nome=$('#cfg-nome').value.trim();if(!nome){err.textContent='Dê um nome pra feira.';return}
     const reg={nome,descricao:$('#cfg-desc').value.trim()||null,cidade:$('#cfg-cid').value.trim()||null,instagram:$('#cfg-ig').value.trim()||null,whatsapp:$('#cfg-zap').value.trim()||null,logo_url:S.cfg.logo_url||null,cor_primaria:$('#cfg-p').value,cor_destaque:$('#cfg-d').value};
     b.disabled=true;const r=await sb.from('organizacoes').update(reg).eq('id',S.org.id).select().single();b.disabled=false;if(r.error){err.textContent=erroMsg(r.error);return}
