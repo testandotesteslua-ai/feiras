@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#2E3532">
-<meta name="app-versao" content="202610301700">
+<meta name="app-versao" content="202610301800">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plataforma de Feiras</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Feiras"><meta name="application-name" content="Feiras">
@@ -553,6 +553,14 @@ details.presumo{display:block}.resumo-c{display:block}
 
 .berg-logo{object-fit:contain;border-radius:22%;background:#fff;display:inline-block}
 .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+
+.cid-filtro{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;margin:0 0 4px;scrollbar-width:none}.cid-filtro::-webkit-scrollbar{display:none}
+.cid-filtro button{flex:none;min-height:40px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-weight:700;font-size:14px;white-space:nowrap}
+.cid-filtro button[aria-pressed="true"]{border-color:var(--verde);background:var(--verde);color:var(--on-verde)}
+
+.pub-topo{display:flex;gap:14px;align-items:center;margin:8px 0 10px}.pub-topo .berg{flex:none}
+.cardfeira.destaque{box-shadow:0 0 0 3px var(--verde)}
+.pub-aviso{margin:8px 0 0;padding:8px 10px;border-radius:10px;background:var(--laranja-soft);font-size:13px}
 </style>
 </head>
 <body>
@@ -612,9 +620,9 @@ const varsOrg=o=>{const c=coresDe(o);return c?Object.entries(c).map(([k,v])=>k+'
 let temaAtual=null;function aplicarTema(o){const c=coresDe(o),chave=c?JSON.stringify(c):'';if(chave===temaAtual)return;temaAtual=chave;const r=document.documentElement.style;
   ['--oliva','--menta','--oliva-esc','--menta-soft','--on-oliva','--verde','--verde-esc','--verde-soft','--on-verde','--laranja','--laranja-esc','--laranja-soft','--on-laranja','--wm'].forEach(k=>r.removeProperty(k));
   if(c)Object.entries(c).forEach(([k,v])=>r.setProperty(k,v));const m=document.querySelector('meta[name=theme-color]');if(m)m.content=c?c['--oliva']:'#2E3532'}
-function temaDaTela(){if(S.tela==='admin')return aplicarTema(null);if(S.papel==='organizadora'&&S.org)return aplicarTema(S.org);if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return aplicarTema(S.edicao.organizacoes);aplicarTema(null)}
+function temaDaTela(){if(S.tela==='admin')return aplicarTema(null);if(S.tela==='feira-pub')return aplicarTema(S.pubOrg||null);if(S.papel==='organizadora'&&S.org)return aplicarTema(S.org);if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return aplicarTema(S.edicao.organizacoes);aplicarTema(null)}
 const nomeEd=e=>e?.titulo||e?.organizacoes?.nome||S.org?.nome||'Edição';
-const ORGCOLS='id,nome,slug,cor_primaria,cor_destaque,logo_url,status,vaga_menor,vaga_maior,vaga_fundo';
+const ORGCOLS='id,nome,slug,cor_primaria,cor_destaque,logo_url,status,vaga_menor,vaga_maior,vaga_fundo,cidade';
 
 async function iniciar(){
   if(LINK.erro){try{history.replaceState(null,'',location.pathname)}catch{}}
@@ -636,12 +644,14 @@ function ouveComprovantes(){if(S.canalComp)return;S.canalComp=sb.channel('org-co
     if(['org-selecao','org-edicoes'].includes(S.tela)){const y=window.scrollY;await renderMantendo();window.scrollTo(0,y)}}).subscribe()}
 async function carregarUsuario(){
   if(LINK.recuperar&&S.sessao){LINK.recuperar=false;S.tela='novasenha';try{history.replaceState(null,'',location.pathname)}catch{}return render()}
-  if(!S.sessao){S.papel='expositor';S.marca=null;S.tela=location.hash==='#proposta'?'proposta':'auth';return render()}
+  if(S.alvo===undefined)S.alvo=lerAlvo();
+  if(!S.sessao){S.papel='expositor';S.marca=null;S.tela=S.alvo?'feira-pub':location.hash==='#proposta'?'proposta':'auth';return render()}
   const uid=S.sessao.user.id;
   const [p,m,og,vp]=await Promise.all([sb.from('perfis').select('eh_admin').eq('id',uid).maybeSingle(),sb.from('marcas').select('*').eq('dono',uid).maybeSingle(),sb.rpc('minhas_organizacoes'),sb.rpc('vapid_publica')]);
   S.admin=!!p.data?.eh_admin;S.marca=m.data;S.orgs=og.data||[];S.pushOk=!!vp.data;
   await escolherModo();
   S.tela=S.papel==='organizadora'?'org-edicoes':'inicio';
+  if(S.alvo){if(S.papel!=='organizadora'&&S.alvo.e){if(!S.marca){S.tela='marca';setTimeout(()=>toast('Antes, cadastre sua marca. Depois o app volta pra feira.'),600)}else{const {data:edL}=await sb.from('edicoes').select(`*,organizacoes(${ORGCOLS})`).eq('id',S.alvo.e).maybeSingle();limpaAlvo();if(edL){S.edicao=edL;S.tela='edicao'}}}else S.tela='feira-pub'}
   const qs=new URLSearchParams(location.search),ab=qs.get('abrir'),abId=qs.get('id');
   if(S.papel!=='organizadora'){if(pushEstado()==='ligado')assinaPush(false).catch(()=>{});
     if(ab==='ed'&&abId){try{history.replaceState(null,'',location.pathname)}catch{}const {data:edA}=await sb.from('edicoes').select('*').eq('id',abId).maybeSingle();if(edA&&S.marca){S.edicao=edA;S.tela='edicao'}}}
@@ -966,7 +976,7 @@ TELAS.inicio=async()=>{
   const hoje=new Date().toISOString().slice(0,10);
   const [proximas,{data:mi}]=await Promise.all([listarProximas(),sb.from('inscricoes').select(`id,edicao_id,status,pago,pago_sinal,tamanho,dia_unico,vaga_id,valor_combinado,dias_combinados,monta_no_dia,monta_respondido,divide_com,cancel_valor,cancel_escolha,reembolsado_em,credito_destino,edicoes(*,organizacoes(${ORGCOLS})),montagem(inscricao_id)`).eq('marca_id',S.marca.id)]);
   const mins=(mi||[]).filter(x=>x.edicoes),ids=new Set(mins.map(x=>x.edicao_id));
-  const disponiveis=proximas.filter(e=>!ids.has(e.id)&&!cancelada(e));
+  const disponiveis=proximas.filter(e=>!ids.has(e.id)&&!cancelada(e));let filtroCid='';
   const pendCx=x=>cancelada(x.edicoes)&&+x.cancel_valor>0&&!x.cancel_escolha&&!x.reembolsado_em&&!x.credito_destino&&!(x.edicoes.cancel_prazo&&hoje>x.edicoes.cancel_prazo);
   const ativa=x=>fimEd(x.edicoes)>=hoje&&(!cancelada(x.edicoes)||pendCx(x));
   const futuras=mins.filter(ativa).sort((a,b)=>a.edicoes.data<b.edicoes.data?-1:1);
@@ -976,7 +986,7 @@ TELAS.inicio=async()=>{
   if(!S.abaExp)S.abaExp=futuras.length?'minhas':'disponiveis';
   const selo=(e,i,pas)=>cancelada(e)?(i&&+i.cancel_valor>0&&!i.cancel_escolha&&!i.reembolsado_em&&!i.credito_destino&&!pas?['Cancelada · escolha reembolso ou crédito','t']:['Cancelada','n']):pas?(i&&i.status==='confirmada'?(e.link_fotos?['Fotos disponíveis','ok']:['Você participou','n']):['Encerrada','n']):!i&&fora.has(e.id)?['Fora dessa edição','n']:!i?(abertaJa(e)?['Inscrições abertas','ok']:agendada(e)?['Abre '+quandoAbre(e),'']:['Em breve','n']):i.status==='encerrada'?['Vagas preenchidas','n']:i.status==='confirmada'?(i.pago?['Presença confirmada','ok']:i.pago_sinal?['Falta o restante','t']:['Pagamento pendente','t']):['Inscrição recebida',''];
   const faltaDias=e=>{const d=Math.ceil((new Date(e.abre_inscricoes_em)-new Date())/86400000);return d<=1?'abre amanhã ou hoje':`faltam ${d} dias`};
-  const card=(e,i,pas)=>{const [t,c]=selo(e,i,pas);const fech=!pas&&!i&&!abertaJa(e);return `<button class="cardfeira ${pas?'passada':''} ${fech||cancelada(e)?'fechada':''}" data-ed="${e.id}" style="width:100%;text-align:left;padding:0;display:block;${varsOrg(e.organizacoes)}" data-med="${medAttr(e.organizacoes)}">${toldo(e,!pas&&!i?(abertaJa(e)?'Inscrições abertas':agendada(e)?'Abre '+quandoAbre(e):'Em breve'):null)}<div class="c"><div class="topo"><p style="font-size:20px;margin:0">${e.organizacoes&&e.titulo&&!String(e.titulo).toLowerCase().includes(String(e.organizacoes.nome).toLowerCase())?`<span class="feira-nome">${esc(e.organizacoes.nome)}</span>`:''}${esc(nomeEd(e))}</p>${!pas&&!i&&!fora.has(e.id)?'':`<span class="status ${c}">${t}</span>`}</div><p class="sub" style="margin:2px 0 0">${periodo(e)}${e.local?' · '+esc(e.local):''}</p>${pas?'':tagsEd(e)}${fech?`<p class="trava">${agendada(e)?`Inscrições ainda fechadas · ${faltaDias(e)}`:'Inscrições ainda fechadas'}</p>`:''}</div></button>`};
+  const card=(e,i,pas)=>{const [t,c]=selo(e,i,pas);const fech=!pas&&!i&&!abertaJa(e);return `<button class="cardfeira ${pas?'passada':''} ${fech||cancelada(e)?'fechada':''}" data-ed="${e.id}" style="width:100%;text-align:left;padding:0;display:block;${varsOrg(e.organizacoes)}" data-med="${medAttr(e.organizacoes)}">${toldo(e,!pas&&!i?(abertaJa(e)?'Inscrições abertas':agendada(e)?'Abre '+quandoAbre(e):'Em breve'):null)}<div class="c"><div class="topo"><p style="font-size:20px;margin:0">${e.organizacoes&&e.titulo&&!String(e.titulo).toLowerCase().includes(String(e.organizacoes.nome).toLowerCase())?`<span class="feira-nome">${esc(e.organizacoes.nome)}</span>`:''}${esc(nomeEd(e))}</p>${!pas&&!i&&!fora.has(e.id)?'':`<span class="status ${c}">${t}</span>`}</div><p class="sub" style="margin:2px 0 0">${periodo(e)}${e.local?' · '+esc(e.local):''}${cidEd(e)&&!String(e.local||'').toLowerCase().includes(cidEd(e).toLowerCase())?' · '+esc(cidEd(e)):''}</p>${pas?'':tagsEd(e)}${fech?`<p class="trava">${agendada(e)?`Inscrições ainda fechadas · ${faltaDias(e)}`:'Inscrições ainda fechadas'}</p>`:''}</div></button>`};
   const avisoLogo=!S.marca.logo_url?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b>Falta a logo da sua marca</b><p style="margin:4px 0 10px">Ela passou a ser obrigatória. Adicione pra liberar novas inscrições.</p><button class="btn pri" data-go="marca">Adicionar logo</button></div>`:'';
   const abas=`<div class="abas" role="group" aria-label="Feiras"><button data-aba="minhas" aria-pressed="${S.abaExp==='minhas'}">Minhas feiras<small>${futuras.length}</small></button><button data-aba="disponiveis" aria-pressed="${S.abaExp==='disponiveis'}">Disponíveis<small>${disponiveis.length}</small></button></div>`;
   let corpo='';
@@ -984,13 +994,18 @@ TELAS.inicio=async()=>{
     corpo=(futuras.length?'<div class="grade-cards">'+futuras.map(x=>card(x.edicoes,x,false)).join('')+'</div>':`<div class="vazio">${berg(64)}<p class="sub">Você ainda não está inscrita em nenhuma feira que vem por aí.</p><button class="btn pri" data-aba="disponiveis" style="max-width:300px;margin:0 auto">Ver feiras disponíveis</button></div>`)
       +(passadas.length?`<h2>Histórico</h2><p class="sub" style="margin-top:-6px">Toque pra ver fotos e detalhes.</p><div class="grade-cards">${passadas.map(x=>card(x.edicoes,x,true)).join('')}</div>`:'');
   }else{
-    const abertasD=disponiveis.filter(e=>abertaJa(e)),embreveD=disponiveis.filter(e=>!abertaJa(e));
+    const cids=new Map();disponiveis.forEach(e=>{const c=cidEd(e);if(c&&!cids.has(chaveCid(c)))cids.set(chaveCid(c),c)});const minha=chaveCid(S.marca?.cidade||'');
+    if(S.cidadeExp===undefined){try{S.cidadeExp=localStorage.getItem(chaveU('pf-cidade'))||''}catch{S.cidadeExp=''}}if(S.cidadeExp&&!cids.has(S.cidadeExp))S.cidadeExp='';
+    const lista=[...cids.entries()].sort((a,b)=>(a[0]===minha?-1:b[0]===minha?1:a[1].localeCompare(b[1],'pt')));
+    filtroCid=cids.size>1?`<div class="cid-filtro" role="group" aria-label="Filtrar por cidade"><button data-cidexp="" aria-pressed="${!S.cidadeExp}">Todas</button>${lista.map(([k,n])=>`<button data-cidexp="${esc(k)}" aria-pressed="${S.cidadeExp===k}">${esc(n)}${k===minha?' 📍':''}</button>`).join('')}</div>`:'';
+    const filtradas=(S.cidadeExp?disponiveis.filter(e=>chaveCid(cidEd(e))===S.cidadeExp):[...disponiveis].sort((a,b)=>(chaveCid(cidEd(a))===minha?0:1)-(chaveCid(cidEd(b))===minha?0:1)));
+    const abertasD=filtradas.filter(e=>abertaJa(e)),embreveD=filtradas.filter(e=>!abertaJa(e));
     corpo=disponiveis.length?(abertasD.length?`<h2 class="gr-ed">Inscrições abertas</h2><div class="grade-cards">${abertasD.map(e=>card(e,null,false)).join('')}</div>`:'')+(embreveD.length?`<h2 class="gr-ed">Em breve</h2><p class="sub" style="margin:-6px 0 10px">Ainda não dá pra se inscrever. Já dá pra ver as informações e deixar a marca pronta.</p><div class="grade-cards">${embreveD.map(e=>card(e,null,false)).join('')}</div>`:''):`<div class="vazio">${berg(64)}<p class="sub">Nenhuma feira aberta agora. Assim que a próxima abrir, ela aparece aqui.</p></div>`;
   }
   S.avisoRest=futuras.filter(x=>!cancelada(x.edicoes)).find(x=>x.status==='confirmada'&&x.pago_sinal&&!x.pago)||null;
   S.avisoVaga=futuras.filter(x=>!cancelada(x.edicoes)).find(x=>x.status==='confirmada'&&garantiu(x)&&!x.vaga_id&&!x.divide_com&&x.edicoes?.mapa_id&&!vagaFechada(x.edicoes))||null;
   S.avisoMontaDia=futuras.filter(x=>!cancelada(x.edicoes)).find(x=>precisaRespMonta(x,x.edicoes))||null;S.avisoMont=futuras.filter(x=>!cancelada(x.edicoes)).find(x=>x.status==='confirmada'&&!(Array.isArray(x.montagem)?x.montagem.length:x.montagem))||null;
-  return cardPend()+avisoLogo+bannerPush()+`<h1>Feiras</h1>`+abas+corpo;
+  return cardPend()+avisoLogo+bannerPush()+`<h1>Feiras</h1>`+abas+filtroCid+corpo;
 };
 TELAS.edicao=async()=>{
   if(!S.edicao)return TELAS.inicio();
@@ -1036,7 +1051,7 @@ TELAS['nova-feira']=()=>`<button class="mini" data-go="conta" style="border:0;ba
 /* ================= DADOS DA FEIRA ================= */
 const PALETAS=[['#47470C','#F06521'],['#2E3532','#3F6B5E'],['#1F3A5F','#E07A5F'],['#4A2C40','#E0A458'],['#22333B','#C9A227'],['#3D405B','#81B29A']];
 TELAS['org-config']=()=>{const o=S.org;if(!o)return TELAS.conta();if(S.cfgDe!==o.id){S.cfgDe=o.id;S.cfg={cor_primaria:o.cor_primaria,cor_destaque:o.cor_destaque,logo_url:o.logo_url}}const c=S.cfg;
-  return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Dados da feira</h1><p class="sub">O que aparece pros expositores. Link: <b>${esc(o.slug)}</b></p><div class="painel">
+  return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Dados da feira</h1><p class="sub">O que aparece pros expositores. <button class="mini" data-divulga="" style="min-height:36px;margin-left:4px">🔗 Link da feira</button></p><div class="painel">
   <label style="margin-top:0">Logo</label><div class="logo-up"><span id="cfg-logo-prev">${c.logo_url?`<img class="logo" src="${esc(c.logo_url)}" alt="Logo" width="84" height="84" style="width:84px;height:84px">`:`<span class="logo-vazio">${berg(40,null)}</span>`}</span><div style="flex:1"><label class="btn sec" for="cfg-logo" style="font-weight:700">${c.logo_url?'Trocar logo':'Escolher logo'}</label><input id="cfg-logo" type="file" accept="image/png,image/jpeg,image/webp" hidden></div></div>
   <label for="cfg-nome">Nome da feira</label><input id="cfg-nome" value="${esc(o.nome)}" maxlength="80">
   <label for="cfg-desc">Sobre a feira</label><textarea id="cfg-desc" placeholder="O que tem na feira, pra quem é, onde costuma acontecer">${esc(o.descricao)}</textarea>
@@ -1146,11 +1161,11 @@ TELAS['org-edicoes']=async()=>{const ed=await listaEdicoes();S.edicoes=ed;await 
   const idsEd=ed.map(e=>e.id);const [{data:ins},{data:preA}]=idsEd.length?await Promise.all([sb.from('inscricoes').select('edicao_id,status,pago,pago_sinal,valor_pago,tamanho,dia_unico,isento,valor_combinado').in('edicao_id',idsEd),sb.from('pre_inscricoes').select('edicao_id,valor_pago').in('edicao_id',idsEd).is('inscricao_id',null)]):[{data:[]},{data:[]}];const cnt={};(ins||[]).forEach(x=>{const c=cnt[x.edicao_id]=cnt[x.edicao_id]||{t:0,c:0,p:0};c.t++;if(x.status==='confirmada'){c.c++;if(x.pago)c.p++}});
   const fin={};ed.forEach(e=>{fin[e.id]=resumoFin((ins||[]).filter(x=>x.edicao_id===e.id),e,(preA||[]).filter(x=>x.edicao_id===e.id))});
   const hoje=new Date().toISOString().slice(0,10);
-  return `${avisoReemb}${S.org.status!=='ativa'?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b>${S.org.status==='suspensa'?'Feira suspensa':'Esperando aprovação'}</b><p style="margin:4px 0 0;font-size:14px">${S.org.status==='suspensa'?'A feira está fora do ar. Fale com a plataforma.':'A feira ainda não aparece pros expositores. Enquanto isso, prepare tudo: dados e cores, mapa e edições. Quando estiver pronta, a plataforma aprova e ela entra no ar.'}</p>${S.org.status==='pendente'?`<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="mini" data-go="org-config" style="min-height:44px">Dados e cores</button><button class="mini" data-go="org-mapas" style="min-height:44px">Mapa</button><button class="mini pri" data-editar="nova" style="min-height:44px">Criar edição</button>${S.admin?`<button class="mini pri" data-admst="ativa" data-id="${S.org.id}" style="min-height:44px">Aprovar agora</button>`:''}</div>`:''}</div>`:''}${bannerPush()}${resumoOrg(ed,cnt,fin)}<div class="topo"><h1>Edições</h1><button class="mini pri" data-editar="nova" style="min-height:44px;padding:0 16px">+ Nova</button></div><p class="sub">Abertas primeiro, depois as próximas. As que já aconteceram ficam no fim.</p>
+  return `${avisoReemb}${S.org.status!=='ativa'?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b>${S.org.status==='suspensa'?'Feira suspensa':'Esperando aprovação'}</b><p style="margin:4px 0 0;font-size:14px">${S.org.status==='suspensa'?'A feira está fora do ar. Fale com a plataforma.':'A feira ainda não aparece pros expositores. Enquanto isso, prepare tudo: dados e cores, mapa e edições. Quando estiver pronta, a plataforma aprova e ela entra no ar.'}</p>${S.org.status==='pendente'?`<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="mini" data-go="org-config" style="min-height:44px">Dados e cores</button><button class="mini" data-go="org-mapas" style="min-height:44px">Mapa</button><button class="mini pri" data-editar="nova" style="min-height:44px">Criar edição</button>${S.admin?`<button class="mini pri" data-admst="ativa" data-id="${S.org.id}" style="min-height:44px">Aprovar agora</button>`:''}</div>`:''}</div>`:''}${bannerPush()}${resumoOrg(ed,cnt,fin)}<div class="topo"><h1>Edições</h1><div class="row" style="gap:8px;flex:none"><button class="mini" data-divulga="" style="min-height:44px;padding:0 14px">🔗 Link da feira</button><button class="mini pri" data-editar="nova" style="min-height:44px;padding:0 16px">+ Nova</button></div></div><p class="sub">Abertas primeiro, depois as próximas. As que já aconteceram ficam no fim.</p>
   ${(ed.length?'<div class="grade-cards">':'')+(()=>{const g=e=>cancelada(e)||fimEd(e)<hoje?2:abertaJa(e)?0:1;return [...ed].sort((a,b)=>g(a)-g(b)||(g(a)===2?(a.data<b.data?1:-1):(a.data<b.data?-1:1)))})().map(e=>{const c=cnt[e.id]||{t:0,c:0,p:0};const passou=fimEd(e)<hoje||cancelada(e);const st=cancelada(e)?['Cancelada','n']:passou?['Encerrada','n']:abertaJa(e)?['Inscrições abertas','ok']:agendada(e)?['Abre '+quandoAbre(e),'']:['Inscrições fechadas','n'];
     return `<div class="edcard ${passou?'passada':''}">${toldo(e,st[0])}<div class="c"><p style="font-family:var(--display);font-size:22px;font-weight:700;margin:0">${esc(nomeEd(e))}</p><p class="sub" style="margin:2px 0 0">${periodo(e)}${e.local?' · '+esc(e.local):''}</p>${passou?'':e.sem_mapa?'<span class="tag-ed" style="background:var(--line);color:var(--ink-2)">🗺️ Sem mapa</span>':!e.mapa_id?'<span class="tag-ed" style="background:#FBE3DF;color:#9B2C20">⚠️ Falta mapa</span>':''}
     <div class="nums"><div style="position:relative"><b>${c.t}</b><span>Inscrições</span>${S.novasEd?.[e.id]?`<i class="badge nv" title="Inscrições novas pra decidir">${S.novasEd[e.id]}</i>`:''}</div><div><b>${c.c}</b><span>Confirmadas</span></div><div><b>${c.p}</b><span>Pagas</span></div></div>
-    ${cancelada(e)?`<button class="btn sec" data-cancelv="${e.id}" style="margin:10px 0 0;border-color:#C0392B;color:#9B2C20">💸 Reembolsos e créditos</button>`:''}${fin[e.id]?.rec&&!cancelada(e)?`<p class="fin-ed">Recebido <b>${money(fin[e.id].rec)}</b>${fin[e.id].falta?` · falta ${money(fin[e.id].falta)}`:''}</p>`:''}<div class="row"><button class="mini" data-editar="${e.id}" style="min-height:44px">Editar</button><button class="mini pri" data-selecionar="${e.id}" style="min-height:44px">${S.novasEd?.[e.id]?`Ver ${S.novasEd[e.id]} ${S.novasEd[e.id]===1?'nova':'novas'}`:'Ver inscrições'}</button></div></div></div>`}).join('')+(ed.length?'</div>':'')||`<div class="vazio">${berg(88)}<h2 style="margin:6px 0 4px">Nenhuma edição ainda</h2><p class="sub">Crie a primeira edição da ${esc(S.org.nome)} pra abrir as inscrições.</p><button class="btn pri" data-editar="nova" style="max-width:320px;margin:0 auto">Criar primeira edição</button></div>`}`};
+    ${cancelada(e)?`<button class="btn sec" data-cancelv="${e.id}" style="margin:10px 0 0;border-color:#C0392B;color:#9B2C20">💸 Reembolsos e créditos</button>`:''}${fin[e.id]?.rec&&!cancelada(e)?`<p class="fin-ed">Recebido <b>${money(fin[e.id].rec)}</b>${fin[e.id].falta?` · falta ${money(fin[e.id].falta)}`:''}</p>`:''}<div class="row"><button class="mini" data-editar="${e.id}" style="min-height:44px">Editar</button>${passou?'':`<button class="mini" data-divulga="${e.id}" style="min-height:44px">Divulgar</button>`}<button class="mini pri" data-selecionar="${e.id}" style="min-height:44px">${S.novasEd?.[e.id]?`Ver ${S.novasEd[e.id]} ${S.novasEd[e.id]===1?'nova':'novas'}`:'Ver inscrições'}</button></div></div></div>`}).join('')+(ed.length?'</div>':'')||`<div class="vazio">${berg(88)}<h2 style="margin:6px 0 4px">Nenhuma edição ainda</h2><p class="sub">Crie a primeira edição da ${esc(S.org.nome)} pra abrir as inscrições.</p><button class="btn pri" data-editar="nova" style="max-width:320px;margin:0 auto">Criar primeira edição</button></div>`}`};
 
 TELAS['org-edicao-form']=async()=>{
   const todas=S.edicoes||await listaEdicoes();S.edicoes=todas;
@@ -1177,6 +1192,8 @@ TELAS['org-edicao-form']=async()=>{
   <label for="e-vdia">Vagas pra quem vem só nesse dia</label><input id="e-vdia" type="number" inputmode="numeric" min="0" value="${v('vagas_dia_unico')}" placeholder="Sem limite">
   <p class="sub" style="margin:4px 0 0;font-size:12px">Contam as inscrições recebidas e confirmadas. Quando enche, a opção aparece como esgotada.</p></div></div>
   <label for="e-local">Nome do local</label><div style="position:relative"><input id="e-local" value="${v('local')}" placeholder="Ex.: Shopping Prataviera" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="loc-sug" aria-expanded="false"><div id="loc-sug" class="sugs" role="listbox" hidden></div></div>
+  <label for="e-cidade">Cidade</label><input id="e-cidade" value="${esc(e.cidade||(e.id?'':S.org?.cidade)||'')}" placeholder="Ex.: Farroupilha" autocomplete="address-level2">
+  <p class="sub" style="margin:4px 0 0;font-size:12px">Os expositores filtram as feiras por cidade.</p>
   <label for="e-end">Endereço (pra abrir no Google Maps e Waze)</label><input id="e-end" value="${v('endereco')}" placeholder="Preenche sozinho ao escolher o local">
   <p class="sub" style="margin:4px 0 0;font-size:12px">Digite o nome do local e escolha na lista. Dá pra corrigir o endereço à mão. <a id="end-conferir" href="#" target="_blank" rel="noopener" style="color:var(--verde);font-weight:700">Conferir no Google Maps</a></p>
   ${(()=>{const hm=hparse(e.horario_montagem),hf=hparse(e.horario_feira),hd=hparse(e.horario_desmontagem);return `
@@ -1992,6 +2009,10 @@ document.addEventListener('click',async ev=>{
   if(d.perfil&&!ev.target.closest('button')){S.perfilId=d.perfil;go('org-inscrito');return}
   try{
   if(b.id==='trocar-perfil'||b.id==='trocar-perfil-2'){abrirPerfis();return}
+  if(d.pubed){guardaAlvo({...(S.alvo||{}),e:d.pubed});if(!S.sessao){go('auth');return}if(S.papel==='organizadora'){try{localStorage.setItem(chaveU('pf-modo'),'expositor')}catch{}const {data:og}=await sb.rpc('minhas_organizacoes');S.orgs=og||[];await escolherModo();S.edicoes=null}await abrirAlvoEd();return}
+  if(d.pubsair!==undefined){limpaAlvo();go(S.sessao?(S.papel==='organizadora'?'org-edicoes':'inicio'):'auth');return}
+  if(d.pubvolta!==undefined){go('feira-pub');return}
+  if(d.divulga!==undefined){abrirDivulgar(d.divulga?(S.edicoes||[]).find(x=>x.id===d.divulga)||null:null);return}
   if(b.id==='org-excluir'){b.disabled=true;await abrirExcluirFeira();b.disabled=false;return}
   if(d.pmodo){fechaPerfis();if(d.pmodo==='admin'){go('admin');return}if(d.pmodo==='expositor'){if(S.papel==='expositor')go('inicio');else await trocarModo('expositor');return}if(S.papel==='organizadora'&&S.org?.id===d.pmodo){go('org-edicoes');return}await trocarModo('organizacao',d.pmodo);return}
   if(d.usarconta){b.disabled=true;await usarConta(d.usarconta);b.disabled=false;return}
@@ -2057,6 +2078,7 @@ document.addEventListener('click',async ev=>{
     b.disabled=true;const r=await sb.rpc('sair_da_edicao',{p_inscricao:S.ins.id});b.disabled=false;if(r.error){toast(erroMsg(r.error));return}
     S.ins=null;S.tamEscolhido=null;toast('Você saiu da edição');go('inicio');return}
   if(d.ig!==undefined){try{await navigator.clipboard.writeText(d.ig);toast(d.ig.includes(' ')?`${d.ig.split(' ').length} @ copiados`:`${d.ig} copiado`)}catch{prompt('Copie os @:',d.ig)}return}
+  if(d.cidexp!==undefined){S.cidadeExp=d.cidexp;try{localStorage.setItem(chaveU('pf-cidade'),d.cidexp)}catch{}render();return}
   if(d.aba){S.abaExp=d.aba;render();return}
   if(d.ed){S.edicao=S.listaEds.find(x=>x.id===d.ed);S.tamEscolhido=null;S.gazebo=null;S.cxOp=null;go('edicao');return}
   if(d.cxop){S.cxOp=d.cxop;await renderMantendo();return}
@@ -2084,7 +2106,7 @@ document.addEventListener('click',async ev=>{
     b.disabled=true;
     const reg={nome,logo_url:S.logo,cidade:$('#m-cidade').value.trim(),segmento_outro:$('#m-seg').value==='outro'?$('#m-outro').value.trim():null,segmento:$('#m-seg').value,instagram:$('#m-insta').value.trim(),whatsapp:$('#m-zap').value.trim(),descricao:$('#m-desc').value.trim(),fotos:S.fotos};
     const r=S.marca?await sb.from('marcas').update(reg).eq('id',S.marca.id).select().single():await sb.from('marcas').insert({...reg,dono:S.sessao.user.id}).select().single();b.disabled=false;
-    if(r.error){err.textContent=erroMsg(r.error);toast(erroMsg(r.error));return}S.marca=r.data;toast('Marca salva');go('inicio');return}
+    if(r.error){err.textContent=erroMsg(r.error);toast(erroMsg(r.error));return}S.marca=r.data;toast('Marca salva');if(S.alvo?.e){await abrirAlvoEd();return}go('inicio');return}
   if(d.escolher&&S.minhaArea){toast(`Seu lugar é na área ${S.minhaArea.nome}`);return}
   if(d.escolher&&S.edicao&&vagaFechada(S.edicao)){toast('O prazo pra escolher a vaga acabou. Fale com a organização.');return}
   if(d.escolher){if(d.so2){toast('Essa vaga é só pra 2 m. Escolha uma das fileiras do meio.');return}if(b.getAttribute('aria-disabled')){toast('Essa vaga já foi escolhida');return}
@@ -2123,7 +2145,7 @@ document.addEventListener('click',async ev=>{
     const num=id=>{const v=$(id).value;return v===''?null:Number(v)};const prazo=$('#e-prazo').value;
     const fimV=$('#e-fim').value||null;
     if($('#e-diaun')?.checked){const dl=$('#e-dialib').value;if(!dl){err.textContent='Informe o dia liberado pra participação avulsa.';return}if(dl<data||dl>(fimV||data)){err.textContent='O dia liberado precisa estar dentro do período da feira.';return}}if(fimV&&fimV<data){err.textContent='O último dia não pode ser antes do início.';return}
-    const reg={titulo:($('#e-tit').value.trim()||S.org.nome).toUpperCase(),endereco:$('#e-end').value.trim()||null,whatsapp_organizacao:$('#e-zap').value.trim()||null,video_estacionamento_url:S.videoForm||null,edital_url:S.editalForm?.url||null,edital_nome:S.editalForm?.nome||null,externa:!!$('#e-externa')?.checked,permite_dia_unico:!!$('#e-diaun')?.checked&&!!$('#e-dialib')?.value,dia_unico_liberado:$('#e-diaun')?.checked&&$('#e-dialib')?.value?$('#e-dialib').value:null,preco_dia:$('#e-pdia')?moedaNum($('#e-pdia').value):null,vagas_dia_unico:$('#e-diaun')?.checked&&$('#e-vdia')?.value!==''?+$('#e-vdia').value:null,data,data_fim:fimV&&fimV!==data?fimV:null,local:$('#e-local').value.trim(),data_montagem:$('#e-dm').value&&$('#e-dm').value!==data?$('#e-dm').value:null,horario_montagem:faixa($('#e-hm1').value,$('#e-hm2').value),horario_feira:faixa($('#e-hf1').value,$('#e-hf2').value),horario_desmontagem:$('#e-hd1').value?'a partir das '+hfmt($('#e-hd1').value):'',preco_2m:moedaNum($('#e-p2').value),preco_unico:moedaNum($('#e-pu').value),preco_3m:moedaNum($('#e-p3').value),valor_estacionamento:moedaNum($('#e-est').value),obs_estacionamento:$('#e-est-obs')?($('#e-est-obs').value.trim()||null):(S.edForm?.obs_estacionamento??null),mapa_id:$('#e-semmapa')?.checked?null:($('#e-mapa').value||null),sem_mapa:!!$('#e-semmapa')?.checked,prazo_escolha_vaga:prazo?new Date(prazo).toISOString():null,regras:$('#e-regras').value.trim(),link_fotos:$('#e-fotos')?($('#e-fotos').value.trim()||null):(S.edForm?.link_fotos??null),capa_url:S.capaForm||null,chave_pix:$('#e-pix').value.trim()||null,permite_sinal:!!$('#e-sinal')?.checked,vencimento_restante:$('#e-sinal')?.checked?($('#e-venc')?.value||sugereVenc(data)):null,total_espacos:$('#e-total').value===''?null:+$('#e-total').value,max_3m:$('#e-m3').value===''?null:+$('#e-m3').value,mesas_total:$('#e-mesas').value===''?null:+$('#e-mesas').value,cadeiras_total:$('#e-cads').value===''?null:+$('#e-cads').value,inscricoes_abertas:$('#e-aberta').checked,abre_inscricoes_em:!$('#e-aberta').checked&&$('#e-abre').value?new Date($('#e-abre').value).toISOString():null};
+    const reg={titulo:($('#e-tit').value.trim()||S.org.nome).toUpperCase(),endereco:$('#e-end').value.trim()||null,whatsapp_organizacao:$('#e-zap').value.trim()||null,video_estacionamento_url:S.videoForm||null,edital_url:S.editalForm?.url||null,edital_nome:S.editalForm?.nome||null,externa:!!$('#e-externa')?.checked,permite_dia_unico:!!$('#e-diaun')?.checked&&!!$('#e-dialib')?.value,dia_unico_liberado:$('#e-diaun')?.checked&&$('#e-dialib')?.value?$('#e-dialib').value:null,preco_dia:$('#e-pdia')?moedaNum($('#e-pdia').value):null,vagas_dia_unico:$('#e-diaun')?.checked&&$('#e-vdia')?.value!==''?+$('#e-vdia').value:null,data,data_fim:fimV&&fimV!==data?fimV:null,local:$('#e-local').value.trim(),cidade:$('#e-cidade')?.value.trim()||null,data_montagem:$('#e-dm').value&&$('#e-dm').value!==data?$('#e-dm').value:null,horario_montagem:faixa($('#e-hm1').value,$('#e-hm2').value),horario_feira:faixa($('#e-hf1').value,$('#e-hf2').value),horario_desmontagem:$('#e-hd1').value?'a partir das '+hfmt($('#e-hd1').value):'',preco_2m:moedaNum($('#e-p2').value),preco_unico:moedaNum($('#e-pu').value),preco_3m:moedaNum($('#e-p3').value),valor_estacionamento:moedaNum($('#e-est').value),obs_estacionamento:$('#e-est-obs')?($('#e-est-obs').value.trim()||null):(S.edForm?.obs_estacionamento??null),mapa_id:$('#e-semmapa')?.checked?null:($('#e-mapa').value||null),sem_mapa:!!$('#e-semmapa')?.checked,prazo_escolha_vaga:prazo?new Date(prazo).toISOString():null,regras:$('#e-regras').value.trim(),link_fotos:$('#e-fotos')?($('#e-fotos').value.trim()||null):(S.edForm?.link_fotos??null),capa_url:S.capaForm||null,chave_pix:$('#e-pix').value.trim()||null,permite_sinal:!!$('#e-sinal')?.checked,vencimento_restante:$('#e-sinal')?.checked?($('#e-venc')?.value||sugereVenc(data)):null,total_espacos:$('#e-total').value===''?null:+$('#e-total').value,max_3m:$('#e-m3').value===''?null:+$('#e-m3').value,mesas_total:$('#e-mesas').value===''?null:+$('#e-mesas').value,cadeiras_total:$('#e-cads').value===''?null:+$('#e-cads').value,inscricoes_abertas:$('#e-aberta').checked,abre_inscricoes_em:!$('#e-aberta').checked&&$('#e-abre').value?new Date($('#e-abre').value).toISOString():null};
     reg.roleta=!!$('#e-premio')?.value;reg.premio_nome=$('#e-premio')?.value||null;reg.roleta_limite=reg.roleta?($('#e-rllim')?.value||menosDias(data,2)||null):null;
     {const lg0=($('#e-grupo')?.value||'').trim();if(lg0&&!/^https:\/\/chat\.whatsapp\.com\//i.test(lg0)){err.textContent='O link do grupo precisa começar com https://chat.whatsapp.com/';return}}
     b.disabled=true;const r=S.edForm?.id?await sb.from('edicoes').update(reg).eq('id',S.edForm.id).select().single():await sb.from('edicoes').insert({...reg,organizacao_id:S.org.id}).select().single();
@@ -2433,7 +2455,7 @@ async function resumoAdmin(){const {data:r,error}=await sb.rpc('resumo_plataform
   addEventListener('scroll',esconde,{passive:true})})();
 
 /* ================= DO JEITO DE CADA FEIRA: logo, tamanho da vaga e nome do prêmio ================= */
-function orgDaTela(){if(S.tela==='admin')return null;if(S.papel==='organizadora'&&S.org)return S.org;if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return S.edicao.organizacoes;return null}
+function orgDaTela(){if(S.tela==='admin')return null;if(S.tela==='feira-pub')return S.pubOrg||null;if(S.papel==='organizadora'&&S.org)return S.org;if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return S.edicao.organizacoes;return null}
 const nM=n=>String(Math.round(n*100)/100).replace('.',',');
 function medDe(o){const n=(v,d)=>{const x=+v;return x>0?x:d};return {p:n(o?.vaga_menor,2),g:n(o?.vaga_maior,3),f:n(o?.vaga_fundo,1.3)}}
 const medAttr=o=>{const m=medDe(o);return `${m.p}|${m.g}|${m.f}`};
@@ -2454,6 +2476,57 @@ function trocaTudo(txt,o,ed){const n=ed?.roleta?(ed.premio_nome||'Roleta premiad
   new MutationObserver(ms=>{for(const m of ms){if(m.type==='characterData')trata(m.target);else m.addedNodes.forEach(anda)}}).observe(document.body,{childList:true,subtree:true,characterData:true});
   const cf=window.confirm.bind(window);window.confirm=msg=>cf(trocaTudo(String(msg),orgDaTela(),edDaTela()));
 })();
+
+const cidEd=e=>String(e?.cidade||e?.organizacoes?.cidade||'').trim();
+const chaveCid=c=>String(c||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+/* ================= LINK DA FEIRA E DA EDIÇÃO ================= */
+const baseLink=()=>location.origin+location.pathname;
+const linkFeira=o=>baseLink()+'?f='+encodeURIComponent(o.slug);
+const linkEd=e=>baseLink()+'?e='+e.id;
+function guardaAlvo(a){S.alvo=a;try{if(a)localStorage.setItem('pf-alvo',JSON.stringify({...a,t:Date.now()}));else localStorage.removeItem('pf-alvo')}catch{}}
+function lerAlvo(){const q=new URLSearchParams(location.search),f=q.get('f'),e=q.get('e');
+  if(f||e){try{history.replaceState(null,'',location.pathname)}catch{}guardaAlvo({f,e});return S.alvo}
+  try{const a=JSON.parse(localStorage.getItem('pf-alvo')||'null');if(a&&Date.now()-a.t<3*864e5)return a}catch{}return null}
+const limpaAlvo=()=>guardaAlvo(null);
+async function abrirAlvoEd(){const id=S.alvo?.e;if(!id){go('feira-pub');return}
+  if(!S.marca){toast('Antes, cadastre sua marca. Depois o app volta pra feira.');go('marca');return}
+  const {data:ed}=await sb.from('edicoes').select(`*,organizacoes(${ORGCOLS})`).eq('id',id).maybeSingle();limpaAlvo();
+  if(!ed){toast('Essa edição não está mais disponível');go('inicio');return}S.edicao=ed;go('edicao')}
+const situacaoEd=e=>cancelada(e)?['Cancelada','n']:abertaJa(e)?['Inscrições abertas','ok']:agendada(e)?['Abre '+quandoAbre(e),'']:['Em breve','n'];
+TELAS['feira-pub']=async()=>{const a=S.alvo||{};let o=null;
+  if(a.e){const {data:ed}=await sb.from('edicoes').select('id,organizacoes(*)').eq('id',a.e).maybeSingle();o=ed?.organizacoes||null}
+  if(!o&&a.f){const {data}=await sb.from('organizacoes').select('*').eq('slug',a.f).maybeSingle();o=data}
+  const sair=`<button class="btn sec" data-pubsair style="margin-top:14px">${S.sessao?'Ver todas as feiras':'Entrar no app'}</button>`;
+  if(!o){S.pubOrg=null;return `<h1>Feira não encontrada</h1><p class="sub">O link pode estar errado, ou a feira ainda não está no ar.</p>${sair}`}
+  S.pubOrg=o;temaDaTela();const hoje=new Date().toISOString().slice(0,10);
+  const {data:l}=await sb.from('edicoes').select('*').eq('organizacao_id',o.id).or(`data.gte.${hoje},data_fim.gte.${hoje}`).order('data');
+  let eds=(l||[]).filter(e=>!cancelada(e)).map(e=>({...e,organizacoes:o}));if(a.e)eds.sort((x,y)=>(x.id===a.e?-1:y.id===a.e?1:0));
+  const ig=o.instagram?String(o.instagram).replace(/^@/,''):'';
+  return `<div class="pub-topo">${berg(76,o)}<div style="min-width:0"><h1 style="margin:0">${esc(o.nome)}</h1><p class="sub" style="margin:2px 0 0">${[o.cidade,ig?'@'+ig:''].filter(Boolean).map(esc).join(' · ')}</p></div></div>
+  ${o.descricao?`<p style="white-space:pre-line;margin:6px 0 14px">${esc(o.descricao)}</p>`:''}
+  ${S.sessao?'':`<div class="painel" style="background:var(--verde-soft);border-color:transparent"><b>É expositor?</b><p style="margin:4px 0 0;font-size:14px">Escolha a edição. Pra se inscrever, você entra ou cria sua conta e já volta pra cá.</p></div>`}
+  <h2 class="gr-ed">Próximas edições</h2>
+  ${eds.length?`<div class="grade-cards">${eds.map(e=>{const [t]=situacaoEd(e);return `<div class="cardfeira ${e.id===a.e?'destaque':''}" style="${varsOrg(o)}" data-med="${medAttr(o)}">${toldo(e,t)}<div class="c"><p style="font-size:20px;margin:0;font-family:var(--display);font-weight:700">${esc(nomeEd(e))}</p><p class="sub" style="margin:2px 0 0">${periodo(e)}${e.local?' · '+esc(e.local):''}${cidEd(e)&&!String(e.local||'').toLowerCase().includes(cidEd(e).toLowerCase())?' · '+esc(cidEd(e)):''}</p>${tagsEd(e)}<button class="btn pri" data-pubed="${e.id}" style="margin-top:10px">${abertaJa(e)?'Quero me inscrever':'Ver detalhes'}</button></div></div>`}).join('')}</div>`
+    :`<div class="vazio">${berg(64,o)}<p class="sub">Nenhuma edição marcada agora. Crie sua conta pra ser avisado quando a próxima abrir.</p></div>`}
+  ${sair}`};
+/* link e mensagem pra divulgar */
+function abrirDivulgar(e){const o=S.org;if(!o)return;const url=e?linkEd(e):linkFeira(o);
+  const txt=e?(abertaJa(e)?`Inscrições abertas pra ${nomeEd(e)} (${periodo(e)}${e.local?', '+e.local:''})! Se inscreve pelo app: ${url}`:`${nomeEd(e)} vai ser ${periodo(e)}${e.local?' no '+e.local:''}. Já dá pra ver tudo e deixar sua marca pronta: ${url}`)
+    :`Conheça a ${o.nome} e se inscreva nas próximas edições pelo app: ${url}`;
+  const f=document.createElement('div');f.className='aviso-fundo';
+  f.innerHTML=`<div class="aviso" role="dialog" aria-labelledby="dv-t" style="text-align:left"><b id="dv-t" style="font-size:20px">${e?'Divulgar '+esc(nomeEd(e)):'Link da feira'}</b>
+  ${o.status!=='ativa'?'<p class="pub-aviso">O link só abre pros expositores depois que a plataforma aprovar a feira.</p>':''}
+  <label for="dv-url">Link</label><input id="dv-url" readonly value="${esc(url)}">
+  <label for="dv-txt">Mensagem</label><textarea id="dv-txt" data-livre style="min-height:110px">${esc(txt)}</textarea>
+  <div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="btn sec" id="dv-copia" style="margin:0;flex:1">Copiar link</button><a class="btn pri" id="dv-zap" target="_blank" rel="noopener" style="margin:0;flex:1;text-align:center;text-decoration:none">Mandar no WhatsApp</a></div>
+  ${navigator.share?'<button class="btn sec" id="dv-share" style="margin-top:8px">Compartilhar…</button>':''}
+  <button class="mini" id="dv-fecha" style="display:block;margin:12px auto 0;border:0;background:none;color:var(--ink-2)">Fechar</button></div>`;
+  document.body.appendChild(f);const zap=f.querySelector('#dv-zap'),tx=f.querySelector('#dv-txt');const atual=()=>{zap.href='https://wa.me/?text='+encodeURIComponent(tx.value)};atual();tx.addEventListener('input',atual);
+  const fecha=()=>f.remove();f.querySelector('#dv-fecha').onclick=fecha;f.addEventListener('click',ev=>{if(ev.target===f)fecha()});
+  f.querySelector('#dv-copia').onclick=async()=>{try{await navigator.clipboard.writeText(url);toast('Link copiado')}catch{const i=f.querySelector('#dv-url');i.select();document.execCommand('copy');toast('Link copiado')}};
+  const sh=f.querySelector('#dv-share');if(sh)sh.onclick=()=>navigator.share({title:e?nomeEd(e):o.nome,text:tx.value}).catch(()=>{})}
+/* tela de entrar lembra pra qual feira a pessoa ia */
+{const _auth=TELAS.auth;TELAS.auth=async()=>{let b='';if(S.alvo){b=`<div class="painel" style="margin-bottom:12px"><b>Quase lá!</b><p style="margin:4px 0 6px;font-size:14px">Entre ou crie sua conta de expositor. Depois o app volta direto pra feira.</p><button class="mini" data-pubvolta style="min-height:40px">← Voltar pra feira</button></div>`}return b+await _auth()}}
 
 let ultAtualiza=Date.now();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!S.sessao)return;if(Date.now()-ultAtualiza<30000)return;
