@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#2E3532">
-<meta name="app-versao" content="202610291600">
+<meta name="app-versao" content="202610300800">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plataforma de Feiras</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Feiras"><meta name="application-name" content="Feiras">
@@ -470,6 +470,31 @@ input,select,textarea{font-size:16px}
 .perfil-it .ok{color:var(--verde);font-weight:800;font-size:18px}
 .perfil-linha{display:flex;gap:8px;align-items:center;margin-bottom:8px}.perfil-linha .perfil-it{margin:0}.perfil-linha .mini{min-height:44px;min-width:44px}
 .cabeca .papel{cursor:pointer}
+
+/* ===== gráficos ===== */
+.presumo>summary{display:flex;align-items:baseline;justify-content:space-between;gap:8px;cursor:pointer;list-style:none;min-height:32px}.presumo>summary::-webkit-details-marker{display:none}
+.presumo>summary::after{content:'▾';color:var(--ink-2);font-size:13px}.presumo:not([open])>summary::after{content:'▸'}
+details.presumo{display:block}.resumo-c{display:block}
+.tiles.kpis{grid-template-columns:repeat(2,minmax(0,1fr));margin:10px 0 4px}.tile.kpi{cursor:default;text-align:left;padding:10px 12px}.tile.kpi b{font-size:21px;color:var(--ink);white-space:nowrap}.tile.kpi span{font-size:12px}
+@media(min-width:620px){.tiles.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.g-par{display:grid;gap:4px 18px}@media(min-width:760px){.g-par{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.graf{margin:14px 0 0}.graf figcaption{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;font-size:14px;margin-bottom:8px}
+.g-leg{display:flex;gap:12px;font-size:12px;color:var(--ink-2)}.g-leg>span{display:flex;align-items:center;gap:5px}
+.g-sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.gs1{background:color-mix(in srgb,var(--verde) 26%,var(--card));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--verde) 60%,var(--card))}.gs2{background:var(--verde)}
+.g-plot{display:grid;grid-template-columns:auto 1fr;gap:6px;height:170px}
+.g-eixo{display:flex;flex-direction:column;justify-content:space-between;font-size:11px;color:var(--ink-2);text-align:right;padding-bottom:20px;line-height:1}
+.g-cols{display:grid;gap:6px;height:100%;background:linear-gradient(var(--line),var(--line)) 0 0/100% 1px no-repeat,linear-gradient(var(--line),var(--line)) 0 calc((100% - 20px)/2)/100% 1px no-repeat}
+.g-col{display:flex;flex-direction:column;min-width:0;outline:0;border-radius:8px}.g-col:focus-visible{box-shadow:0 0 0 2px var(--verde)}
+.g-area{flex:1;position:relative;border-bottom:1.5px solid var(--ink-2)}
+.g-b{position:absolute;bottom:0;left:16%;right:16%;border-radius:4px 4px 0 0;min-height:1px}.g-b.g-in{left:30%;right:30%}
+.g-col:hover .g-b{filter:brightness(.92)}
+.g-val{position:absolute;left:0;right:0;text-align:center;font-size:11px;font-weight:700;color:var(--ink)}
+.g-rot{font-size:11px;color:var(--ink-2);text-align:center;height:20px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-tab{margin-top:6px;font-size:12px}.g-tab summary{color:var(--ink-2);cursor:pointer;min-height:28px}.g-tab table{width:100%;border-collapse:collapse;margin-top:4px}.g-tab td,.g-tab th{padding:4px 6px;border-top:1px solid var(--line);text-align:right}.g-tab td:first-child,.g-tab th:first-child{text-align:left}
+.g-rank{display:grid;gap:8px}.g-rl{display:grid;grid-template-columns:minmax(0,9em) 1fr auto;align-items:center;gap:8px;font-size:13px;outline:0}.g-rn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g-rt{position:relative;height:14px}.g-rl .g-b{top:0;bottom:0;left:0;right:auto;border-radius:0 4px 4px 0}
+.g-tip{position:fixed;z-index:60;max-width:240px;padding:8px 10px;border-radius:10px;background:var(--ink);color:#fff;font-size:12px;line-height:1.4;white-space:pre-line;pointer-events:none;display:none;box-shadow:0 6px 18px rgba(0,0,0,.18)}
 </style>
 </head>
 <body>
@@ -942,7 +967,7 @@ function previaCores(){const p=$('#cfg-p')?.value,d=$('#cfg-d')?.value;if(!p||!d
 TELAS.admin=async()=>{if(!S.admin)return `<h1>Administração</h1><p class="sub">Essa área é só da plataforma.</p>`;const f=S.admFiltro||'pendente';
   let q=sb.from('organizacoes').select('*').order('criado_em',{ascending:false});if(f!=='todas')q=q.eq('status',f);const {data,error}=await q;if(error)throw error;
   const st={pendente:['Esperando aprovação',''],ativa:['No ar','ok'],suspensa:['Suspensa','t']};
-  return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Feiras cadastradas</h1>
+  return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Administração</h1>${await resumoAdmin()}<h2 style="margin:18px 0 0">Feiras cadastradas</h2>
   <div class="tiles" role="group" aria-label="Filtrar feiras">${[['pendente','Esperando'],['ativa','No ar'],['suspensa','Suspensas'],['todas','Todas']].map(([k,l])=>`<button class="tile" data-admf="${k}" aria-pressed="${f===k}"><span>${l}</span></button>`).join('')}</div>
   ${(data||[]).map(o=>{const [t,c]=st[o.status]||[o.status,'n'];return `<div class="painel"><div class="org-it">${o.logo_url?`<img src="${esc(o.logo_url)}" alt="">`:`<span class="org-ph">${esc(String(o.nome).charAt(0).toUpperCase())}</span>`}<div style="flex:1;min-width:0"><b>${esc(o.nome)}</b><div class="sub" style="margin:0;font-size:13px">${esc(o.slug)}${o.cidade?' · '+esc(o.cidade):''} · pedido em ${new Date(o.criado_em).toLocaleDateString('pt-BR')}</div></div><span class="status ${c}">${t}</span></div>
     <div class="row" style="margin-top:10px">${o.status!=='ativa'?`<button class="mini pri" data-admst="ativa" data-id="${o.id}" style="min-height:44px">Aprovar</button>`:''}${o.status!=='suspensa'?`<button class="mini" data-admst="suspensa" data-id="${o.id}" style="min-height:44px">Suspender</button>`:`<button class="mini" data-admst="pendente" data-id="${o.id}" style="min-height:44px">Voltar pra esperando</button>`}</div></div>`}).join('')||'<p class="sub">Nada por aqui.</p>'}`};
@@ -1013,7 +1038,7 @@ TELAS['org-edicoes']=async()=>{const ed=await listaEdicoes();S.edicoes=ed;await 
   const idsEd=ed.map(e=>e.id);const [{data:ins},{data:preA}]=idsEd.length?await Promise.all([sb.from('inscricoes').select('edicao_id,status,pago,pago_sinal,valor_pago,tamanho,dia_unico,isento,valor_combinado').in('edicao_id',idsEd),sb.from('pre_inscricoes').select('edicao_id,valor_pago').in('edicao_id',idsEd).is('inscricao_id',null)]):[{data:[]},{data:[]}];const cnt={};(ins||[]).forEach(x=>{const c=cnt[x.edicao_id]=cnt[x.edicao_id]||{t:0,c:0,p:0};c.t++;if(x.status==='confirmada'){c.c++;if(x.pago)c.p++}});
   const fin={};ed.forEach(e=>{fin[e.id]=resumoFin((ins||[]).filter(x=>x.edicao_id===e.id),e,(preA||[]).filter(x=>x.edicao_id===e.id))});
   const hoje=new Date().toISOString().slice(0,10);
-  return `${S.org.status!=='ativa'?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b>${S.org.status==='suspensa'?'Feira suspensa':'Esperando aprovação'}</b><p style="margin:4px 0 0;font-size:14px">${S.org.status==='suspensa'?'A feira está fora do ar. Fale com a plataforma.':'A feira ainda não aparece pros expositores. Enquanto isso, prepare tudo: dados e cores, mapa e edições. Quando estiver pronta, a plataforma aprova e ela entra no ar.'}</p>${S.org.status==='pendente'?`<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="mini" data-go="org-config" style="min-height:44px">Dados e cores</button><button class="mini" data-go="org-mapas" style="min-height:44px">Mapa</button><button class="mini pri" data-editar="nova" style="min-height:44px">Criar edição</button>${S.admin?`<button class="mini pri" data-admst="ativa" data-id="${S.org.id}" style="min-height:44px">Aprovar agora</button>`:''}</div>`:''}</div>`:''}${bannerPush()}<div class="topo"><h1>Edições</h1><button class="mini pri" data-editar="nova" style="min-height:44px;padding:0 16px">+ Nova</button></div><p class="sub">Suas edições, das mais novas pras mais antigas.</p>
+  return `${S.org.status!=='ativa'?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b>${S.org.status==='suspensa'?'Feira suspensa':'Esperando aprovação'}</b><p style="margin:4px 0 0;font-size:14px">${S.org.status==='suspensa'?'A feira está fora do ar. Fale com a plataforma.':'A feira ainda não aparece pros expositores. Enquanto isso, prepare tudo: dados e cores, mapa e edições. Quando estiver pronta, a plataforma aprova e ela entra no ar.'}</p>${S.org.status==='pendente'?`<div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="mini" data-go="org-config" style="min-height:44px">Dados e cores</button><button class="mini" data-go="org-mapas" style="min-height:44px">Mapa</button><button class="mini pri" data-editar="nova" style="min-height:44px">Criar edição</button>${S.admin?`<button class="mini pri" data-admst="ativa" data-id="${S.org.id}" style="min-height:44px">Aprovar agora</button>`:''}</div>`:''}</div>`:''}${bannerPush()}${resumoOrg(ed,cnt,fin)}<div class="topo"><h1>Edições</h1><button class="mini pri" data-editar="nova" style="min-height:44px;padding:0 16px">+ Nova</button></div><p class="sub">Suas edições, das mais novas pras mais antigas.</p>
   ${(ed.length?'<div class="grade-cards">':'')+ed.map(e=>{const c=cnt[e.id]||{t:0,c:0,p:0};const passou=fimEd(e)<hoje;const st=passou?['Encerrada','n']:abertaJa(e)?['Inscrições abertas','ok']:agendada(e)?['Abre '+quandoAbre(e),'']:['Inscrições fechadas','n'];
     return `<div class="edcard">${toldo(e,st[0])}<div class="c"><p style="font-family:var(--display);font-size:22px;font-weight:700;margin:0">${esc(nomeEd(e))}</p><p class="sub" style="margin:2px 0 0">${periodo(e)}${e.local?' · '+esc(e.local):''}</p>
     <div class="nums"><div style="position:relative"><b>${c.t}</b><span>Inscrições</span>${S.novasEd?.[e.id]?`<i class="badge nv" title="Inscrições novas pra decidir">${S.novasEd[e.id]}</i>`:''}</div><div><b>${c.c}</b><span>Confirmadas</span></div><div><b>${c.p}</b><span>Pagas</span></div></div>
@@ -1956,6 +1981,45 @@ document.addEventListener('change',async ev=>{const t=ev.target;
     const r=await sb.storage.from('feiras').upload(path,f);if(r.error){toast(erroMsg(r.error));return}
     const url=sb.storage.from('feiras').getPublicUrl(path).data.publicUrl;const r2=await sb.from('mapas').update({imagem_url:url}).eq('id',S.mapaSel);if(r2.error){toast(erroMsg(r2.error));return}toast('Planta atualizada');await render();if(!S.vagasEd?.length)await criarVagasDaPlanta(true);return}
 });
+/* ================= GRÁFICOS ================= */
+const gNum=n=>Number(n||0).toLocaleString('pt-BR');
+const gMax=v=>{if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const f=v/p;return (f<=1?1:f<=2?2:f<=5?5:10)*p};
+/* barras verticais. itens:[{rot,v,p?,tip}] · com p: total claro + parte escura por cima */
+function grafColunas({titulo,itens,nomes,fmt=gNum,desc}){
+  if(!itens.length)return '';const max=gMax(Math.max(...itens.map(i=>+i.v||0)));const duas=itens.some(i=>i.p!=null);const ult=itens[itens.length-1];
+  const leg=duas?`<span class="g-leg"><span><i class="g-sw gs1"></i>${esc(nomes[0])}</span><span><i class="g-sw gs2"></i>${esc(nomes[1])}</span></span>`:'';
+  return `<figure class="graf"><figcaption><b>${esc(titulo)}</b>${leg}</figcaption>
+  <div class="g-plot" role="img" aria-label="${esc(desc||titulo)}"><div class="g-eixo" aria-hidden="true"><span>${fmt(max)}</span><span>${fmt(max/2)}</span><span>0</span></div>
+  <div class="g-cols" style="grid-template-columns:repeat(${itens.length},minmax(0,1fr))">${itens.map(i=>{const h=Math.max(0,(+i.v||0)/max*100),hp=i.p!=null?Math.max(0,(+i.p||0)/max*100):null;
+    return `<div class="g-col" tabindex="0" data-tip="${esc(i.tip)}"><div class="g-area">${i===ult?`<span class="g-val" style="bottom:calc(${h}% + 4px)">${fmt(i.v)}</span>`:''}<div class="g-b ${duas?'gs1':'gs2'}" style="height:${h}%"></div>${hp!=null?`<div class="g-b gs2 g-in" style="height:${hp}%"></div>`:''}</div><span class="g-rot">${esc(i.rot)}</span></div>`}).join('')}</div></div>
+  <details class="g-tab"><summary>Ver em tabela</summary><table><thead><tr><th></th><th>${esc(duas?nomes[0]:titulo)}</th>${duas?`<th>${esc(nomes[1])}</th>`:''}</tr></thead><tbody>${itens.map(i=>`<tr><td>${esc(i.nomeLongo||i.rot)}</td><td>${fmt(i.v)}</td>${duas?`<td>${fmt(i.p)}</td>`:''}</tr>`).join('')}</tbody></table></details></figure>`}
+/* barras deitadas (ranking), com rótulo e valor direto */
+function grafRanking({titulo,itens,fmt=gNum}){if(!itens.length)return '';const max=Math.max(1,...itens.map(i=>+i.v||0));
+  return `<figure class="graf"><figcaption><b>${esc(titulo)}</b></figcaption><div class="g-rank">${itens.map(i=>`<div class="g-rl" tabindex="0" data-tip="${esc(i.tip||i.rot+': '+fmt(i.v))}"><span class="g-rn">${esc(i.rot)}</span><span class="g-rt"><span class="g-b gs2" style="width:${Math.max(1.5,(+i.v||0)/max*100)}%"></span></span><b>${fmt(i.v)}</b></div>`).join('')}</div></figure>`}
+const kpi=(n,rot,extra='')=>`<div class="tile kpi"><b>${n}</b><span>${rot}</span>${extra?`<small>${extra}</small>`:''}</div>`;
+function resumoOrg(ed,cnt,fin){
+  const eds=ed.filter(e=>e.data).sort((a,b)=>a.data<b.data?-1:1);if(!eds.length)return '';
+  const hoje=new Date().toISOString().slice(0,10);const passadas=eds.filter(e=>e.data<=hoje);const ref=passadas.length?passadas[passadas.length-1]:eds[0];const ant=eds[eds.indexOf(ref)-1];
+  const c=cnt[ref.id]||{t:0,c:0,p:0},ca=ant?(cnt[ant.id]||{t:0}):null;const dif=ca?c.t-ca.t:null;
+  const recT=eds.reduce((t,e)=>t+(fin[e.id]?.rec||0),0),faltaT=eds.filter(e=>fimEd(e)>=hoje).reduce((t,e)=>t+(fin[e.id]?.falta||0),0);
+  const ult=eds.slice(-8);const rotEd=e=>{const d=new Date(e.data+'T12:00:00');return d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')};
+  const gs1=ult.length>=2?grafColunas({titulo:'Inscrições por edição',nomes:['Inscrições','Confirmadas'],desc:'Inscrições e confirmadas nas últimas edições',itens:ult.map(e=>{const k=cnt[e.id]||{t:0,c:0};return {rot:rotEd(e),nomeLongo:nomeEd(e)+' · '+dataBR(e.data),v:k.t,p:k.c,tip:`${nomeEd(e)} · ${dataBR(e.data)}\n${k.t} ${k.t===1?'inscrição':'inscrições'} · ${k.c} ${k.c===1?'confirmada':'confirmadas'}`}})}):'';
+  const gs2=ult.some(e=>fin[e.id]?.rec)?grafColunas({titulo:'Recebido por edição',fmt:v=>money(v).replace(',00',''),itens:ult.map(e=>({rot:rotEd(e),nomeLongo:nomeEd(e)+' · '+dataBR(e.data),v:fin[e.id]?.rec||0,tip:`${nomeEd(e)} · ${dataBR(e.data)}\nRecebido ${money(fin[e.id]?.rec||0)}${fin[e.id]?.falta?' · falta '+money(fin[e.id].falta):''}`}))}):'';
+  return `<details class="painel presumo" ${S.resumoFechado?'':'open'} id="resumo-org"><summary><b class="secao" style="margin:0">Resumo</b><span class="sub" style="margin:0;font-size:12px">${esc(nomeEd(ref))} · ${dataBR(ref.data)}</span></summary><div class="resumo-c">
+  <div class="tiles kpis">${kpi(c.t,'Inscrições',dif==null?'':dif===0?'igual à anterior':`${dif>0?'+':''}${dif} que a anterior`)}${kpi(c.c,'Confirmadas',c.t?Math.round(c.c/c.t*100)+'% das inscrições':'')}${kpi(c.p,'Pagas',c.c?`de ${c.c} confirmadas`:'')}${kpi(recT>=10000?'R$ '+(recT/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mil':money(recT).replace(',00',''),'Recebido no total',faltaT?'falta '+money(faltaT).replace(',00',''):'')}</div>
+  ${gs1?`<div class="g-par">${gs1}${gs2}</div>`:''}</div></details>`}
+async function resumoAdmin(){const {data:r,error}=await sb.rpc('resumo_plataforma');if(error||!r)return '';
+  const meses=(r.por_mes||[]).map(x=>{const d=new Date(x.mes+'-15T12:00:00');return {rot:d.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''),nomeLongo:d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}),v:x.n,tip:`${d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}\n${x.n} ${x.n===1?'inscrição':'inscrições'}`}});
+  return `<div class="painel presumo"><b class="secao">Visão da plataforma</b><div class="tiles kpis">${kpi(r.ativas,'Feiras no ar')}${kpi(r.pendentes,'Esperando',r.pendentes?'aprovação':'')}${kpi(gNum(r.marcas),'Expositores')}${kpi(gNum(r.mes),'Inscrições no mês')}</div>
+  <div class="g-par">${grafColunas({titulo:'Inscrições por mês',desc:'Inscrições nos últimos 6 meses',itens:meses})}${(r.por_feira||[]).length?grafRanking({titulo:'Feiras com mais inscrições (90 dias)',itens:r.por_feira.map(x=>({rot:x.nome,v:x.n}))}):''}</div></div>`}
+/* dica ao passar o dedo/mouse */
+(()=>{let tip=null;const mostra=el=>{if(!tip){tip=document.createElement('div');tip.className='g-tip';tip.setAttribute('role','tooltip');document.body.appendChild(tip)}tip.textContent=el.dataset.tip;tip.style.display='block';
+    const r=el.getBoundingClientRect(),tw=tip.offsetWidth,th=tip.offsetHeight;let x=r.left+r.width/2-tw/2;x=Math.max(8,Math.min(innerWidth-tw-8,x));let y=r.top-th-8;if(y<8)y=r.bottom+8;tip.style.left=x+'px';tip.style.top=y+'px'};
+  const esconde=()=>{if(tip)tip.style.display='none'};
+  document.addEventListener('pointerover',ev=>{const el=ev.target.closest?.('[data-tip]');if(el&&el.dataset.tip)mostra(el);else esconde()});
+  document.addEventListener('focusin',ev=>{const el=ev.target.closest?.('[data-tip]');if(el&&el.dataset.tip)mostra(el);else esconde()});
+  addEventListener('scroll',esconde,{passive:true})})();
+
 let ultAtualiza=Date.now();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!S.sessao)return;if(Date.now()-ultAtualiza<30000)return;
   if(!['org-selecao','org-mapas','org-lista','org-feedback','org-inscrito','org-edicoes','inicio','edicao','mapa'].includes(S.tela))return;
