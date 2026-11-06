@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#2E3532">
-<meta name="app-versao" content="202611061535">
+<meta name="app-versao" content="202611061620">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plataforma de Feiras</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Feiras"><meta name="application-name" content="Feiras">
@@ -1746,7 +1746,7 @@ TELAS['org-cancel']=async()=>{const id=S.cancelEd;if(!id)return TELAS['org-edico
 const PL_AREAS=[['tattoo','Flash Tattoo / Piercing','✒️','#F06521','tatuagem'],['musica','Música ao vivo / DJ','🎵','#8E5BD9',null],['pintura','Pintura ao vivo','🖌️','#2F8F6F',null],['roleta','Roleta premiada','🎡','#E0A100',null],['kids','Espaço kids','🧸','#3A8DDE',null],['entrada','Entrada','🚪','#47470C',null],['outra','Outra área','📍','#8A826E',null]];
 const plK=()=>{const cs=getComputedStyle(document.documentElement),g=(k,d)=>cs.getPropertyValue(k).trim()||d;return {v:g('--verde','#3F6B5E'),vs:g('--verde-soft','#DDE8E4'),o:g('--oliva','#2E3532'),ink:g('--ink','#1E2220'),fundo:'#FCFBF8',grade:'#ECEAE4'}};
 async function plRedesenhaTela(){const y=window.scrollY;await render();window.scrollTo(0,y)}
-const plNovo=(nome)=>({nome:nome||'Nova planta',W:20,H:12,corr:1,gap:0.3,paredes:true,meio:true,so2parede:true,vL:medDe(S.org).p,vD:medDe(S.org).f,itens:[]});
+const plNovo=(nome)=>({nome:nome||'Nova planta',W:20,H:12,corr:2,gap:0.3,paredes:true,meio:true,so2parede:true,vL:medDe(S.org).p,vD:medDe(S.org).f,itens:[]});
 const plId=()=>Math.random().toString(36).slice(2,9);
 const plR=n=>Math.round(n*100)/100;
 const plSobre=(a,b,m=0)=>a.x<b.x+b.w+m&&a.x+a.w>b.x-m&&a.y<b.y+b.h+m&&a.y+a.h>b.y-m;
@@ -1822,12 +1822,12 @@ TELAS['org-planta']=async()=>{if(!S.pl)S.pl=plNovo();const P=S.pl;
   <div class="g2"><div><label for="pl-vL">Frente da vaga (m)</label><input id="pl-vL" type="number" step="0.1" min="1" value="${P.vL||2}"></div><div><label for="pl-vD">Fundo da vaga (m)</label><input id="pl-vD" type="number" step="0.1" min="1" value="${P.vD||1.3}"></div></div>
   <p class="sub" style="margin:4px 0 0;font-size:12px">${P.aberto?'Gazebo: 3 × 3 m.':'Mesa de feira: 2 × 1,30 m.'}</p></div>
   <div class="painel"><b class="secao">Sugerir vagas</b>
-  <div class="g2"><div><label for="pl-corr">Corredor mínimo (m)</label><input id="pl-corr" type="number" step="0.1" min="0.8" value="${P.corr}"></div><div><label for="pl-gap">Espaço entre vagas (m)</label><input id="pl-gap" type="number" step="0.05" min="0" value="${P.gap==null?0.3:P.gap}"></div></div>
+  <div class="g2"><div><label for="pl-corr">Corredor entre fileiras (m)</label><input id="pl-corr" type="number" step="0.1" min="0.8" value="${P.corr}"></div><div><label for="pl-gap">Espaço entre vagas (m)</label><input id="pl-gap" type="number" step="0.05" min="0" value="${P.gap==null?0.3:P.gap}"></div></div>
   <label class="check" style="margin-top:10px"><input type="checkbox" id="pl-paredes" ${P.paredes?'checked':''}> ${P.aberto?'Vagas nas bordas da área (viradas pra dentro)':'Vagas encostadas nas paredes'}</label>
   <label class="check" style="margin-top:6px"><input type="checkbox" id="pl-meio" ${P.meio?'checked':''}> Fileiras duplas no meio (costas com costas)</label>
   ${P.aberto?'':`<label class="check" style="margin-top:6px"><input type="checkbox" id="pl-so2" ${P.so2parede?'checked':''}> Vagas da parede só pra 2 m</label>`}
   <button class="btn pri" id="pl-sugerir" style="margin-top:12px">Sugerir vagas</button>
-  <p class="sub" style="margin:6px 0 0;font-size:12px">Coloque as áreas, pilares e entrada antes: as vagas desviam deles deixando o corredor. Pilar na parede não precisa de corredor em volta; pilar solto sim. Na frente da entrada fica pelo menos 1,5 m livre. Os corredores ficam alinhados pra circular bem.${P.aberto?'':''} Vaga = 2 m × 1,30 m.</p></div>
+  <p class="sub" style="margin:6px 0 0;font-size:12px">Coloque as áreas, pilares e entrada antes: as vagas desviam deles deixando o corredor. Pilar na parede não precisa de corredor em volta; pilar solto sim. Na frente da entrada fica pelo menos 1,5 m livre. Primeiro as vagas vão em todas as paredes; depois o meio vira fileiras duplas, sem fechar a passagem em volta. Corredor de 2 m: dá pra parar olhando a banca e ainda passar gente.${P.aberto?'':''} Vaga = 2 m × 1,30 m.</p></div>
   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0 6px"><p class="sub" id="pl-cont" style="margin:0;font-weight:700"></p><div class="row" style="gap:6px;flex:none"><button class="mini" id="pl-undo" ${(S.plHist||[]).length?'':'disabled'}>↶ Voltar</button><button class="mini" id="pl-limpar" style="color:var(--tomate)">Limpar tudo</button></div></div>
   <div style="display:flex;gap:6px;justify-content:flex-end;margin:0 0 6px;flex-wrap:wrap;align-items:center"><button class="mini ${S.plDesenhar?'pri':''}" id="pl-desenhar" aria-pressed="${!!S.plDesenhar}" style="margin-right:auto;min-height:40px">✏️ ${S.plDesenhar?'Parar de desenhar':'Desenhar partes'}</button><button class="mini" data-plzoom="-1" aria-label="Diminuir zoom">−</button><button class="mini" data-plzoom="0">Ajustar</button><button class="mini" data-plzoom="1" aria-label="Aumentar zoom">＋</button></div>
   <div id="plwrap" style="overflow:auto;-webkit-overflow-scrolling:touch;border-radius:14px;max-height:75vh"></div>
@@ -2421,7 +2421,7 @@ document.addEventListener('change',async ev=>{const t=ev.target;
   if(S.pl&&/^pl-/.test(t.id)){plSnap();const P=S.pl,i=P.itens.find(x=>x.id===S.plSel),n=v=>Math.max(0.3,parseFloat(String(v).replace(',','.'))||0);
     if(t.id==='pl-nome')P.nome=t.value.trim();else if(t.id==='pl-W')P.W=Math.max(3,n(t.value));else if(t.id==='pl-H')P.H=Math.max(3,n(t.value));else if(t.id==='pl-corr')P.corr=Math.max(0.8,n(t.value));else if(t.id==='pl-gap')P.gap=Math.max(0,parseFloat(String(t.value).replace(',','.'))||0);
     else if(t.id==='pl-paredes')P.paredes=t.checked;else if(t.id==='pl-vL')P.vL=Math.max(1,n(t.value));else if(t.id==='pl-vD')P.vD=Math.max(1,n(t.value));
-    else if(t.id==='pl-aberto'){P.aberto=t.checked;if(P.aberto){P.paredes=true;P.vL=3;P.vD=3;P.corr=Math.max(+P.corr||1,1.5)}else{P.paredes=true;P.vL=medDe(S.org).p;P.vD=medDe(S.org).f;P.corr=1}await plRedesenhaTela();return}else if(t.id==='pl-meio')P.meio=t.checked;else if(t.id==='pl-so2')P.so2parede=t.checked;
+    else if(t.id==='pl-aberto'){P.aberto=t.checked;if(P.aberto){P.paredes=true;P.vL=3;P.vD=3;P.corr=Math.max(+P.corr||2,2.5)}else{P.paredes=true;P.vL=medDe(S.org).p;P.vD=medDe(S.org).f;P.corr=2}await plRedesenhaTela();return}else if(t.id==='pl-meio')P.meio=t.checked;else if(t.id==='pl-so2')P.so2parede=t.checked;
     else if(i&&t.id==='pl-inome')i.nome=t.value.trim();else if(i&&t.id==='pl-iw')i.w=Math.min(n(t.value),+P.W);else if(i&&t.id==='pl-ih')i.h=Math.min(n(t.value),+P.H);
     if(t.id==='pl-corr')t.value=P.corr;plDesenha();return}
   if(t.id==='mp-sel'){S.mapaSel=t.value;S.vagaSel=null;S.mapaEdSel=null;render();return}
@@ -2705,6 +2705,94 @@ function plLigaDesenho(){const w=$('#plwrap');if(!w||w.dataset.desenho)return;w.
 async function plFotoArquivo(fl){if(!fl)return;if(!/^image\//.test(fl.type)){toast('Escolha uma imagem');return}
   const src=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(fl)});S.plFotoOriginal=await plReduz(src,2400);S.plFoto=await plReduz(src,1600);S.plFotoVer=true;S.plAvisosIA=null;await plRedesenhaTela();
   toast('Foto carregada. Se tiver borda sobrando, use "Recortar nos cantos".')}
+
+/* ===== Sugestão de vagas "contorno primeiro" =====
+   1) encosta vagas em toda parede disponível (paredes do local e das salas/partes sem uso), viradas pro salão;
+   2) deixa o corredor na frente delas;
+   3) no miolo que sobra, fileiras duplas (costas com costas) com corredor dos dois lados;
+   4) onde não cabe dupla, fileira simples virada pro corredor. */
+function sugerirContorno(P,o={}){
+  const g=0.1,W=+P.W,H=+P.H,nx=Math.round(W/g),ny=Math.round(H/g);
+  const L=+P.vL||2,D=+P.vD||1.3,c=Math.max(0.8,+P.corr||1),gp=P.gap==null?0.3:+P.gap;
+  const cL=Math.round(L/g),cD=Math.round(D/g),cc=Math.round(c/g),cg=Math.round(gp/g),cw=Math.round(Math.min(c,1.2)/g);
+  const LIVRE=0,PAREDE=1,VAGA=2,CORR=3;const m=new Uint8Array(nx*ny);
+  const k=(x,y)=>y*nx+x,dentro=(x,y)=>x>=0&&y>=0&&x<nx&&y<ny;
+  const pinta=(r,v,so)=>{const x0=Math.max(0,Math.round(r.x/g)),x1=Math.min(nx,Math.round((r.x+r.w)/g)),y0=Math.max(0,Math.round(r.y/g)),y1=Math.min(ny,Math.round((r.y+r.h)/g));for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=k(x,y);if(so==null||m[i]===so)m[i]=v}};
+  const itens=P.itens||[];
+  itens.forEach(i=>{if(i.t==='fora'||i.t==='bloq'||(i.t==='area'&&i.tipo!=='entrada'))pinta(i,PAREDE)});
+  itens.forEach(i=>{if(i.t==='vaga'&&i.fixo)pinta(i,VAGA)});
+  /* frente da entrada fica livre (1,5 m) */
+  itens.forEach(i=>{if(i.t==='area'&&i.tipo==='entrada'){const e=1.5;pinta({x:i.x-e,y:i.y-e,w:i.w+2*e,h:i.h+2*e},CORR,LIVRE);pinta(i,CORR)}});
+  /* pilar solto: meio metro livre em volta */
+  itens.forEach(i=>{if(i.t==='bloq'){const e=0.5;pinta({x:i.x-e,y:i.y-e,w:i.w+2*e,h:i.h+2*e},CORR,LIVRE)}});
+  const ret=(x0,y0,w,h,ok)=>{if(x0<0||y0<0||x0+w>nx||y0+h>ny)return false;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)if(!ok(m[k(x,y)]))return false;return true};
+  const livre=v=>v===LIVRE,passavel=v=>v===LIVRE||v===CORR;
+  const vagas=[];
+  const poe=(x0,y0,w,h,parede,fx0,fy0,fw,fh)=>{for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)m[k(x,y)]=VAGA;
+    for(let y=Math.max(0,fy0);y<Math.min(ny,fy0+fh);y++)for(let x=Math.max(0,fx0);x<Math.min(nx,fx0+fw);x++)if(m[k(x,y)]===LIVRE)m[k(x,y)]=CORR;
+    vagas.push({t:'vaga',x:+(x0*g).toFixed(2),y:+(y0*g).toFixed(2),w:+(w*g).toFixed(2),h:+(h*g).toFixed(2),parede,_f:[fx0,fy0,fw,fh],_c:[x0,y0,w,h]})};
+  const bloqueado=(x,y)=>!dentro(x,y)||m[k(x,y)]===PAREDE;
+  /* ---- 1) contorno ---- */
+  if(P.paredes!==false){
+    /* trechos de parede: [lado, fixo (linha/coluna), início, fim] */
+    const trechos=[];
+    for(let y=0;y<ny;y++){let ini=-1;for(let x=0;x<=nx;x++){const ok=x<nx&&m[k(x,y)]!==PAREDE&&bloqueado(x,y-1);if(ok&&ini<0)ini=x;if(!ok&&ini>=0){trechos.push(['cima',y,ini,x]);ini=-1}}
+      ini=-1;for(let x=0;x<=nx;x++){const ok=x<nx&&m[k(x,y)]!==PAREDE&&bloqueado(x,y+1);if(ok&&ini<0)ini=x;if(!ok&&ini>=0){trechos.push(['baixo',y,ini,x]);ini=-1}}}
+    for(let x=0;x<nx;x++){let ini=-1;for(let y=0;y<=ny;y++){const ok=y<ny&&m[k(x,y)]!==PAREDE&&bloqueado(x-1,y);if(ok&&ini<0)ini=y;if(!ok&&ini>=0){trechos.push(['esq',x,ini,y]);ini=-1}}
+      ini=-1;for(let y=0;y<=ny;y++){const ok=y<ny&&m[k(x,y)]!==PAREDE&&bloqueado(x+1,y);if(ok&&ini<0)ini=y;if(!ok&&ini>=0){trechos.push(['dir',x,ini,y]);ini=-1}}}
+    trechos.sort((a,b)=>(b[3]-b[2])-(a[3]-a[2]));
+    for(const [lado,f,a,b] of trechos){if(b-a<cL)continue;
+      /* centraliza o que sobra no trecho */
+      const n=Math.floor((b-a+cg)/(cL+cg));if(n<1)continue;let p=a+Math.floor(((b-a)-(n*cL+(n-1)*cg))/2);
+      for(let s=0;s<n;s++,p+=cL+cg){
+        let x0,y0,w,h,fx,fy,fw,fh;
+        if(lado==='cima'){x0=p;y0=f;w=cL;h=cD;fx=p;fy=f+cD;fw=cL;fh=cc}
+        else if(lado==='baixo'){x0=p;y0=f-cD+1;w=cL;h=cD;fx=p;fy=y0-cc;fw=cL;fh=cc}
+        else if(lado==='esq'){x0=f;y0=p;w=cD;h=cL;fx=f+cD;fy=p;fw=cc;fh=cL}
+        else{x0=f-cD+1;y0=p;w=cD;h=cL;fx=x0-cc;fy=p;fw=cc;fh=cL}
+        if(!ret(x0,y0,w,h,livre))continue;            // vaga cabe sem bater em nada
+        const fw2=lado==='esq'||lado==='dir'?cw:fw,fh2=lado==='cima'||lado==='baixo'?cw:fh,fx2=lado==='dir'?x0-cw:fx,fy2=lado==='baixo'?y0-cw:fy;
+        if(!ret(fx2,fy2,fw2,fh2,passavel))continue;   // dá pra passar na frente
+        if(!ret(Math.max(0,fx),Math.max(0,fy),Math.min(fw,nx-Math.max(0,fx)),Math.min(fh,ny-Math.max(0,fy)),v=>v!==VAGA))continue; // nenhuma vaga perto demais
+        poe(x0,y0,w,h,true,fx,fy,fw,fh)}}}
+  /* ---- 2) miolo: faixas paralelas (fileira dupla, corredor, fileira dupla...) numa grade fixa ---- */
+  if(P.meio!==false){
+    /* volta livre: nenhuma vaga do meio encosta em parede (fica passagem em toda a volta) */
+    {const perto=new Uint8Array(nx*ny);for(let y=0;y<ny;y++)for(let x=0;x<nx;x++){if(m[k(x,y)]!==LIVRE)continue;
+      let achou=false;for(let dy=-cw;dy<=cw&&!achou;dy++)for(let dx=-cw;dx<=cw;dx++){if(bloqueado(x+dx,y+dy)){achou=true;break}}if(achou)perto[k(x,y)]=1}
+      for(let i=0;i<nx*ny;i++)if(perto[i])m[i]=CORR}
+    const base=m.slice(),vb=vagas.length,per=2*cD+cc;let melhor=null;
+    for(const horiz of [false,true])for(let off=0;off<per;off+=2){
+      m.set(base);vagas.length=vb;let soltas=0;
+      const A=horiz?nx:ny,B=horiz?ny:nx;
+      const R=(a,b,la,lb,ok)=>horiz?ret(a,b,la,lb,ok):ret(b,a,lb,la,ok);
+      const P2=(a,b,la,lb,fa,fb,fla,flb)=>horiz?poe(a,b,la,lb,false,fa,fb,fla,flb):poe(b,a,lb,la,false,fb,fa,flb,fla);
+      for(let b0=off-per;b0<B;b0+=per){const mb=m.slice(),vb0=vagas.length,sb=soltas;
+        const lados=[[b0,b0-cc],[b0+cD,b0+2*cD]];   // [início da meia-fileira, corredor da frente]
+        const K=P.aberto?4:5;let seg=0;
+        for(let a=0;a+cL<=A;){
+          const ok=lados.map(([bb,fb])=>bb>=0&&bb+cD<=B&&R(a,bb,cL,cD,livre)&&R(a,fb,cL,cc,passavel));
+          if(!ok[0]&&!ok[1]){a++;continue}
+          ok.forEach((o,j)=>{if(o){const [bb,fb]=lados[j];P2(a,bb,cL,cD,a,fb,cL,cc)}});
+          if(!(ok[0]&&ok[1]))soltas++;
+          a+=cL+cg;if(++seg%K===0){for(let s2=0;s2<cc;s2++)for(let bb=b0;bb<b0+2*cD;bb++){const aa=a-cg+s2;if(aa<0||aa>=A||bb<0||bb>=B)continue;const i=horiz?k(aa,bb):k(bb,aa);if(m[i]===LIVRE)m[i]=CORR}a+=cc-cg}}
+        if(vagas.length-vb0===1){m.set(mb);vagas.length=vb0;soltas=sb}}
+      const n=vagas.length-vb,nota=(n*10-soltas*3)*((horiz?nx>=ny:ny>nx)?1.25:1);
+      if(!melhor||nota>melhor.nota)melhor={nota,v:vagas.slice(vb),m:m.slice()}}
+    m.set(melhor.m);vagas.length=vb;vagas.push(...melhor.v)}
+  /* ---- 3) toda vaga precisa de caminho até a entrada ---- */
+  const ent=itens.filter(i=>i.t==='area'&&i.tipo==='entrada');
+  if(ent.length){const vis=new Uint8Array(nx*ny),fila=[];
+    ent.forEach(e=>{const x0=Math.max(0,Math.round(e.x/g)),x1=Math.min(nx,Math.round((e.x+e.w)/g)),y0=Math.max(0,Math.round(e.y/g)),y1=Math.min(ny,Math.round((e.y+e.h)/g));for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){vis[k(x,y)]=1;fila.push(k(x,y))}});
+    for(let q=0;q<fila.length;q++){const i=fila[q],x=i%nx,y=(i/nx)|0;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(!dentro(X,Y))continue;const j=k(X,Y);if(vis[j]||m[j]===PAREDE||m[j]===VAGA)continue;vis[j]=1;fila.push(j)}}
+    const chega=v=>{const [fx,fy,fw,fh]=v._f;for(let y=Math.max(0,fy);y<Math.min(ny,fy+fh);y++)for(let x=Math.max(0,fx);x<Math.min(nx,fx+fw);x++)if(vis[k(x,y)])return true;return false};
+    for(let i=vagas.length-1;i>=0;i--)if(!chega(vagas[i]))vagas.splice(i,1)}
+  return vagas.map(({_f,_c,...v})=>v)}
+/* troca a sugestão antiga: contorno primeiro; se não couber nada, usa a antiga */
+{const _sug=plSugerir;plSugerir=function(){const P=S.pl;let v=[];if(!(+P.corr>=1.5)){P.corr=2;const c=document.getElementById('pl-corr');if(c)c.value=2}
+  try{v=sugerirContorno(P)}catch(e){console.error(e)}
+  if(!v.length){_sug();return}
+  P.itens=P.itens.filter(i=>i.t!=='vaga'||i.fixo).concat(v.map(x=>({id:plId(),...x})));S.plSel=null}}
 
 let ultAtualiza=Date.now();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!S.sessao)return;if(Date.now()-ultAtualiza<30000)return;
