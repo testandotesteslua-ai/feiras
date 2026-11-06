@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#2E3532">
-<meta name="app-versao" content="202611061400">
+<meta name="app-versao" content="202611061535">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plataforma de Feiras</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Feiras"><meta name="application-name" content="Feiras">
@@ -2653,7 +2653,7 @@ function plPassos(){const P=S.pl,it=P.itens;const st=[['Medidas do local',!!S.pl
   return `<ol class="pl-passos">${st.map((x,k)=>`<li class="${x[1]?'ok':k===atual?'agora':''}"><span>${x[1]?'✓':k+1}</span>${esc(x[0])}</li>`).join('')}</ol>`}
 function plPainelFoto(){if(!S.plFoto)return `<div class="painel pl-foto"><b class="secao">Tem um rascunho do local?</b><p class="sub" style="margin:4px 0 10px;font-size:13px">Pode ser foto de um desenho à mão com as medidas, ou a planta do lugar. A IA monta a planta pra você, ou você desenha por cima com o dedo.</p>
   <label class="btn sec" for="pl-foto-in" style="margin:0">📷 Subir foto do rascunho</label><input id="pl-foto-in" type="file" accept="image/*" hidden></div>`;
-  return `<div class="painel pl-foto"><div style="display:flex;gap:12px;align-items:center"><img src="${S.plFoto}" alt="Rascunho" class="pl-foto-mini"><div style="min-width:0"><b>Rascunho do local</b><p class="sub" style="margin:2px 0 0;font-size:12px">Aparece por baixo da planta, esticado no tamanho do local.</p>
+  return `<div class="painel pl-foto"><div style="display:flex;gap:12px;align-items:center"><img src="${S.plFoto}" alt="Rascunho" class="pl-foto-mini"><div style="min-width:0"><b>Rascunho do local</b><p class="sub" style="margin:2px 0 0;font-size:12px">Só pra você comparar enquanto monta. Não vai pro mapa final.</p>
   <label class="check" style="margin:6px 0 0"><input type="checkbox" id="pl-foto-ver" ${S.plFotoVer===false?'':'checked'}> Mostrar por baixo</label></div></div>
   <button class="btn pri" id="pl-ia" style="margin:12px 0 0">✨ Montar a planta com IA</button>
   <div class="row" style="margin-top:8px;gap:8px"><button class="mini" id="pl-foto-cortar" style="min-height:40px;flex:1">Recortar nos cantos</button><label class="mini" for="pl-foto-in" style="min-height:40px;flex:1;display:flex;align-items:center;justify-content:center;margin:0">Trocar foto</label><button class="mini" id="pl-foto-tirar" style="min-height:40px;flex:1">Tirar</button></div><input id="pl-foto-in" type="file" accept="image/*" hidden>
@@ -2679,7 +2679,7 @@ async function plIA(b){if(!S.plFoto){toast('Suba a foto do rascunho primeiro');r
     const {data,error}=await sb.functions.invoke('ler-planta',{body:{imagem,W:S.plMedidasOk?+P.W:null,H:S.plMedidasOk?+P.H:null,vaga:[+P.vL||medDe(S.org).p,+P.vD||medDe(S.org).f]}});
     if(error){let m='';try{const j=await error.context.json();m=j.erro||''}catch{}if(!m&&/404|not found|Failed to send/i.test(String(error.message||error)))m='A leitura por IA ainda não foi ligada no Supabase. Fale com a plataforma.';throw new Error(m||'Não deu pra ler o rascunho agora. Tente de novo.')}
     if(!data?.itens)throw new Error(data?.erro||'A IA não conseguiu entender o rascunho. Tente uma foto mais nítida, de cima, com as medidas escritas.');
-    plSnap();P.W=data.W;P.H=data.H;S.plMedidasOk=true;P.itens=[...P.itens.filter(i=>i.t==='vaga'&&i.fixo),...data.itens.map(i=>({...i,id:plId()}))];S.plAvisosIA=data.avisos||[];S.plSel=null;
+    plSnap();P.W=data.W;P.H=data.H;S.plMedidasOk=true;P.itens=[...P.itens.filter(i=>i.t==='vaga'&&i.fixo),...data.itens.map(i=>({...i,id:plId()}))];S.plAvisosIA=data.avisos||[];S.plSel=null;S.plFotoVer=false;
     plSugerir();await plRedesenhaTela();toast(`Pronto! A IA montou a planta e sugeriu ${S.pl.itens.filter(i=>i.t==='vaga').length} vagas. Confira as medidas.`)}
   catch(e){toast(e.message||String(e));const er=$('#pl-err');if(er)er.textContent=e.message||String(e)}
   finally{const bb=$('#pl-ia');if(bb){bb.disabled=false;bb.textContent=t0}}}
