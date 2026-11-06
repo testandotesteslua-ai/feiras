@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#2E3532">
-<meta name="app-versao" content="202611061620">
+<meta name="app-versao" content="202611061700">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Plataforma de Feiras</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Feiras"><meta name="application-name" content="Feiras">
@@ -569,6 +569,11 @@ details.presumo{display:block}.resumo-c{display:block}
 .colab-lista>summary{display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;min-height:32px}.colab-lista>summary::-webkit-details-marker{display:none}
 .colab-it{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .edcard .row{flex-wrap:wrap}
+
+.colab-opcoes{display:flex;flex-direction:column;gap:2px;max-height:260px;overflow:auto}
+.colab-op{margin:0;padding:8px 2px;border-bottom:1px solid var(--line);align-items:center}
+.colab-op:last-child{border-bottom:0}
+.colab-op[hidden]{display:none}
 
 .pl-passos{list-style:none;margin:10px 0 12px;padding:0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.pl-passos::-webkit-scrollbar{display:none}
 .pl-passos li{flex:none;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink-2);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:6px 10px 6px 6px}
@@ -1264,7 +1269,7 @@ TELAS['org-edicao-form']=async()=>{
   <label for="e-abre">Ou abrir automaticamente em</label><input id="e-abre" type="datetime-local" value="${e.abre_inscricoes_em?new Date(new Date(e.abre_inscricoes_em).getTime()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16):''}">
   <p class="sub" style="margin:4px 0 0;font-size:12px">Deixe a edição pronta e escolha dia e hora: as inscrições abrem sozinhas. Os expositores já veem a edição com a data de abertura.</p></div>
   <div class="painel"><b>Vagas por segmento</b><p class="sub" style="margin:2px 0 6px">Vazio = sem limite. Zero = o segmento não participa dessa edição.</p>${S.segs.map(s=>`<div class="cota"><span style="flex:1">${esc(s.nome)}</span><input type="number" min="0" data-cota="${s.slug}" value="${cot[s.slug]??''}" style="width:90px" aria-label="Limite de ${esc(s.nome)}"></div>`).join('')}</div>
-  <p class="erro" id="e-err"></p><button class="btn pri" id="e-ok">Salvar edição</button>${e.id&&!terminou?(cancelada(e)?`<div class="canc" style="margin-top:16px"><h3>Edição cancelada</h3><p style="margin:0">Cancelada em ${new Date(e.cancelada_em).toLocaleDateString('pt-BR')}.</p><button class="btn sec" data-cancelv="${e.id}" style="margin-top:10px">💸 Reembolsos e créditos</button><button class="btn sec" id="e-descancel" style="margin-top:8px">Desfazer cancelamento</button></div>`:`<button class="btn sec" id="e-cancelar" style="margin-top:10px;color:#9B2C20;border-color:#C0392B">Cancelar edição</button><p class="sub" style="margin-top:6px;font-size:12px;text-align:center">Avisa os inscritos e quem pagou escolhe reembolso ou crédito.</p>`):''}${e.id?`<button class="btn sec" id="e-del" style="margin-top:10px;color:var(--tomate);border-color:var(--tomate-soft)">Excluir edição</button><p class="sub" style="margin-top:6px;font-size:12px;text-align:center">Se tiver inscritos, o app mostra quem foi afetado antes de excluir.</p>`:''}`;
+  ${await colabForm(e)}<p class="erro" id="e-err"></p><button class="btn pri" id="e-ok">Salvar edição</button>${e.id&&!terminou?(cancelada(e)?`<div class="canc" style="margin-top:16px"><h3>Edição cancelada</h3><p style="margin:0">Cancelada em ${new Date(e.cancelada_em).toLocaleDateString('pt-BR')}.</p><button class="btn sec" data-cancelv="${e.id}" style="margin-top:10px">💸 Reembolsos e créditos</button><button class="btn sec" id="e-descancel" style="margin-top:8px">Desfazer cancelamento</button></div>`:`<button class="btn sec" id="e-cancelar" style="margin-top:10px;color:#9B2C20;border-color:#C0392B">Cancelar edição</button><p class="sub" style="margin-top:6px;font-size:12px;text-align:center">Avisa os inscritos e quem pagou escolhe reembolso ou crédito.</p>`):''}${e.id?`<button class="btn sec" id="e-del" style="margin-top:10px;color:var(--tomate);border-color:var(--tomate-soft)">Excluir edição</button><p class="sub" style="margin-top:6px;font-size:12px;text-align:center">Se tiver inscritos, o app mostra quem foi afetado antes de excluir.</p>`:''}`;
 };
 
 TELAS['org-selecao']=async()=>{
@@ -2214,7 +2219,7 @@ document.addEventListener('click',async ev=>{
     await sb.from('edicao_cotas').delete().eq('edicao_id',eid);
     const cotas=[...document.querySelectorAll('[data-cota]')].filter(i=>i.value!=='').map(i=>({edicao_id:eid,segmento:i.dataset.cota,limite:+i.value}));
     if(cotas.length){const r2=await sb.from('edicao_cotas').insert(cotas);if(r2.error){b.disabled=false;err.textContent=erroMsg(r2.error);return}}
-    S.edicoes=null;toast('Edição salva');go('org-edicoes');return}
+    {const cb=await enviaColabsForm(eid);S.edicoes=null;toast(cb.erro?'Edição salva, mas um convite de colab não foi: '+cb.erro:cb.ok?`Edição salva e ${cb.ok===1?'convite de colab enviado':cb.ok+' convites de colab enviados'}`:'Edição salva')}go('org-edicoes');return}
   if(b.id==='logo-ajustar'){abrirRecorte(S.logo);return}
   if(b.id==='e-edital-tira'){S.editalForm=null;await renderMantendo();return}
   if(b.id==='e-video-tira'){S.videoForm=null;await renderMantendo();return}
@@ -2793,6 +2798,23 @@ function sugerirContorno(P,o={}){
   try{v=sugerirContorno(P)}catch(e){console.error(e)}
   if(!v.length){_sug();return}
   P.itens=P.itens.filter(i=>i.t!=='vaga'||i.fixo).concat(v.map(x=>({id:plId(),...x})));S.plSel=null}}
+
+/* colab já na criação/edição da edição */
+async function colabForm(e){if(!S.org)return '';
+  const [{data:os},{data:ja}]=await Promise.all([sb.from('organizacoes').select('id,nome,cidade').eq('status','ativa').neq('id',S.org.id).order('nome'),
+    e.id?sb.from('edicao_colabs').select('organizacao_id,status').eq('edicao_id',e.id).neq('status','recusado'):{data:[]}]);
+  const st=new Map((ja||[]).map(x=>[x.organizacao_id,x.status]));S.colabFormJa=st.size;
+  const lista=os||[];
+  if(!lista.length&&!st.size)return '';
+  return `<div class="painel" id="e-colab"><label class="check" style="margin:0"><input type="checkbox" id="e-colab-on" ${st.size?'checked':''}><span><b>🤝 Colab com outras feiras</b></span></label>
+  <div id="e-colab-lista" ${st.size?'':'hidden'} style="margin-top:8px">${lista.length>6?'<input id="e-colab-busca" placeholder="Buscar feira…" style="margin-bottom:6px">':''}<div class="colab-opcoes">${lista.map(o=>{const s=st.get(o.id);return `<label class="check colab-op" data-nome="${esc((o.nome+' '+(o.cidade||'')).toLowerCase())}"><input type="checkbox" data-ecolab="${o.id}" ${s?'checked disabled':''}><span>${esc(o.nome)}${o.cidade?` <span class="sub" style="font-size:12px">· ${esc(o.cidade)}</span>`:''}${s?` <span class="sub" style="font-size:12px">· ${s==='aceito'?'aceita':'convidada'}</span>`:''}</span></label>`}).join('')}</div></div></div>`}
+document.addEventListener('change',ev=>{const t=ev.target;if(t.id==='e-colab-on'){const l=document.getElementById('e-colab-lista');if(l)l.hidden=!t.checked;return}if(!t.matches?.('[data-ecolab]'))return;
+  const n=document.querySelectorAll('[data-ecolab]:checked').length;if(n>3){t.checked=false;toast('Dá pra fazer colab com até 3 feiras por edição')}});
+document.addEventListener('input',ev=>{if(ev.target.id!=='e-colab-busca')return;const q=ev.target.value.trim().toLowerCase();
+  document.querySelectorAll('.colab-op').forEach(l=>{l.hidden=!!q&&!l.dataset.nome.includes(q)})});
+async function enviaColabsForm(eid){if(!document.getElementById('e-colab-on')?.checked)return {ok:0,erro:''};const novos=[...document.querySelectorAll('[data-ecolab]:checked:not(:disabled)')].map(i=>i.dataset.ecolab);let ok=0,erro='';
+  for(const org of novos){const r=await sb.rpc('convidar_colab',{p_edicao:eid,p_org:org});if(r.error)erro=erroMsg(r.error);else ok++}
+  return {ok,erro}}
 
 let ultAtualiza=Date.now();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!S.sessao)return;if(Date.now()-ultAtualiza<30000)return;
