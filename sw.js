@@ -1,4 +1,4 @@
-/* Plataforma de Feiras — service worker.
+/* Plataforma de Eventos — service worker.
    Não guarda nada em cache: tudo continua vindo da internet, sempre atualizado.
    Recebe as notificações (push) e mostra a bolinha no ícone. */
 self.addEventListener('install', () => self.skipWaiting());
@@ -8,7 +8,7 @@ self.addEventListener('fetch', () => {});
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
-  const titulo = d.title || 'Feiras';
+  const titulo = d.title || 'Eventos';
   const tarefas = [self.registration.showNotification(titulo, {
     body: d.body || '',
     icon: 'icon-192.png',

@@ -1,12 +1,12 @@
 {
-  "name": "Plataforma de Feiras",
-  "short_name": "Feiras",
+  "name": "Plataforma de Eventos",
+  "short_name": "Eventos",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F1F0EC",
-  "theme_color": "#2E3532",
+  "background_color": "#F6F6F9",
+  "theme_color": "#17161C",
   "lang": "pt-BR",
   "icons": [
     {
