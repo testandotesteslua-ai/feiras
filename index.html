@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#1E2235">
-<meta name="app-versao" content="202611171201">
+<meta name="app-versao" content="202611171523">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ExpoMatch · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="ExpoMatch"><meta name="application-name" content="ExpoMatch">
@@ -1319,7 +1319,7 @@ TELAS['org-edicao-form']=async()=>{
   <p class="sub" style="margin:6px 0 0;font-size:12px">A capa padrão usa as cores do evento. Se quiser, troque por uma imagem da edição.</p>
   <label for="e-tit">Nome</label><input id="e-tit" value="${v('titulo')}" style="text-transform:uppercase" autocapitalize="characters">
   <label for="e-tipo">Tipo de evento</label><select id="e-tipo">${tipoOpcoes(e.tipo||S.org.tipo||'feira')}</select>${!e.id&&/\d/.test(e.titulo||'')?'<p class="sub" style="margin:4px 0 0;font-size:12px">Número da edição sugerido pela última cadastrada.</p>':''}
-  <div class="g2"><div><label for="e-data">Primeiro dia</label><input id="e-data" type="date" value="${v('data')}"></div><div><label for="e-fim">Último dia</label><input id="e-fim" type="date" value="${v('data_fim')}"></div></div>
+  <label for="e-data" id="e-data-l">${e.data_fim?'Primeiro dia':'Data'}</label><input id="e-data" type="date" value="${v('data')}"><label class="check" style="margin-top:10px"><input type="checkbox" id="e-variosdias" ${e.data_fim?'checked':''}> 📅 Evento com mais de um dia</label><div id="e-fim-w" ${e.data_fim?'':'hidden'}><label for="e-fim">Último dia</label><input id="e-fim" type="date" value="${v('data_fim')}"></div>
   ${'' }<div id="e-diaun-w"><label class="check" style="margin-top:12px"><input type="checkbox" id="e-diaun" ${e.permite_dia_unico?'checked':''}> Permitir participar de um dia só</label>
   <div id="e-pdia-w" ${e.permite_dia_unico?'':'hidden'}><div class="g2"><div><label for="e-dialib">Dia liberado</label><input id="e-dialib" type="date" value="${v('dia_unico_liberado')}"></div><div><label for="e-pdia">Valor do dia (R$)</label><input id="e-pdia" class="moeda" inputmode="numeric" placeholder="0,00" value="${moedaTxt(e.preco_dia)}"></div></div><p class="sub" style="margin:4px 0 0;font-size:12px">Ex.: evento de 9 a 14, liberando só o dia 14.</p>
   <label for="e-vdia">Vagas pra quem vem só nesse dia</label><input id="e-vdia" type="number" inputmode="numeric" min="0" value="${v('vagas_dia_unico')}" placeholder="Sem limite">
@@ -1342,10 +1342,10 @@ TELAS['org-edicao-form']=async()=>{
   <h2 style="font-size:17px;margin:20px 0 0">Valores</h2>`})()}
   <label class="check" style="margin:10px 0 4px"><input type="checkbox" id="e-gratis" ${e.gratuita?'checked':''}> <span><b>Grátis pro expositor</b> · ninguém paga pra participar</span></label><div class="g2 precos-ed"><div><label for="e-p2">2 m × 1,30 m (R$)</label><input id="e-p2" class="moeda" inputmode="numeric" placeholder="0,00" value="${moedaTxt(e.preco_2m)}"></div><div><label for="e-p3">3 m × 1,30 m (R$)</label><input id="e-p3" class="moeda" inputmode="numeric" placeholder="0,00" value="${moedaTxt(e.preco_3m)}"></div></div>
   <div id="e-tam-w">
-  <div class="g2"><div><label for="e-total">Total de espaços</label><input id="e-total" type="number" inputmode="numeric" min="0" value="${v('total_espacos')}" placeholder="Nº de vagas do mapa"></div><div><label for="e-m3">Máximo de 3 m</label><input id="e-m3" type="number" inputmode="numeric" min="0" value="${e.id?v('max_3m'):'10'}" placeholder="Sem limite"></div></div>
-  <p class="sub" style="margin:4px 0 0;font-size:12px">Os espaços de 2 m são o que sobrar do total. Deixe o total vazio pra usar o número de vagas do mapa.</p>
+  <input type="hidden" id="e-total" value=""><input type="hidden" id="e-m3" value="">
+  
   </div><div id="e-tam-mapa" class="painel" hidden style="margin:12px 0 0;background:var(--laranja-soft);border-color:transparent;padding:12px 14px"></div>
-  <div class="g2"><div><label for="e-mesas">Mesas no local</label><input id="e-mesas" type="number" inputmode="numeric" min="0" value="${v('mesas_total')}" placeholder="Não controlar"></div><div><label for="e-cads">Cadeiras no local</label><input id="e-cads" type="number" inputmode="numeric" min="0" value="${v('cadeiras_total')}" placeholder="Não controlar"></div></div>
+  <div class="g2"><div><label for="e-mesas">Mesas no local</label><input id="e-mesas" type="number" inputmode="numeric" min="0" value="${e.id?v('mesas_total'):'0'}" placeholder="Não controlar"></div><div><label for="e-cads">Cadeiras no local</label><input id="e-cads" type="number" inputmode="numeric" min="0" value="${e.id?v('cadeiras_total'):'0'}" placeholder="Não controlar"></div></div>
   <p class="sub" style="margin:4px 0 0;font-size:12px">Todo mundo vê quantas ainda sobram. Contam os expositores confirmados e pagos, e ninguém consegue pedir mais do que tem. Vazio = sem controle.</p>
   <label class="check" style="margin-top:14px;align-items:flex-start"><input type="checkbox" id="e-sinal" ${e.permite_sinal?'checked':''} style="width:20px;min-height:20px;margin-top:2px"><span>Permitir pagar metade pra garantir a vaga</span></label>
   <div id="e-venc-w" ${e.permite_sinal?'':'hidden'}><label for="e-venc">Vencimento do restante</label><input id="e-venc" type="date" value="${v('vencimento_restante')}">
@@ -3192,6 +3192,10 @@ abrirCancelar=async function(e){if(!e?.id)return;
     corpo=`<div class="painel" style="margin:12px 0 0"><b>💸 A organização vai devolver ${money(v)}</b><p style="margin:4px 0 0">${tem?`Pix informado: <b>${esc(ins.cancel_pix||'')}</b>${ins.cancel_titular?' · '+esc(ins.cancel_titular):''}. A organização vai devolver e avisar aqui.`:`Informe sua chave Pix${e.cancel_prazo?` até <b>${dataBR(e.cancel_prazo)}</b>`:''}.`}</p></div>${pnota}
     <label for="cx-pix">Chave Pix</label><input id="cx-pix" value="${esc(ins.cancel_pix||'')}"><label for="cx-tit">Nome do titular da conta</label><input id="cx-tit" value="${esc(ins.cancel_titular||'')}"><p class="erro" id="cx-err"></p><button class="btn pri" data-cxok="reembolso" data-id="${ins.id}">${tem?'Atualizar Pix':'Mandar meu Pix'}</button>`}
   return topo()+corpo+'</div>'}}
+/* evento de vários dias: só mostra o último dia quando marcar */
+document.addEventListener('change',ev=>{if(ev.target.id!=='e-variosdias')return;const on=ev.target.checked,w=$('#e-fim-w'),l=$('#e-data-l');if(w)w.hidden=!on;if(l)l.textContent=on?'Primeiro dia':'Data';
+  const fi=$('#e-fim');if(fi){if(!on)fi.value='';else if(!fi.value&&$('#e-data')?.value){const d=new Date($('#e-data').value+'T12:00');d.setDate(d.getDate()+1);fi.value=d.toISOString().slice(0,10)}fi.dispatchEvent(new Event('input',{bubbles:true}));fi.dispatchEvent(new Event('change',{bubbles:true}))}
+  if(typeof diaUnVis==='function')diaUnVis()});
 
 let ultAtualiza=Date.now();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!S.sessao)return;if(Date.now()-ultAtualiza<30000)return;
