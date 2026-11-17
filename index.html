@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#1E2235">
-<meta name="app-versao" content="202611171523">
+<meta name="app-versao" content="202611171546">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ExpoMatch · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="ExpoMatch"><meta name="application-name" content="ExpoMatch">
@@ -660,6 +660,7 @@ body:has(#e-gratis:checked) .precos-ed{display:none}
 .cx-modo input{margin-top:3px;width:auto;min-height:0}
 .cx-modo b{display:block;font-size:15px}.cx-modo small{display:block;color:var(--ink-2);font-size:12.5px;line-height:1.35;margin-top:2px}
 .cx-alerta{margin-top:10px;padding:10px 12px;border-radius:12px;background:#FDECEA;color:#7A1F16;font-size:13.5px;line-height:1.4}
+.pl-tam{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.pl-tam span{font-size:13px;font-weight:600;margin-right:4px}
 </style>
 </style>
 </head>
@@ -1366,7 +1367,7 @@ TELAS['org-edicao-form']=async()=>{
   <p class="sub" style="margin:4px 0 8px;font-size:12px">PDF ou imagem explicando como vai funcionar. Aparece bem destacado pro expositor, mesmo com as inscrições fechadas.</p>
   ${S.editalForm?`<div style="display:flex;align-items:center;gap:12px;background:#F3EBDE;border-radius:14px;padding:10px;margin-bottom:8px"><span style="font-size:28px">📄</span><div style="flex:1;min-width:0"><b style="font-size:14px;word-break:break-all">${esc(S.editalForm.nome)}</b><div class="sub" style="margin:0;font-size:12px">Edital anexado</div></div><a class="mini" href="${esc(S.editalForm.url)}" target="_blank" rel="noopener" style="display:flex;align-items:center;min-height:38px">Ver</a></div>`:''}
   <div class="row"><label class="mini" for="e-edital" style="display:flex;align-items:center;justify-content:center;min-height:42px">${S.editalForm?'Trocar edital':'Anexar edital'}</label><input id="e-edital" type="file" accept="application/pdf,image/*" hidden>${S.editalForm?'<button class="mini" id="e-edital-tira" style="min-height:42px;color:var(--tomate)">Remover edital</button>':''}</div>
-  <label class="check" style="margin-top:16px;align-items:flex-start"><input type="checkbox" id="e-externa" ${e.externa?'checked':''} style="width:20px;min-height:20px;margin-top:2px"><span>Evento externa (ao ar livre)<br><small style="font-weight:500;color:var(--ink-2)">O expositor responde se vai trazer gazebo. Com gazebo, a vaga é de 3 m.</small></span></label>
+  <label class="check" style="margin-top:16px;align-items:flex-start"><input type="checkbox" id="e-externa" ${e.externa?'checked':''} style="width:20px;min-height:20px;margin-top:2px"><span>Evento ao ar livre<br><small style="font-weight:500;color:var(--ink-2)">O expositor responde se vai trazer gazebo. Com gazebo, a vaga é de 3 m.</small></span></label>
   <label class="check" style="margin-top:14px"><input type="checkbox" id="e-semmapa" ${e.sem_mapa?'checked':''}> Essa edição não tem mapa (a organização define os lugares)</label>
   <label for="e-mapa">Mapa</label><select id="e-mapa"><option value="">Sem mapa</option>${(mp.data||[]).map(m=>`<option value="${m.id}" ${e.mapa_id===m.id?'selected':''}>${esc(m.nome)}</option>`).join('')}</select>
   <label for="e-prazo">Prazo pra escolher vaga</label><input id="e-prazo" type="datetime-local" value="${e.prazo_escolha_vaga?new Date(new Date(e.prazo_escolha_vaga).getTime()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16):''}"><p class="sub" style="margin:4px 0 0;font-size:12px" id="e-prazo-dica"></p>
@@ -1939,7 +1940,7 @@ TELAS['org-planta']=async()=>{if(!S.pl)S.pl=plNovo();const P=S.pl;
   <div class="g2"><div><label for="pl-corr">Corredor entre fileiras (m)</label><input id="pl-corr" type="number" step="0.1" min="0.8" value="${P.corr}"></div><div><label for="pl-gap">Espaço entre vagas (m)</label><input id="pl-gap" type="number" step="0.05" min="0" value="${P.gap==null?0.3:P.gap}"></div></div>
   <label class="check" style="margin-top:10px"><input type="checkbox" id="pl-paredes" ${P.paredes?'checked':''}> ${P.aberto?'Vagas nas bordas da área (viradas pra dentro)':'Vagas encostadas nas paredes'}</label>
   <label class="check" style="margin-top:6px"><input type="checkbox" id="pl-meio" ${P.meio?'checked':''}> Fileiras duplas no meio (costas com costas)</label>
-  ${P.aberto?'':`<label class="check" style="margin-top:6px"><input type="checkbox" id="pl-so2" ${P.so2parede?'checked':''}> Vagas da parede só pra 2 m</label>`}
+  
   <button class="btn pri" id="pl-sugerir" style="margin-top:12px">Sugerir vagas</button>
   <p class="sub" style="margin:6px 0 0;font-size:12px">Coloque as áreas, pilares e entrada antes: as vagas desviam deles deixando o corredor. Pilar na parede não precisa de corredor em volta; pilar solto sim. Na frente da entrada fica pelo menos 1,5 m livre. Primeiro as vagas vão em todas as paredes; depois o meio vira fileiras duplas, sem fechar a passagem em volta. Corredor de 2 m: dá pra parar olhando a banca e ainda passar gente.${P.aberto?'':''} Vaga = 2 m × 1,30 m.</p></div>
   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0 6px"><p class="sub" id="pl-cont" style="margin:0;font-weight:700"></p><div class="row" style="gap:6px;flex:none"><button class="mini" id="pl-undo" ${(S.plHist||[]).length?'':'disabled'}>↶ Voltar</button><button class="mini" id="pl-limpar" style="color:var(--tomate)">Limpar tudo</button></div></div>
@@ -2008,7 +2009,7 @@ async function plSalvar(b){const P=S.pl,err=$('#pl-err');err.textContent='';cons
   const areas=P.itens.filter(i=>i.t==='area'&&plAreaInfo(i)[4]).map(i=>{const [x,y]=toPct(i.x+i.w/2,i.y+i.h/2);return {x:plR(x),y:plR(y),largura:plR(wPct(i.w)),altura:plR(hPct(i.h)),nome:i.nome||plAreaInfo(i)[1],segmento:plAreaInfo(i)[4]}});
   const r1=await sb.from('mapas').update({nome:P.nome||'Planta',imagem_url:url,planta:P,areas}).eq('id',mid);if(r1.error)throw r1.error;
   const {data:ant}=await sb.from('mapa_vagas').select('id,numero').eq('mapa_id',mid);const porNum=new Map((ant||[]).map(v=>[v.numero,v]));
-  const linhas=vs.map((v,k)=>{const [x,y]=toPct(v.x+v.w/2,v.y+v.h/2);return {mapa_id:mid,numero:k+1,x:plR(x),y:plR(y),largura:plR(wPct(v.w)*0.94),altura:plR(hPct(v.h)*0.94),so_2m:!!(P.so2parede&&v.parede),externa:plExterna(v,P),tamanho:Math.max(v.w,v.h)>=(medDe(S.org).p+medDe(S.org).g)/2?'3m':'2m'}});
+  const linhas=vs.map((v,k)=>{const [x,y]=toPct(v.x+v.w/2,v.y+v.h/2);return {mapa_id:mid,numero:k+1,x:plR(x),y:plR(y),largura:plR(wPct(v.w)*0.94),altura:plR(hPct(v.h)*0.94),so_2m:false,externa:plExterna(v,P),tamanho:Math.max(v.w,v.h)>=(medDe(S.org).p+medDe(S.org).g)/2?'3m':'2m'}});
   const ins=linhas.filter(l=>!porNum.has(l.numero));for(const l of linhas.filter(l=>porNum.has(l.numero))){const r=await sb.from('mapa_vagas').update(l).eq('id',porNum.get(l.numero).id);if(r.error)throw r.error}
   if(ins.length){const r=await sb.from('mapa_vagas').insert(ins);if(r.error)throw r.error}
   let presas=0;for(const v of (ant||[]).filter(v=>v.numero>linhas.length)){const r=await sb.from('mapa_vagas').delete().eq('id',v.id);if(r.error)presas++}
@@ -3143,6 +3144,12 @@ function plCanvasZonas(cx,X,px,P){P.itens.filter(i=>i.t==='zona').forEach(i=>{co
   else if(k==='externa'){cx.strokeStyle=c;cx.lineWidth=px*0.05;cx.setLineDash([px*0.3,px*0.2]);cx.strokeRect(X(i.x),X(i.y),i.w*px,i.h*px);cx.setLineDash([])}
   const fs=Math.min(px*0.5,i.h*px*0.25);cx.font=`800 ${fs}px Arial,sans-serif`;cx.fillStyle=k==='pista'?'#fff':c;cx.textAlign='left';cx.textBaseline='top';cx.fillText((k==='pista'&&P.ruaFechada?'🚧 RUA FECHADA':`${ic} ${n}`).toUpperCase(),X(i.x)+px*0.2,X(i.y)+px*0.15)})}
 function plCanvasRua(cx,X,px,i){if(!i.rua)return;const r=PL_RUA.find(x=>x[0]===i.rua);if(!r)return;const fs=Math.min(i.w,i.h)*px*0.7;cx.font=`${fs}px Arial,sans-serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(r[1],X(i.x+i.w/2),X(i.y+i.h/2))}
+/* tamanho de cada vaga: a organização escolhe (2 m ou 3 m) */
+const plTamVaga=v=>{const m=medDe(S.org);return Math.max(v.w,v.h)>=(m.p+m.g)/2?'3m':'2m'};
+{const _p=plPainelSel;plPainelSel=function(){let h=_p.apply(this,arguments);const i=S.pl.itens.find(x=>x.id===S.plSel);if(!i||i.t!=='vaga')return h;const m=medDe(S.org),t=plTamVaga(i),f=n=>String(n).replace('.',',');
+  return h.replace(/(<div class="g2"><div><label for="pl-iw">)/,`<div class="pl-tam"><span>Tamanho da vaga</span><button class="mini ${t==='2m'?'pri':''}" data-pltam="p">${f(m.p)} m</button><button class="mini ${t==='3m'?'pri':''}" data-pltam="g">${f(m.g)} m</button></div>$1`)}}
+document.addEventListener('click',ev=>{const b=ev.target.closest('[data-pltam]');if(!b||!S.pl)return;ev.preventDefault();ev.stopPropagation();const i=S.pl.itens.find(x=>x.id===S.plSel);if(!i||i.t!=='vaga')return;
+  plSnap();const m=medDe(S.org),L=b.dataset.pltam==='g'?m.g:m.p;if(i.w>=i.h)i.w=L;else i.h=L;plDesenha()},true);
 
 /* ================= CANCELAMENTO: a organização escolhe ================= */
 const CX_MODOS=[['escolha','Cada expositor escolhe','Reembolso no Pix ou crédito pra próxima edição. Quem não escolher até o prazo fica com crédito.'],['reembolso','Devolver pra todo mundo','Cada um informa o Pix e você devolve.'],['credito','Crédito pra todo mundo','O valor entra como pagamento na próxima edição desse evento que a marca for confirmada.'],['nada','Sem devolução','Ninguém recebe reembolso nem crédito.']];
