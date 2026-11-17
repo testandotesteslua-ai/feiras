@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#17161C">
-<meta name="app-versao" content="202611131641">
+<meta name="app-versao" content="202611131823">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Plataforma de Eventos</title>
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Eventos"><meta name="application-name" content="Eventos">
+<title>ExpoMatch · expositores e eventos</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="ExpoMatch"><meta name="application-name" content="ExpoMatch">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
@@ -610,6 +610,11 @@ nav.baixo{box-shadow:0 -4px 20px rgba(23,22,28,.06)!important}
 h1::after{width:36px!important;height:4px!important;border-radius:4px;margin-top:10px!important;-webkit-mask:none!important;mask:none!important;background:var(--verde)!important}
 .data{box-shadow:0 4px 14px rgba(23,22,28,.18)!important;background:var(--card)!important}
 body::before{display:none!important}
+.wm b i{font-style:normal;color:var(--laranja)}
+.wm b{text-transform:none!important}
+.wm.grande b{font-size:clamp(38px,11.5vw,56px)!important}
+.hero .b1{width:62px!important;height:62px!important;right:14px!important;top:14px!important}
+.hero .wm.grande{padding-right:64px}
 
 .passos{list-style:none;counter-reset:p;padding:0;margin:10px 0 12px}.passos li{display:block!important;counter-increment:p;position:relative;padding:4px 0 12px 44px;line-height:1.45}.passos li::before{content:counter(p);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;background:var(--laranja);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center}
 /* ===== qualquer tipo de evento ===== */
@@ -638,7 +643,7 @@ body:has(#e-gratis:checked) .precos-ed{display:none}
 const SUPABASE_URL='https://guiieswqphjixidbtzvs.supabase.co';
 const SUPABASE_KEY='sb_publishable_BMKDottWt_NP_8qaUV_X5Q_9qEhMREi';
 /* Nome da plataforma: troque aqui quando decidir a marca */
-const PLAT={nome:'Plataforma de Eventos',curto:'Eventos',peq:'PLATAFORMA DE',grande:'EVENTOS'};
+const PLAT={nome:'ExpoMatch',curto:'ExpoMatch',peq:'EXPOSITORES + EVENTOS',grande:'Expo<i>Match</i>'};
 const lembrar=()=>{try{return localStorage.getItem('pf-lembrar')!=='0'}catch{return true}};
 const guarda={
   getItem:k=>{try{return localStorage.getItem(k)??sessionStorage.getItem(k)}catch{return null}},

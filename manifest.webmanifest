@@ -1,6 +1,6 @@
 {
-  "name": "Plataforma de Eventos",
-  "short_name": "Eventos",
+  "name": "ExpoMatch · expositores e eventos",
+  "short_name": "ExpoMatch",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -27,5 +27,6 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "description": "Onde expositores e eventos se encontram"
 }
