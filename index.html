@@ -3006,7 +3006,7 @@ function lerCamposInscricao(f,e){const o=e?.organizacoes||{},cats=catsDe(o),ps=e
   if(ps.length)p.p_respostas=r;return {p}}
 /* respostas pra organização */
 function respostasHtml(i){const ps=i?.edicoes?.perguntas||[],r=i?.respostas||{};const tem=ps.filter(q=>r[q.id]);if(!ps.length)return '';
-  const val=v=>/^https?:\/\//i.test(v)?`<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v)}</a>`:esc(v);
+  const val=v=>/^https?:\/\//i.test(v)?`<a href="${hrefSeguro(v)}" target="_blank" rel="noopener">${esc(v)}</a>`:esc(v);
   return `<div class="painel"><b class="secao">Respostas da inscrição</b>${tem.length?ps.map(q=>r[q.id]?`<div class="resp"><span>${esc(q.texto)}</span><p>${val(r[q.id])}</p></div>`:'').join(''):'<p class="sub" style="margin:6px 0 0">Não respondeu as perguntas (se inscreveu antes delas existirem).</p>'}</div>`}
 
 /* ================= ZOOM COMO FOTO (pinça e rodinha) ================= */
