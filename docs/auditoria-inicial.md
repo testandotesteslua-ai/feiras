@@ -32,3 +32,14 @@ Plataforma comercial para conectar expositores e organizadores de eventos, com s
 - Nome comercial definitivo (não renomear arquivos, domínios ou identidade visual até escolha).
 - Hospedagem de homologação e estratégia de dados de teste.
 - Modelo mensal ou avulso por evento: aprovado como direção futura, sem implementação nesta fase.
+
+## Verificação complementar — autorização e políticas RLS
+- `is_dona(p_org)` e `is_membro(p_org)` exigem `auth.uid() is not null` e verificam a associação do usuário à organização, ou `is_admin()`. Isso reduz o risco de execução anônima das funções que dependem delas, mas **não substitui testes com usuários reais de homologação**.
+- `org_da_inscricao(p_inscricao)` obtém a organização pela edição da inscrição; é usada como parte da verificação de autorização de `marcar_reembolsado`.
+- As políticas de `inscricoes` restringem leitura ao dono da inscrição ou membro da organização e gerenciamento aos membros da organização.
+- As políticas de `edicoes`, `mapas` e `mapa_vagas` permitem leitura de organizações ativas por usuários anônimos e autenticados, além da equipe; conferir se todas as colunas são destinadas a acesso público.
+- A política `orgs: ver` permite `SELECT` de toda a linha de organizações ativas, inclusive campos como `whatsapp`, `vaga_menor`, `vaga_maior` e `vaga_fundo`. Decidir quais campos devem ser públicos; RLS filtra linhas, **não colunas**.
+- A política `orgs: equipe edita` permite que qualquer membro da organização atualize sua linha, desde que continue membro. Verificar se campos como `status`, `criado_por` e preços devem exigir papel de dona/administradora.
+- A política `edicoes: equipe gerencia` e políticas similares usam `ALL` com verificação de associação à organização. Avaliar autorização granular para ações financeiras e irreversíveis.
+
+**Status:** revisão estática, sem alterações em produção; nenhuma vulnerabilidade foi demonstrada por teste de exploração. Próximo passo: matriz de permissões e testes em homologação, antes de aplicar restrições que possam interromper funcionalidades.
