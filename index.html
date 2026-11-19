@@ -1753,6 +1753,15 @@ function dicaPrazoVaga(){const dt=$('#e-data')?.value,vi=$('#e-prazo'),dc=$('#e-
   if(!vi.value&&sg){vi.value=sg+'T23:59';vi.dataset.auto='1';vi.dispatchEvent(new Event('input'))}
   dc.innerHTML=sg?`Sugestão: <b>${dataBR(sg)}, 23h59</b>, 2 dias antes do evento. Dá pra mudar. Depois disso, quem não escolheu fica sem poder escolher e vocês colocam a pessoa numa vaga pela tela do mapa.`:'Informe a data do evento pra sugerir o prazo.'}
 const tamMapaVis=()=>{const w=$('#e-tam-w'),m=$('#e-tam-mapa');if(!w||!m)return;const sem=$('#e-semmapa')?.checked,id=$('#e-mapa')?.value,t=!sem&&id&&S.tamMapa?.[id];w.hidden=!!t;m.hidden=!t;if(t)m.innerHTML=`<b>📐 Quantidade definida pelo mapa</b><p style="margin:4px 0 0">${t['2m']} vagas de 2 m e ${t['3m']} vagas de 3 m. Quando acabarem, o tamanho aparece esgotado na inscrição.</p>`};
+const alinharAberturaMontagem=()=>{
+ const fim=$('#e-hm2'),inicio=$('#e-hf1'),data=$('#e-data')?.value,montagem=$('#e-dm')?.value;
+ if(!fim||!inicio)return;
+ const mesmoDia=!montagem||montagem===data;
+ inicio.min=mesmoDia&&fim.value?fim.value:'';
+ if(mesmoDia&&fim.value&&(!inicio.value||inicio.dataset.autoMontagem==='1')){
+   inicio.value=fim.value;inicio.dataset.autoMontagem='1';
+ }
+};
 const sincronizarCamposEdicao=()=>{
  const el=id=>$(id), ativo=id=>!!el(id)?.checked;
  const multi=ativo('#e-variosdias');
@@ -1766,6 +1775,7 @@ const sincronizarCamposEdicao=()=>{
  const mapa=el('#e-mapa'),sem=ativo('#e-semmapa');if(mapa)mapa.disabled=sem;
  const prazo=el('#e-prazo');if(prazo)prazo.disabled=sem||!mapa?.value;
  const abertura=el('#e-abre');if(abertura)abertura.disabled=ativo('#e-aberta');
+ alinharAberturaMontagem();
  tamMapaVis();
 };
 const diaUnVis=()=>{const d=$('#e-data')?.value,f=$('#e-fim')?.value,w=$('#e-diaun-w');if(!w)return;const multi=!!$('#e-variosdias')?.checked&&!!(d&&f&&f>d);w.hidden=!multi;if(!multi&&$('#e-diaun')){$('#e-diaun').checked=false;const dw=$('#e-pdia-w');if(dw)dw.hidden=true}};
@@ -1802,6 +1812,10 @@ document.addEventListener('change',ev=>{
  if(/ - [A-Z]{2}$/.test(el.value))return;
  const exatos=municipiosBrasil.filter(m=>normalizaMunicipio(m.nome)===termo);
  if(exatos.length===1)el.value=exatos[0].nome+' - '+exatos[0].uf;
+});
+document.addEventListener('change',ev=>{
+ if(['e-hm2','e-dm','e-data'].includes(ev.target?.id))alinharAberturaMontagem();
+ if(ev.target?.id==='e-hf1')ev.target.dataset.autoMontagem='0';
 });
 /* exportar mapa em JPEG */
 function carregaImg(url){return new Promise((ok,err)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>ok(i);i.onerror=err;i.src=url})}
@@ -2487,6 +2501,14 @@ document.addEventListener('click',async ev=>{
     for(const [inicio,fim,nome] of [['#e-hm1','#e-hm2','montagem'],['#e-hf1','#e-hf2','evento']]){
       if(!!horario(inicio)!==!!horario(fim)){falha('Informe o início e o fim do horário de '+nome+'.',!horario(inicio)?inicio:fim);return}
       if(horario(inicio)&&horario(fim)&&horario(fim)<=horario(inicio)){falha('O horário final de '+nome+' precisa ser posterior ao inicial (horários após a meia-noite precisam ser configurados separadamente).',fim);return}
+    }
+    // Montagem e abertura no mesmo dia não podem se sobrepor.
+    const diaMontagem=$('#e-dm')?.value||data;
+    if(diaMontagem===data&&horario('#e-hm2')&&horario('#e-hf1')&&horario('#e-hf1')<horario('#e-hm2')){
+      falha('A abertura do evento deve ser no horário de término da montagem ou depois dele.','#e-hf1');return
+    }
+    if(horario('#e-hd1')&&horario('#e-hf2')&&horario('#e-hd1')<horario('#e-hf2')){
+      falha('A desmontagem deve começar no horário de encerramento do evento ou depois dele.','#e-hd1');return
     }
     if($('#e-diaun')?.checked&&!varios){falha('Participação de um dia só é uma opção para eventos com vários dias.','#e-diaun');return}
     if($('#e-diaun')?.checked&&!$('#e-gratis')?.checked&&moedaNum($('#e-pdia').value)<=0){falha('Informe um valor maior que zero para a participação de um dia.','#e-pdia');return}
