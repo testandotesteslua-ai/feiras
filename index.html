@@ -1222,7 +1222,7 @@ TELAS.conta=()=>{const st={pendente:['Esperando aprovação',''],ativa:['No ar',
   <button class="btn pri" id="trocar-perfil-2" style="margin-bottom:8px">Trocar de perfil ou de conta</button>${minhas}
   <div class="painel" style="background:var(--laranja-soft);border-color:transparent;margin-top:12px"><b>Organiza um evento?</b><p class="sub" style="margin:4px 0 10px">Cadastre o seu pra receber inscrições, montar o mapa e fazer a curadoria por aqui.</p><button class="btn sec" data-go="nova-feira">Cadastrar um evento</button></div>
   ${S.admin?`<div class="painel"><b>Administração da plataforma</b><p class="sub" style="margin:4px 0 10px">Aprove eventos novos e suspenda quando precisar.</p><button class="btn pri" data-go="admin">Abrir administração</button></div>`:''}
-  <h2>Sua conta</h2>${blocoPush()}<button class="btn sec" data-go="novasenha" style="margin-bottom:8px">Trocar minha senha</button><button class="btn sec" id="sair">Sair</button>`};
+  <h2>Sua conta</h2>${blocoPush()}<button class="btn sec" data-go="novasenha" style="margin-bottom:8px">Trocar minha senha</button><button class="btn sec" id="sair">Sair</button><div class="painel" style="margin-top:20px;border-color:var(--tomate)"><b>Excluir minha conta</b><p class="sub" style="margin:6px 0 12px">Exclui permanentemente seu acesso de expositor e seus dados associados. Inscrições e marcas vinculadas também podem ser removidas. Esta ação não pode ser desfeita.</p><button class="btn sec" id="conta-excluir-abrir" style="color:var(--tomate);border-color:var(--tomate)">Excluir minha conta permanentemente</button></div>`};
 
 /* ================= CADASTRAR EVENTO ================= */
 const slugDe=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40).replace(/-+$/,'');
@@ -2270,6 +2270,26 @@ document.addEventListener('click',async ev=>{
     if(modoAuth==='criar'&&!r.data.session){err.style.color='var(--menta)';err.textContent='Conta criada! Confirme pelo link que enviamos pro seu e-mail.'}return}
   if(b.id==='a-esqueci'){const email=$('#a-email').value.trim();if(!email){$('#a-err').textContent='Digite seu e-mail acima primeiro.';return}const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});$('#a-err').textContent=r.error?erroMsg(r.error):'Enviamos um link pra redefinir a senha.';return}
   if(b.id==='ns-ok'){const r=await sb.auth.updateUser({password:$('#ns').value});if(r.error){$('#ns-err').textContent=erroMsg(r.error);return}toast('Senha atualizada');carregarUsuario();return}
+  if(b.id==='conta-excluir-abrir'){
+    if(!S.sessao?.user?.email){toast('Entre na sua conta para continuar');return}
+    const email=S.sessao.user.email;
+    const f=document.createElement('div');f.className='recorte-fundo';f.id='excluir-conta-fundo';
+    f.innerHTML=`<div class="recorte-folha" role="dialog" aria-modal="true" aria-labelledby="exc-t" style="max-width:440px"><h2 id="exc-t" style="margin-top:0">Excluir conta permanentemente?</h2><p class="sub">Seu login e seus dados vinculados serão removidos. Esta ação não pode ser desfeita. Se você administra uma organização, será necessário desvincular-se primeiro.</p><label for="exc-email">Para confirmar, digite seu e-mail: <b>${esc(email)}</b></label><input id="exc-email" type="email" autocomplete="off" spellcheck="false" placeholder="Seu e-mail"><p class="erro" id="exc-erro" role="alert"></p><div class="row" style="margin-top:12px;gap:8px"><button class="btn sec" id="exc-cancelar">Cancelar</button><button class="btn" id="exc-confirmar" style="background:var(--tomate);color:white">Excluir definitivamente</button></div></div>`;
+    document.body.appendChild(f);
+    f.querySelector('#exc-cancelar').onclick=()=>f.remove();
+    f.querySelector('#exc-confirmar').onclick=async()=>{
+      const campo=f.querySelector('#exc-email'),err=f.querySelector('#exc-erro'),ok=f.querySelector('#exc-confirmar');
+      if(campo.value.trim().toLowerCase()!==email.toLowerCase()){err.textContent='Digite exatamente o e-mail da sua conta.';return}
+      ok.disabled=true;ok.textContent='Excluindo…';err.textContent='';
+      try{
+        const {data,error}=await sb.functions.invoke('excluir-minha-conta',{body:{confirmar:true,email:campo.value.trim()}});
+        if(error||!data?.ok){let msg=data?.error||'Não foi possível excluir a conta.';if(error?.context){try{const e=await error.context.json();msg=e.error||msg}catch{}}throw Error(msg)}
+        const id=S.sessao?.user?.id;if(id)removeConta(id);
+        await sb.auth.signOut();f.remove();toast('Sua conta foi excluída.');location.replace(location.pathname);
+      }catch(e){err.textContent=erroMsg(e);ok.disabled=false;ok.textContent='Excluir definitivamente'}
+    };
+    f.querySelector('#exc-email').focus();return;
+  }
   if(b.id==='sair'){const id=S.sessao?.user?.id;await sb.auth.signOut();if(id)removeConta(id);render();return}
   if(d.abrirorg){b.disabled=true;await trocarModo('organizacao',d.abrirorg);return}
   if(d.modo==='expositor'){b.disabled=true;await trocarModo('expositor');return}
