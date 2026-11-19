@@ -816,8 +816,8 @@ async function carregarUsuario(){
   if(S.alvo===undefined)S.alvo=lerAlvo();
   if(!S.sessao){S.papel='expositor';S.marca=null;S.tela=S.alvo?'feira-pub':location.hash==='#proposta'?'proposta':'auth';return render()}
   const uid=S.sessao.user.id;
-  const [p,m,og,vp]=await Promise.all([sb.from('perfis').select('eh_admin').eq('id',uid).maybeSingle(),sb.from('marcas').select('*').eq('dono',uid).maybeSingle(),sb.rpc('minhas_organizacoes'),sb.rpc('vapid_publica')]);
-  S.admin=!!p.data?.eh_admin;S.marca=m.data;S.orgs=og.data||[];S.pushOk=!!vp.data;
+  const [p,m,og,vp]=await Promise.all([sb.from('perfis').select('eh_admin,expositor_ativo').eq('id',uid).maybeSingle(),sb.from('marcas').select('*').eq('dono',uid).maybeSingle(),sb.rpc('minhas_organizacoes'),sb.rpc('vapid_publica')]);
+  S.admin=!!p.data?.eh_admin;S.expositorAtivo=p.data?.expositor_ativo!==false;S.marca=m.data;S.orgs=og.data||[];S.pushOk=!!vp.data;
   await escolherModo();
   S.tela=S.papel==='organizadora'?'org-edicoes':'inicio';
   if(S.alvo){if(S.papel!=='organizadora'&&S.alvo.e){if(!S.marca){S.tela='marca';setTimeout(()=>toast('Antes, cadastre sua marca. Depois o app volta pro evento.'),600)}else{const {data:edL}=await sb.from('edicoes').select(`*,organizacoes(${ORGCOLS}),edicao_colabs(status,organizacoes(${ORGCOLS}))`).eq('id',S.alvo.e).maybeSingle();limpaAlvo();if(edL){S.edicao=edL;S.tela='edicao'}}}else S.tela='feira-pub'}
@@ -829,7 +829,7 @@ async function carregarUsuario(){
   render();
 }
 async function escolherModo(){let modo='',oid='';try{modo=localStorage.getItem(chaveU('pf-modo'))||'';oid=localStorage.getItem(chaveU('pf-org'))||''}catch{}
-  if(S.orgs.length&&modo!=='expositor'){const o=S.orgs.find(x=>x.id===oid)||S.orgs[0];const {data,error}=await sb.from('organizacoes').select('*').eq('id',o.id).maybeSingle();if(error)toast(erroMsg(error));S.org=data?{...data,papel:o.papel}:{...o}}else S.org=null;
+  if(S.orgs.length&&(modo!=='expositor'||S.expositorAtivo===false)){const o=S.orgs.find(x=>x.id===oid)||S.orgs[0];const {data,error}=await sb.from('organizacoes').select('*').eq('id',o.id).maybeSingle();if(error)toast(erroMsg(error));S.org=data?{...data,papel:o.papel}:{...o}}else S.org=null;
   S.papel=S.org?'organizadora':'expositor';nomeConta(S.marca?.nome||'')}
 async function trocarModo(modo,orgId){try{localStorage.setItem(chaveU('pf-modo'),modo);if(orgId)localStorage.setItem(chaveU('pf-org'),orgId)}catch{}
   if(S.canalComp){sb.removeChannel(S.canalComp);S.canalComp=null}S.edicoes=null;S.orgEdicao=null;S.mapaSel=null;S.mapaEdSel=null;S.fbEd=null;S.compNovos=0;S.insNovas=0;S.novasEd={};
@@ -847,7 +847,7 @@ const itPerfil=(attr,nome,sub,img,on)=>`<button class="perfil-it ${on?'on':''}" 
 const blocoContas=()=>{const cs=contasSalvas();if(!cs.length)return '';return `<div class="painel" style="margin-top:12px"><b class="secao">Continuar como</b><div style="margin-top:8px">${cs.map(c=>`<div class="perfil-linha">${itPerfil(`data-usarconta="${c.id}"`,c.nome||c.email.split('@')[0],c.email,null,false)}<button class="mini" data-rmconta="${c.id}" aria-label="Tirar ${esc(c.email)} deste aparelho">✕</button></div>`).join('')}</div><p class="sub" style="margin:4px 0 0;font-size:13px">Ou entre com outro e-mail aqui embaixo.</p></div>`};
 function fechaPerfis(){document.getElementById('perfis-fundo')?.remove()}
 function abrirPerfis(){fechaPerfis();if(!S.sessao)return;const eu=S.sessao.user;
-  const perfis=[itPerfil('data-pmodo="expositor"',S.marca?.nome||'Perfil de expositor',S.marca?'Expositor':'Expositor · cadastre sua marca',S.marca?.logo_url,S.papel==='expositor'&&S.tela!=='admin'),
+  const perfis=[...(S.expositorAtivo!==false?[itPerfil('data-pmodo="expositor"',S.marca?.nome||'Perfil de expositor',S.marca?'Expositor':'Expositor · cadastre sua marca',S.marca?.logo_url,S.papel==='expositor'&&S.tela!=='admin')]:[]),
     ...S.orgs.map(o=>itPerfil(`data-pmodo="${o.id}"`,o.nome,'Organização'+(o.status==='pendente'?' · esperando aprovação':o.status==='suspensa'?' · suspensa':''),S.org?.id===o.id?S.org.logo_url:null,S.papel==='organizadora'&&S.org?.id===o.id&&S.tela!=='admin')),
     ...(S.admin?[itPerfil('data-pmodo="admin"','Administração','Plataforma',null,S.tela==='admin')]:[])];
   const outras=contasSalvas().filter(c=>c.id!==eu.id);
@@ -901,6 +901,21 @@ async function render(){
 }
 document.addEventListener('toggle',ev=>{const d=ev.target;if(!d.dataset||!d.dataset.grupo)return;S.gAbertos=S.gAbertos||new Set();if(d.open)S.gAbertos.add(d.dataset.grupo);else S.gAbertos.delete(d.dataset.grupo)},true);
 function go(t){fechaPerfis();if(t==='org-planta'&&S.tela!=='org-planta'){S.plFoto=null;S.plFotoOriginal=null;S.plAvisosIA=null;S.plDesenhar=false;S.plDraft=null;S.plMedidasOk=!!S.plMapa}if(S.papel!=='organizadora'&&/^org-(?!config)/.test(t))t='inicio';if(t==='org-selecao')S.gAbertos=new Set();if(S.canal){sb.removeChannel(S.canal);S.canal=null}S.tela=t;render()}
+
+document.addEventListener('change',async ev=>{
+  if(ev.target?.id!=='conta-expositor-ativo')return;
+  const el=ev.target,ativo=el.checked,err=document.getElementById('conta-expositor-erro');
+  if(!ativo&&!S.orgs?.length){el.checked=true;if(err)err.textContent='Cadastre uma organização antes de desativar o perfil de expositora.';return}
+  el.disabled=true;if(err)err.textContent='';
+  try{
+    const {data,error}=await sb.rpc('definir_perfil_expositor',{p_ativo:ativo});
+    if(error||data!==ativo)throw error||new Error('Não foi possível atualizar o perfil.');
+    S.expositorAtivo=ativo;
+    if(!ativo){try{localStorage.setItem(chaveU('pf-modo'),'organizacao')}catch{}await escolherModo();if(S.papel==='organizadora'){go('conta');toast('Agora você usa o ExpoMatch somente como organizadora.');return}}
+    toast(ativo?'Perfil de expositora ativado.':'Perfil de expositora desativado.');
+  }catch(e){el.checked=!ativo;if(err)err.textContent=erroMsg(e)}
+  finally{el.disabled=false}
+});
 
 /* ================= AUTENTICAÇÃO ================= */
 let modoAuth='entrar';
@@ -1222,7 +1237,7 @@ TELAS.conta=()=>{const st={pendente:['Esperando aprovação',''],ativa:['No ar',
   <button class="btn pri" id="trocar-perfil-2" style="margin-bottom:8px">Trocar de perfil ou de conta</button>${minhas}
   <div class="painel" style="background:var(--laranja-soft);border-color:transparent;margin-top:12px"><b>Organiza um evento?</b><p class="sub" style="margin:4px 0 10px">Cadastre o seu pra receber inscrições, montar o mapa e fazer a curadoria por aqui.</p><button class="btn sec" data-go="nova-feira">Cadastrar um evento</button></div>
   ${S.admin?`<div class="painel"><b>Administração da plataforma</b><p class="sub" style="margin:4px 0 10px">Aprove eventos novos e suspenda quando precisar.</p><button class="btn pri" data-go="admin">Abrir administração</button></div>`:''}
-  <h2>Sua conta</h2>${blocoPush()}<button class="btn sec" data-go="novasenha" style="margin-bottom:8px">Trocar minha senha</button><button class="btn sec" id="sair">Sair</button><div class="painel" style="margin-top:20px;border-color:var(--tomate)"><b>Excluir minha conta</b><p class="sub" style="margin:6px 0 12px">Exclui permanentemente seu acesso de expositor e seus dados associados. Inscrições e marcas vinculadas também podem ser removidas. Esta ação não pode ser desfeita.</p><button class="btn sec" id="conta-excluir-abrir" style="color:var(--tomate);border-color:var(--tomate)">Excluir minha conta permanentemente</button></div>`};
+  <h2>Sua conta</h2>${S.orgs.length?`<div class="painel"><b>Perfis que você usa</b><p class="sub" style="margin:5px 0 12px">Você pode usar o ExpoMatch só como organizadora. Desativar o modo expositor não apaga seu login, sua marca nem o histórico de inscrições.</p><label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="conta-expositor-ativo" ${S.expositorAtivo!==false?'checked':''} style="width:20px;height:20px;flex:none"><span>Quero usar também como expositora</span></label><p class="erro" id="conta-expositor-erro" role="alert"></p></div>`:''}${blocoPush()}<button class="btn sec" data-go="novasenha" style="margin-bottom:8px">Trocar minha senha</button><button class="btn sec" id="sair">Sair</button><div class="painel" style="margin-top:20px;border-color:var(--tomate)"><b>Excluir minha conta</b><p class="sub" style="margin:6px 0 12px">Exclui permanentemente seu acesso de expositor e seus dados associados. Inscrições e marcas vinculadas também podem ser removidas. Esta ação não pode ser desfeita.</p><button class="btn sec" id="conta-excluir-abrir" style="color:var(--tomate);border-color:var(--tomate)">Excluir minha conta permanentemente</button></div>`};
 
 /* ================= CADASTRAR EVENTO ================= */
 const slugDe=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40).replace(/-+$/,'');
