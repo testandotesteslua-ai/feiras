@@ -1222,7 +1222,7 @@ TELAS.marca=()=>{const m=S.marca||{};S.fotos=[...(m.fotos||[])];if(S.logoMarcaId
 <label style="margin-top:0">Logo da marca</label><p class="sub" style="margin:0;font-size:13px">Ou uma foto que represente a marca. Aparece pra organização e na divulgação.</p>
 <div class="logo-up"><span id="logo-prev">${S.logo?`<img class="logo" src="${esc(S.logo)}" alt="Logo" width="84" height="84" style="width:84px;height:84px">`:`<span class="logo-vazio">${berg(40,null)}</span>`}</span><div style="flex:1;display:flex;flex-direction:column;gap:8px"><label class="btn sec" for="m-logo" style="font-weight:700;font-size:15px">${S.logo?'Trocar imagem da logo':'Escolher imagem da galeria'}</label>${S.logo?'<button class="btn sec" id="logo-ajustar" style="min-height:44px;font-size:15px;font-weight:700">Ajustar posição</button>':''}</div><input id="m-logo" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" hidden></div>
 <label for="m-nome">Nome da marca</label><input id="m-nome" value="${esc(m.nome)}">
-<label for="m-cidade">Cidade</label><input id="m-cidade" value="${esc(m.cidade)}" placeholder="Ex.: Farroupilha">
+<label for="m-cidade">Cidade</label><input list="cidades-br-m-cidade" autocomplete="off" data-cidade-br="1" id="m-cidade" value="${esc(m.cidade)}" placeholder="Ex.: Farroupilha"><datalist id="cidades-br-m-cidade"></datalist><small class="sub">Digite a cidade e selecione a opção com a UF.</small>
 <label for="m-seg">Segmento</label><select id="m-seg">${S.segs.map(s=>`<option value="${s.slug}" ${m.segmento===s.slug?'selected':''}>${esc(s.nome)}</option>`).join('')}</select><div id="m-outro-w" ${m.segmento==='outro'?'':'hidden'}><label for="m-outro">Qual é o seu segmento?</label><input id="m-outro" value="${esc(m.segmento_outro)}" placeholder="Descreva em poucas palavras"></div>
 <div class="g2"><div><label for="m-insta">Instagram</label><input id="m-insta" value="${esc(m.instagram)}" placeholder="@suamarca"></div><div><label for="m-zap">WhatsApp</label><input id="m-zap" inputmode="tel" value="${esc(m.whatsapp)}"></div></div>
 <label for="m-desc">Sobre a marca (opcional)</label><textarea id="m-desc">${esc(m.descricao)}</textarea>
@@ -1261,7 +1261,7 @@ TELAS['org-config']=()=>{const o=S.org;if(!o)return TELAS.conta();if(S.cfgDe!==o
   <label for="cfg-nome">Nome do evento</label><input id="cfg-nome" value="${esc(o.nome)}" maxlength="80">
   <label for="cfg-tipo">Tipo de evento</label><select id="cfg-tipo">${tipoOpcoes(o.tipo||'feira')}</select><p class="sub" style="margin:4px 0 0;font-size:12px">Os expositores filtram os eventos por tipo. Cada edição pode trocar.</p>
   <label for="cfg-desc">Sobre o evento</label><textarea id="cfg-desc" placeholder="O que tem no evento, pra quem é, onde costuma acontecer">${esc(o.descricao)}</textarea>
-  <label for="cfg-cid">Cidade</label><input id="cfg-cid" value="${esc(o.cidade)}">
+  <label for="cfg-cid">Cidade</label><input list="cidades-br-cfg-cid" autocomplete="off" data-cidade-br="1" id="cfg-cid" value="${esc(o.cidade)}"><datalist id="cidades-br-cfg-cid"></datalist><small class="sub">Digite a cidade e selecione a opção com a UF.</small>
   <div class="g2"><div><label for="cfg-ig">Instagram</label><input id="cfg-ig" value="${esc(o.instagram)}" placeholder="@suafeira"></div><div><label for="cfg-zap">WhatsApp</label><input id="cfg-zap" inputmode="tel" value="${esc(o.whatsapp)}"></div></div></div>
   <div class="painel"><b class="secao">Cores do evento</b><p class="sub" style="margin:4px 0 0;font-size:13px">O painel e as edições do seu evento usam essas cores. Escolha um par pronto ou ajuste à mão.</p>
   <div class="cores" role="group" aria-label="Pares de cores">${PALETAS.map(([p,d],k)=>`<button type="button" data-paleta="${k}" aria-pressed="${c.cor_primaria===p&&c.cor_destaque===d}" aria-label="Par de cores ${k+1}" style="background:linear-gradient(135deg,${p} 50%,${d} 50%)"></button>`).join('')}</div>
@@ -1773,6 +1773,36 @@ AFTER['org-edicao-form']=()=>{sincronizarCamposEdicao();diaUnVis();atualizaConfe
 document.addEventListener('change',ev=>{if(!['e-variosdias','e-diaun','e-gratis','e-sinal','e-semmapa','e-mapa','e-aberta','e-data','e-fim'].includes(ev.target?.id))return;if($('#e-tit')&&$('#e-ok')){sincronizarCamposEdicao();diaUnVis()}});
 document.addEventListener('change',ev=>{if(ev.target?.id==='ed-mes-filtro'){S.mesEdicoes=ev.target.value;render()}});
 document.addEventListener('click',ev=>{const b=ev.target.closest?.('[data-mes-nav]');if(b&&b.dataset.mesNav){S.mesEdicoes=b.dataset.mesNav;render()}});
+// Sugestões oficiais de municípios do IBGE; a UF é armazenada junto ao nome da cidade.
+let municipiosBrasil=null;
+const normalizaMunicipio=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+async function carregarMunicipiosBrasil(){
+ if(municipiosBrasil)return municipiosBrasil;
+ const r=await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome');
+ if(!r.ok)throw new Error('IBGE indisponível');
+ const dados=await r.json();
+ municipiosBrasil=dados.map(m=>({nome:m.nome,uf:m.microrregiao?.mesorregiao?.UF?.sigla||m['regiao-imediata']?.['regiao-intermediaria']?.UF?.sigla||''})).filter(m=>m.uf);
+ return municipiosBrasil;
+}
+document.addEventListener('focusin',async ev=>{
+ const el=ev.target;if(!el?.matches?.('[data-cidade-br]'))return;
+ try{await carregarMunicipiosBrasil();el.dispatchEvent(new Event('input',{bubbles:true}))}catch(e){/* campo continua editável sem rede */}
+});
+document.addEventListener('input',ev=>{
+ const el=ev.target;if(!el?.matches?.('[data-cidade-br]')||!municipiosBrasil)return;
+ const lista=document.getElementById('cidades-br-'+el.id);if(!lista)return;
+ const termo=normalizaMunicipio(el.value.replace(/\s*[-–]\s*[A-Z]{2}$/i,''));
+ if(termo.length<2){lista.replaceChildren();return}
+ const resultados=municipiosBrasil.filter(m=>normalizaMunicipio(m.nome).startsWith(termo)).slice(0,18);
+ lista.replaceChildren(...resultados.map(m=>{const op=document.createElement('option');op.value=m.nome+' - '+m.uf;return op}));
+});
+document.addEventListener('change',ev=>{
+ const el=ev.target;if(!el?.matches?.('[data-cidade-br]')||!municipiosBrasil)return;
+ const termo=normalizaMunicipio(el.value);
+ if(/ - [A-Z]{2}$/.test(el.value))return;
+ const exatos=municipiosBrasil.filter(m=>normalizaMunicipio(m.nome)===termo);
+ if(exatos.length===1)el.value=exatos[0].nome+' - '+exatos[0].uf;
+});
 /* exportar mapa em JPEG */
 function carregaImg(url){return new Promise((ok,err)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>ok(i);i.onerror=err;i.src=url})}
 function rr(cx,x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
