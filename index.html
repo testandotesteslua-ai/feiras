@@ -2439,8 +2439,7 @@ document.addEventListener('click',async ev=>{
     if($('#e-diaun')?.checked&&!varios){falha('Participação de um dia só é uma opção para eventos com vários dias.','#e-diaun');return}
     if($('#e-diaun')?.checked&&!$('#e-gratis')?.checked&&moedaNum($('#e-pdia').value)<=0){falha('Informe um valor maior que zero para a participação de um dia.','#e-pdia');return}
     if($('#e-gratis')?.checked&&$('#e-sinal')?.checked){falha('Evento gratuito não pode exigir pagamento de sinal.','#e-sinal');return}
-    if($('#e-sinal')?.checked){const venc=$('#e-venc')?.value||sugereVenc(data);if(!venc||venc<data&&false){/* data de vencimento pode ser anterior ao evento */}
-      if(venc&&venc>=data){falha('O vencimento do restante deve ser anterior à data do evento.','#e-venc');return}
+    if($('#e-sinal')?.checked){const venc=$('#e-venc')?.value||sugereVenc(data);if(venc&&venc>=data){falha('O vencimento do restante deve ser anterior à data do evento.','#e-venc');return}
     }
     for(const id of ['#e-mesas','#e-cads','#e-vdia']){const el=$(id);if(el&&el.value!==''&&(!Number.isInteger(Number(el.value))||Number(el.value)<0)){falha('As quantidades devem ser números inteiros não negativos.',id);return}}
     for(const id of ['#e-p2','#e-p3','#e-pu','#e-pdia','#e-est']){const el=$(id);if(el&&el.value.trim()&&(!Number.isFinite(moedaNum(el.value))||moedaNum(el.value)<0)){falha('Os valores não podem ser negativos.',id);return}}
