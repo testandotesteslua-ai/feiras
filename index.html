@@ -1410,11 +1410,11 @@ TELAS['org-edicao-form']=async()=>{
   <h2 style="font-size:17px;margin:20px 0 0">Montagem</h2>
   <label for="e-dm">Dia</label><input id="e-dm" type="date" value="${v('data_montagem')}">
   <p class="sub" style="margin:4px 0 0;font-size:12px">Deixe vazio se for no mesmo dia do evento.</p>
-  <div class="g2"><div><label for="e-hm1">Das</label><input id="e-hm1" type="time" value="${hm[0]||''}"></div><div><label for="e-hm2">Até</label><input id="e-hm2" type="time" value="${hm[1]||''}"></div></div>
+  <div class="g2"><div><label for="e-hm1">Das</label><input id="e-hm1" type="time" step="300" value="${hm[0]||''}"></div><div><label for="e-hm2">Até</label><input id="e-hm2" type="time" step="300" value="${hm[1]||''}"></div></div>
   <h2 style="font-size:17px;margin:20px 0 0">Evento aberto</h2>
-  <div class="g2"><div><label for="e-hf1">Das</label><input id="e-hf1" type="time" value="${hf[0]||''}"></div><div><label for="e-hf2">Até</label><input id="e-hf2" type="time" value="${hf[1]||''}"></div></div>
+  <div class="g2"><div><label for="e-hf1">Das</label><input id="e-hf1" type="time" step="300" value="${hf[0]||''}"></div><div><label for="e-hf2">Até</label><input id="e-hf2" type="time" step="300" value="${hf[1]||''}"></div></div>
   <h2 style="font-size:17px;margin:20px 0 0">Desmontagem</h2>
-  <label for="e-hd1">A partir das</label><input id="e-hd1" type="time" value="${hd[0]||hf[1]||''}" data-auto="${hd[0]?'0':'1'}">
+  <label for="e-hd1">A partir das</label><input id="e-hd1" type="time" step="300" value="${hd[0]||hf[1]||''}" data-auto="${hd[0]?'0':'1'}">
   <p class="sub" style="margin:4px 0 0;font-size:12px">Vem com o horário de fim do evento. Dá pra mudar.</p>
   <h2 style="font-size:17px;margin:20px 0 0">Valores</h2>`})()}
   <label class="check" style="margin:10px 0 4px"><input type="checkbox" id="e-gratis" ${e.gratuita?'checked':''}> <span><b>Grátis pro expositor</b> · ninguém paga pra participar</span></label><div class="g2 precos-ed"><div><label for="e-p2">2 m × 1,30 m (R$)</label><input id="e-p2" class="moeda" inputmode="numeric" placeholder="0,00" value="${moedaTxt(e.preco_2m)}"></div><div><label for="e-p3">3 m × 1,30 m (R$)</label><input id="e-p3" class="moeda" inputmode="numeric" placeholder="0,00" value="${moedaTxt(e.preco_3m)}"></div></div>
