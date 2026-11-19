@@ -2851,8 +2851,8 @@ TELAS['feira-pub']=async()=>{const a=S.alvo||{};let o=null;
   ${sair}`};
 /* link e mensagem pra divulgar */
 function abrirDivulgar(e){const o=S.org;if(!o)return;const url=e?linkEd(e):linkFeira(o);
-  const txt=e?(abertaJa(e)?`Inscrições abertas pra ${nomeEd(e)} (${periodo(e)}${e.local?', '+e.local:''})! Se inscreve pelo app: ${url}`:`${nomeEd(e)} vai ser ${periodo(e)}${e.local?' no '+e.local:''}. Já dá pra ver tudo e deixar sua marca pronta: ${url}`)
-    :`Conheça a ${o.nome} e se inscreva nas próximas edições pelo app: ${url}`;
+  const txt=e?(abertaJa(e)?`As inscrições para ${nomeEd(e)} estão abertas!\n📅 ${periodo(e)}${e.local?'\n📍 '+e.local:''}\n\nConfira os detalhes e participe:\n${url}`:`${nomeEd(e)} vem aí!\n📅 ${periodo(e)}${e.local?'\n📍 '+e.local:''}\n\nConfira as informações da edição:\n${url}`)
+    :`Acompanhe as próximas edições da ${o.nome}!\n\nConfira a programação, conheça as oportunidades e saiba como participar:\n${url}`;
   const f=document.createElement('div');f.className='aviso-fundo';
   f.innerHTML=`<div class="aviso" role="dialog" aria-labelledby="dv-t" style="text-align:left"><b id="dv-t" style="font-size:20px">${e?'Divulgar '+esc(nomeEd(e)):'Link do evento'}</b>
   ${o.status!=='ativa'?'<p class="pub-aviso">O link só abre pros expositores depois que a plataforma aprovar o evento.</p>':''}
