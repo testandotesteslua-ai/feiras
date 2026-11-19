@@ -665,6 +665,62 @@ body:has(#e-gratis:checked) .precos-ed{display:none}
 .cx-modo b{display:block;font-size:15px}.cx-modo small{display:block;color:var(--ink-2);font-size:12.5px;line-height:1.35;margin-top:2px}
 .cx-alerta{margin-top:10px;padding:10px 12px;border-radius:12px;background:#FDECEA;color:#7A1F16;font-size:13.5px;line-height:1.4}
 .pl-tam{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.pl-tam span{font-size:13px;font-weight:600;margin-right:4px}
+
+/* ExpoMatch: melhorias progressivas para telas e interação */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:clip}
+#tela,.wrap,.painel,.cardfeira,.edcard,.sel,.hero{min-width:0}
+#tela img,#tela video,#tela canvas{max-width:100%}
+#tela p,#tela .sub,#tela .resp{overflow-wrap:anywhere}
+#tela .row>*,#tela .topo>*{min-width:0}
+#tela a:focus-visible,#tela button:focus-visible,nav.baixo button:focus-visible{outline:3px solid var(--verde);outline-offset:3px}
+input,select,textarea{max-width:100%;font-size:16px;accent-color:var(--verde)}
+input[type=checkbox],input[type=radio]{width:auto;min-height:0}
+textarea{resize:vertical}
+h1{font-size:clamp(27px,4vw,36px);line-height:1.14}
+h2{font-size:clamp(20px,2.6vw,26px)}
+.hero h1{font-size:clamp(29px,6vw,42px)}
+.hero p{max-width:52ch}
+nav.baixo{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:color-mix(in srgb,var(--card) 94%,transparent)}
+.toast{width:max-content;max-width:min(440px,calc(100vw - 32px));text-align:center}
+.btn,.mini,nav.baixo button{transition:background-color .18s ease,border-color .18s ease,transform .18s ease}
+.btn:active:not(:disabled),.mini:active:not(:disabled){transform:translateY(1px)}
+@media(max-width:639px){
+.wrap{padding-top:14px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+.painel{padding:15px;border-radius:18px}
+.cardfeira,.edcard,.sel{border-radius:18px}
+.hero{padding:24px 18px 22px}
+nav.baixo{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+nav.baixo .in{gap:2px}
+nav.baixo button{min-width:0;min-height:58px;padding:6px 2px;line-height:1.15;overflow-wrap:anywhere}
+.g3{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kv{flex-wrap:wrap}
+.pub-topo{align-items:flex-start}
+}
+@media(max-width:370px){
+.wrap{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+.painel{padding:12px}
+.g2,.g3,.opcoes{grid-template-columns:minmax(0,1fr)}
+nav.baixo button{font-size:10px}
+nav.baixo button svg{width:20px;height:20px}
+}
+@media(min-width:640px) and (max-width:999px){
+.wrap{max-width:840px;padding:24px 28px calc(112px + env(safe-area-inset-bottom))}
+.painel{padding:20px 22px}
+.hero{padding:30px 28px}
+.grade-cards{gap:16px}
+}
+@media(min-width:1000px){
+html body nav.baixo{background:var(--card);padding-top:32px!important}
+html body nav.baixo .in{gap:6px}
+html body nav.baixo button{border-radius:12px;min-height:48px}
+.wrap{min-height:100dvh}
+.hero{padding:36px 32px}
+.grade-cards{gap:18px}
+}
+@media(hover:none){.btn,.mini,nav.baixo button{touch-action:manipulation}}
+@media(prefers-reduced-motion:reduce){.btn,.mini,nav.baixo button{transition:none!important}}
+
 </style>
 </head>
 <body>
