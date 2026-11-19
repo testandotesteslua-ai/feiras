@@ -24,7 +24,14 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const alvo = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href;
+  // Notificações podem conter URLs vindas de payload externo: limitar navegação ao app.
+  let alvo = self.registration.scope;
+  try {
+    const candidato = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope);
+    if (candidato.origin === self.location.origin && candidato.href.startsWith(self.registration.scope)) {
+      alvo = candidato.href;
+    }
+  } catch { /* Usa a página inicial do app */ }
   e.waitUntil((async () => {
     const abertas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const c of abertas) {
