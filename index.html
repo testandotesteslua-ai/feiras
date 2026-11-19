@@ -950,7 +950,7 @@ const pascoa=a=>{const b=a%19,c=Math.floor(a/100),d=a%100,e=Math.floor(c/4),f=c%
 const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const feriados=a=>{const sx=pascoa(a);sx.setDate(sx.getDate()-2);return new Set([`${a}-01-01`,iso(sx),`${a}-04-21`,`${a}-05-01`,`${a}-09-07`,`${a}-10-12`,`${a}-11-02`,`${a}-11-15`,`${a}-11-20`,`${a}-12-25`])};
 const quintoUtil=(a,m)=>{const fe=feriados(a);const d=new Date(a,m,1,12);let n=0;for(;;){const w=d.getDay();if(w>0&&w<6&&!fe.has(iso(d))){n++;if(n===5)return iso(d)}d.setDate(d.getDate()+1)}};
-const sugereVenc=data=>{if(!data)return '';const[a,m]=data.split('-').map(Number);const q=quintoUtil(a,m-1);if(q<data)return q;const pm=m-2<0?[a-1,11]:[a,m-2];return quintoUtil(pm[0],pm[1])};
+const sugereVenc=data=>{if(!data)return '';const hoje=iso(new Date());if(data<=hoje)return '';const[a,m]=data.split('-').map(Number);const q=quintoUtil(a,m-1);if(q>=hoje&&q<data)return q;const limite=new Date(data+'T12:00:00');limite.setDate(limite.getDate()-2);const doisDias=iso(limite);return doisDias>=hoje?doisDias:hoje};
 const prazoRestante=e=>e.vencimento_restante||sugereVenc(e.data);
 const garantiu=i=>!!(i&&(i.pago||i.pago_sinal));
 const cancelada=e=>!!e?.cancelada_em;
@@ -1739,9 +1739,9 @@ function desenhaEditor(){
   a.innerHTML=v?`<b>Vaga ${v.numero}</b><div class="row" style="margin-top:8px"><button class="mini" data-vnum="${v.id}">Mudar número</button><button class="mini" data-vdel="${v.id}" style="color:var(--tomate)">Apagar</button></div><div class="row" style="margin-top:6px"><button class="mini" data-vesc="${v.id}" data-f="0.85">Desenho menor</button><button class="mini" data-vesc="${v.id}" data-f="1.15">Desenho maior</button></div>`:`<span class="sub">${S.vagasEd.length} vagas · toque numa vaga pra editar</span>`;
 }
 AFTER['org-mapas']=desenhaEditor;
-function dicaVenc(){const dt=$('#e-data')?.value,dc=$('#e-venc-dica'),vi=$('#e-venc');if(!dc||!vi)return;const sg=sugereVenc(dt);
+function dicaVenc(){const dt=$('#e-data')?.value,dc=$('#e-venc-dica'),vi=$('#e-venc');if(!dc||!vi)return;const sg=sugereVenc(dt);vi.min=hojeLocal();
   if(!vi.value&&sg){vi.value=sg;vi.dataset.auto='1';vi.dispatchEvent(new Event('input'))}
-  dc.innerHTML=sg?`Sugestão: <b>${dataBR(sg)}</b>, o 5º dia útil do mês mais próximo antes do evento (segunda a sexta, sem feriados nacionais). Dá pra mudar.`:'Informe a data do evento pra sugerir o vencimento.'}
+  dc.innerHTML=sg?`Sugestão: <b>${dataBR(sg)}</b>. O app usa o 5º dia útil quando ainda é futuro; caso contrário, sugere até 2 dias antes do evento (ou hoje, se faltar menos tempo). Dá pra mudar, mas não para uma data passada.`:'Informe uma data futura para o evento e receber a sugestão.';}
 function dicaRoleta(){const dt=$('#e-data')?.value,vi=$('#e-rllim'),dc=$('#e-rllim-dica');if(!vi||!dc)return;const sg=menosDias(dt,2);
   if(!vi.value&&sg){vi.value=sg;vi.dataset.auto='1';vi.dispatchEvent(new Event('input'))}
   dc.innerHTML=sg?`Sugestão: <b>${dataBR(sg)}</b>, 2 dias antes do evento. Dá pra mudar. Depois desse dia o expositor só vê o que salvou.`:'Informe a data do evento pra sugerir o prazo.'}
@@ -2455,7 +2455,7 @@ document.addEventListener('click',async ev=>{
     if($('#e-diaun')?.checked&&!varios){falha('Participação de um dia só é uma opção para eventos com vários dias.','#e-diaun');return}
     if($('#e-diaun')?.checked&&!$('#e-gratis')?.checked&&moedaNum($('#e-pdia').value)<=0){falha('Informe um valor maior que zero para a participação de um dia.','#e-pdia');return}
     if($('#e-gratis')?.checked&&$('#e-sinal')?.checked){falha('Evento gratuito não pode exigir pagamento de sinal.','#e-sinal');return}
-    if($('#e-sinal')?.checked){const venc=$('#e-venc')?.value||sugereVenc(data);if(venc&&venc>=data){falha('O vencimento do restante deve ser anterior à data do evento.','#e-venc');return}
+    if($('#e-sinal')?.checked){const venc=$('#e-venc')?.value||sugereVenc(data);if(!venc||venc<hojeLocal()||venc>=data){falha('O vencimento do restante deve ser de hoje em diante e anterior ao evento.','#e-venc');return}
     }
     for(const id of ['#e-mesas','#e-cads','#e-vdia']){const el=$(id);if(el&&el.value!==''&&(!Number.isInteger(Number(el.value))||Number(el.value)<0)){falha('As quantidades devem ser números inteiros não negativos.',id);return}}
     for(const id of ['#e-p2','#e-p3','#e-pu','#e-pdia','#e-est']){const el=$(id);if(el&&el.value.trim()&&(!Number.isFinite(moedaNum(el.value))||moedaNum(el.value)<0)){falha('Os valores não podem ser negativos.',id);return}}
