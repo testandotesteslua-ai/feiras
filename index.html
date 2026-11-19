@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#1E2235">
-<meta name="app-versao" content="202611171546">
+<meta name="app-versao" content="202611190736">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ExpoMatch · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="ExpoMatch"><meta name="application-name" content="ExpoMatch">
@@ -639,17 +639,21 @@ body:has(#e-gratis:checked) .precos-ed{display:none}
 .perg-op{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin-top:8px}.perg-op select{flex:1 1 220px}
 
 /* ===== zoom como foto ===== */
-#plwrap{touch-action:none;overscroll-behavior:contain}
+#plwrap{touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
 .mapawrap{touch-action:none;overscroll-behavior:contain}
-.mapawrap .mz{position:relative;transform-origin:0 0;will-change:transform}
+.mapawrap .mz{position:relative;transform-origin:0 0}
 .mapawrap.mz-on{cursor:grab}
 .mz-bts{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px;z-index:5}
 .mz-bts button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:700 20px/1 var(--body);box-shadow:0 2px 8px rgba(0,0,0,.12);padding:0}
 #plwrap.trenando{cursor:crosshair;outline:3px dashed #D2603A;outline-offset:-3px}
 
+.mapawrap .vg::after,.mapawrap .vg::before{transform:scale(var(--vgk,1));transform-origin:100% 0}
+.mapawrap .vg{overflow:visible;border-width:1.5px;border-radius:4px}
+.mapawrap .vg.fina{border-width:1px;border-radius:2px}
+
 /* ===== área externa e rua ===== */
 .pl-tipos{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.vg.ext::after{content:"☀️";position:absolute;right:-5px;top:-7px;font-size:11px;line-height:1;filter:drop-shadow(0 0 1px #fff)}
+.vg.ext::before{content:"☀️";position:absolute;left:-4px;top:-7px;font-size:10px;line-height:1;filter:drop-shadow(0 0 1px #fff);transform-origin:0 0!important}
 .legenda-ext{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-top:8px;color:var(--ink-2)}
 .legenda-ext span{display:inline-flex;align-items:center;gap:5px}
 
@@ -1884,7 +1888,7 @@ function plGerar(P,orient,off,lados=true){const W=+P.W,H=+P.H,c=Math.max(0.8,+P.
   if(P.meio){const x0=c,x1=W-c,y0=c,y1=H-c;
     if(hor){for(let y=y0+off;y+2*d<=y1+0.001;y+=2*d+c)filaMeio(x0,x1,y,true)}
     else{for(let x=x0+off;x+2*d<=x1+0.001;x+=2*d+c)filaMeio(y0,y1,x,false)}}
-  for(const f of fixos.filter(f=>f.t==='bloq'&&!naParede(f))){
+  for(const f of fixos.filter(f=>f.t==='bloq'&&!f.rua&&!naParede(f))){
     const gap=(dir)=>{let g=dir==='u'?f.y:dir==='d'?H-(f.y+f.h):dir==='l'?f.x:W-(f.x+f.w);
       novas.forEach(v=>{if(dir==='u'||dir==='d'){if(v.x<f.x+f.w&&v.x+v.w>f.x){const dd=dir==='u'?f.y-(v.y+v.h):v.y-(f.y+f.h);if(dd>=-0.001&&dd<g)g=dd}}else{if(v.y<f.y+f.h&&v.y+v.h>f.y){const dd=dir==='l'?f.x-(v.x+v.w):v.x-(f.x+f.w);if(dd>=-0.001&&dd<g)g=dd}}});return g};
     const u=gap('u'),dn=gap('d'),l=gap('l'),r=gap('r');const mau=x=>x>gp+0.05&&x<c-0.01;
@@ -1953,7 +1957,10 @@ AFTER['org-planta']=()=>{plDesenha();const svg=()=>$('#plsvg');let arr=null;
   const pt=ev=>{const s=svg();const p=s.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;return p.matrixTransform(s.getScreenCTM().inverse())};
   const w=$('#plwrap');if(!w)return;
   let pan=null;
-  w.onpointerdown=ev=>{const g=ev.target.closest('[data-plit]');if(!g){pan={x:ev.clientX,y:ev.clientY,sl:w.scrollLeft,st:w.scrollTop,mov:false};return}const i=S.pl.itens.find(x=>x.id===g.dataset.plit);if(!i)return;S.plSel=i.id;if(i.fixo){plDesenha();return}const p=pt(ev);ev.preventDefault();arr={i,dx:p.x-i.x,dy:p.y-i.y,sx:p.x,sy:p.y,x0:i.x,y0:i.y,mov:false};plDesenha();ev.preventDefault()};
+  w.onpointerdown=ev=>{pan=null;arr=null;const g=ev.target.closest('[data-plit]');try{w.setPointerCapture(ev.pointerId)}catch{}/* iPhone: o desenho é refeito no toque; sem isso o dedo 'perde' o mapa e zoom/arrasto param */
+    const i0=g&&S.pl.itens.find(x=>x.id===g.dataset.plit);
+    /* calçada/pista/área externa cobrem o mapa todo: 1 dedo nelas arrasta o mapa; toque rápido seleciona; selecionada, arrasta a peça */
+    if(!g||(i0&&i0.t==='zona'&&S.plSel!==i0.id)){pan={x:ev.clientX,y:ev.clientY,sl:w.scrollLeft,st:w.scrollTop,mov:false,zona:i0?i0.id:null};return}const i=i0;if(!i)return;S.plSel=i.id;if(i.fixo){plDesenha();return}const p=pt(ev);ev.preventDefault();arr={i,dx:p.x-i.x,dy:p.y-i.y,sx:p.x,sy:p.y,x0:i.x,y0:i.y,mov:false};plDesenha();ev.preventDefault()};
   w.onpointermove=ev=>{if(pan){const dx=ev.clientX-pan.x,dy=ev.clientY-pan.y;if(Math.abs(dx)+Math.abs(dy)>6)pan.mov=true;w.scrollLeft=pan.sl-dx;w.scrollTop=pan.st-dy;return}if(!arr)return;const p=pt(ev),i=arr.i,W=+S.pl.W,H=+S.pl.H;
     if(!arr.mov){if(Math.hypot(p.x-arr.sx,p.y-arr.sy)<0.35)return;plSnap()}
     let nx=Math.round((p.x-arr.dx)*10)/10,ny=Math.round((p.y-arr.dy)*10)/10;
@@ -1975,7 +1982,7 @@ AFTER['org-planta']=()=>{plDesenha();const svg=()=>$('#plsvg');let arr=null;
     if(i.t==='vaga'){const dt=i.w>=i.h;if(dt&&Math.abs(ny-arr.y0)<1)ny=arr.y0;if(!dt&&Math.abs(nx-arr.x0)<1)nx=arr.x0}
     if(i.t==='tomada'){nx=Math.min(Math.max(nx,0),W);ny=Math.min(Math.max(ny,0),H)}else{nx=Math.min(Math.max(nx,0),W-i.w);ny=Math.min(Math.max(ny,0),H-i.h)}
     if(nx!==i.x||ny!==i.y){i.x=nx;i.y=ny;arr.mov=true;const g=w.querySelector(`[data-plit="${i.id}"]`);if(g){w.innerHTML=plSVG()}}};
-  w.onpointerup=w.onpointercancel=()=>{if(pan){const m=pan.mov;pan=null;if(!m&&S.plSel){S.plSel=null;plDesenha()}return}if(arr){arr=null;plDesenha()}};
+  w.onpointerup=w.onpointercancel=ev=>{if(pan){const m=pan.mov,z=pan.zona;pan=null;if(!m&&ev.type==='pointerup'&&(z||S.plSel)){S.plSel=z||null;plDesenha()}return}if(arr){arr=null;plDesenha()}};
 };
 function plAdd(t,tipo){plSnap();const P=S.pl,W=+P.W,H=+P.H;let i;
   if(t==='vaga')i={t,w:+P.vL||2,h:+P.vD||1.3};else if(t==='tomada')i={t,x:W/2,y:H/2};else if(t==='bloq')i={t,w:0.6,h:0.6,nome:'Pilar'};else if(t==='fora')i={t,w:3,h:3};
@@ -2542,6 +2549,9 @@ document.addEventListener('change',async ev=>{const t=ev.target;
     else if(t.id==='pl-paredes')P.paredes=t.checked;else if(t.id==='pl-vL')P.vL=Math.max(1,n(t.value));else if(t.id==='pl-vD')P.vD=Math.max(1,n(t.value));
     else if(t.id==='pl-aberto'){P.aberto=t.checked;if(P.aberto){P.paredes=true;P.vL=3;P.vD=3;P.corr=Math.max(+P.corr||2,2.5)}else{P.paredes=true;P.vL=medDe(S.org).p;P.vD=medDe(S.org).f;P.corr=2}await plRedesenhaTela();return}else if(t.id==='pl-meio')P.meio=t.checked;else if(t.id==='pl-so2')P.so2parede=t.checked;
     else if(i&&t.id==='pl-inome')i.nome=t.value.trim();else if(i&&t.id==='pl-iw')i.w=Math.min(n(t.value),+P.W);else if(i&&t.id==='pl-ih')i.h=Math.min(n(t.value),+P.H);
+    /* nada passa da borda da planta: se a peça cresceu ou a planta encolheu, empurra pra dentro */
+    (P.itens||[]).forEach(x=>{if(x.w>+P.W)x.w=+P.W;if(x.h>+P.H)x.h=+P.H;if(x.x+x.w>+P.W)x.x=Math.max(0,Math.round((+P.W-x.w)*100)/100);if(x.y+x.h>+P.H)x.y=Math.max(0,Math.round((+P.H-x.h)*100)/100)});
+    if(i&&(t.id==='pl-iw'||t.id==='pl-ih')){const ix=$('#pl-ix'),iy=$('#pl-iy');if(ix)ix.value=Math.round(i.x*100)/100;if(iy)iy.value=Math.round(i.y*100)/100}
     if(t.id==='pl-corr')t.value=P.corr;plDesenha();return}
   if(t.id==='mp-sel'){S.mapaSel=t.value;S.vagaSel=null;S.mapaEdSel=null;render();return}
   if(t.id==='mp-ed'){S.mapaEdSel=t.value;render();return}
@@ -3023,7 +3033,12 @@ function zoomMapa(w){if(!w)return;let mz=w.querySelector(':scope>.mz');
   if(!mz){mz=document.createElement('div');mz.className='mz';while(w.firstChild)mz.appendChild(w.firstChild);w.appendChild(mz);
     const bt=document.createElement('div');bt.className='mz-bts';bt.innerHTML='<button type="button" data-mz="1" aria-label="Aproximar">+</button><button type="button" data-mz="-1" aria-label="Afastar">−</button><button type="button" data-mz="0" aria-label="Ver o mapa inteiro">⤢</button>';w.appendChild(bt)}
   const z=w._z||(w._z={s:1,x:0,y:0});
-  const aplica=()=>{const W=w.clientWidth,H=mz.offsetHeight;z.s=zLim(z.s,1,5);z.x=zLim(z.x,W*(1-z.s),0);z.y=zLim(z.y,H*(1-z.s),0);mz.style.transform=`translate(${z.x}px,${z.y}px) scale(${z.s})`;w.classList.toggle('mz-on',z.s>1.01)};
+  const aplica=()=>{const W=w.clientWidth,H=mz.offsetHeight;z.s=zLim(z.s,1,5);if(z.s<=1.01){z.s=1;z.x=0;z.y=0}z.x=zLim(z.x,W*(1-z.s),0);z.y=zLim(z.y,H*(1-z.s),0);
+    /* sem zoom: nada de transform (o iPhone às vezes não pinta a imagem da planta numa camada transformada) */
+    mz.style.transform=z.s>1?`translate(${z.x}px,${z.y}px) scale(${z.s})`:'none';w.classList.toggle('mz-on',z.s>1)};
+  /* número da vaga do tamanho da vaga, como na planta: mapa largo no celular não vira um monte de bolinha */
+  const ajustaVg=()=>w.querySelectorAll('.vg').forEach(el=>{const a=el.offsetWidth,b=el.offsetHeight;if(!a||!b)return;const fs=Math.max(5,Math.min(11,a*0.5,b*0.62));el.style.fontSize=fs.toFixed(1)+'px';el.style.setProperty('--vgk',(Math.max(0.55,fs/11)).toFixed(2));el.classList.toggle('fina',fs<9)});
+  const img=mz.querySelector('img');if(img&&!img.complete)img.addEventListener('load',()=>{ajustaVg();aplica()},{once:true});ajustaVg();
   const em=(s,cx,cy)=>{const r=w.getBoundingClientRect(),px=cx-r.left,py=cy-r.top,k=zLim(s,1,5)/z.s;z.x=px-(px-z.x)*k;z.y=py-(py-z.y)*k;z.s=zLim(s,1,5);aplica()};
   w._zAplica=aplica;aplica();
   if(w._zLigado)return;w._zLigado=true;
@@ -3135,8 +3150,8 @@ function plAddRua(k){const r=PL_RUA.find(x=>x[0]===k);if(!r)return;plSnap();cons
 document.addEventListener('click',ev=>{const b=ev.target.closest('[data-plzona],[data-plrua]');if(!b||!S.pl)return;ev.preventDefault();ev.stopPropagation();if(b.dataset.plzona)plAddZona(b.dataset.plzona);else plAddRua(b.dataset.plrua)},true);
 document.addEventListener('change',ev=>{if(ev.target.id!=='pl-ruafechada'||!S.pl)return;plSnap();S.pl.ruaFechada=ev.target.checked;plDesenha()});
 /* desenhar com o dedo também cria as zonas */
-PL_DESENHO.push(...PL_ZONAS.map(z=>[z[0],z[1],z[2]]));
-{const _c=plCriaDesenho;plCriaDesenho=function(tipo){if(!PL_ZONAS.some(z=>z[0]===tipo))return _c.apply(this,arguments);const d=S.plDraft;if(!d)return;
+if(typeof PL_DESENHO!=='undefined')PL_DESENHO.push(...PL_ZONAS.map(z=>[z[0],z[1],z[2]]));
+if(typeof plCriaDesenho==='function'){const _c=plCriaDesenho;plCriaDesenho=function(tipo){if(!PL_ZONAS.some(z=>z[0]===tipo))return _c.apply(this,arguments);const d=S.plDraft;if(!d)return;
   plSnap();const i={id:plId(),t:'zona',tipo,x:Math.min(d.x0,d.x1),y:Math.min(d.y0,d.y1),w:plR(Math.abs(d.x1-d.x0)),h:plR(Math.abs(d.y1-d.y0))};S.pl.itens.unshift(i);S.plDraft=null;S.plSel=i.id;plDesenha()}}
 /* imagem do mapa (o que o expositor vê) */
 function plCanvasZonas(cx,X,px,P){P.itens.filter(i=>i.t==='zona').forEach(i=>{const [k,ic,n,c]=zonaInfo(i.tipo);cx.globalAlpha=k==='pista'?0.55:0.22;cx.fillStyle=c;cx.fillRect(X(i.x),X(i.y),i.w*px,i.h*px);cx.globalAlpha=1;
@@ -3145,11 +3160,12 @@ function plCanvasZonas(cx,X,px,P){P.itens.filter(i=>i.t==='zona').forEach(i=>{co
   const fs=Math.min(px*0.5,i.h*px*0.25);cx.font=`800 ${fs}px Arial,sans-serif`;cx.fillStyle=k==='pista'?'#fff':c;cx.textAlign='left';cx.textBaseline='top';cx.fillText((k==='pista'&&P.ruaFechada?'🚧 RUA FECHADA':`${ic} ${n}`).toUpperCase(),X(i.x)+px*0.2,X(i.y)+px*0.15)})}
 function plCanvasRua(cx,X,px,i){if(!i.rua)return;const r=PL_RUA.find(x=>x[0]===i.rua);if(!r)return;const fs=Math.min(i.w,i.h)*px*0.7;cx.font=`${fs}px Arial,sans-serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(r[1],X(i.x+i.w/2),X(i.y+i.h/2))}
 /* tamanho de cada vaga: a organização escolhe (2 m ou 3 m) */
-const plTamVaga=v=>{const m=medDe(S.org);return Math.max(v.w,v.h)>=(m.p+m.g)/2?'3m':'2m'};
-{const _p=plPainelSel;plPainelSel=function(){let h=_p.apply(this,arguments);const i=S.pl.itens.find(x=>x.id===S.plSel);if(!i||i.t!=='vaga')return h;const m=medDe(S.org),t=plTamVaga(i),f=n=>String(n).replace('.',',');
+const plMed=()=>typeof medDe==='function'?medDe(S.org):{p:2,g:3,f:1.3};
+const plTamVaga=v=>{const m=plMed();return Math.max(v.w,v.h)>=(m.p+m.g)/2?'3m':'2m'};
+{const _p=plPainelSel;plPainelSel=function(){let h=_p.apply(this,arguments);const i=S.pl.itens.find(x=>x.id===S.plSel);if(!i||i.t!=='vaga')return h;const m=plMed(),t=plTamVaga(i),f=n=>String(n).replace('.',',');
   return h.replace(/(<div class="g2"><div><label for="pl-iw">)/,`<div class="pl-tam"><span>Tamanho da vaga</span><button class="mini ${t==='2m'?'pri':''}" data-pltam="p">${f(m.p)} m</button><button class="mini ${t==='3m'?'pri':''}" data-pltam="g">${f(m.g)} m</button></div>$1`)}}
 document.addEventListener('click',ev=>{const b=ev.target.closest('[data-pltam]');if(!b||!S.pl)return;ev.preventDefault();ev.stopPropagation();const i=S.pl.itens.find(x=>x.id===S.plSel);if(!i||i.t!=='vaga')return;
-  plSnap();const m=medDe(S.org),L=b.dataset.pltam==='g'?m.g:m.p;if(i.w>=i.h)i.w=L;else i.h=L;plDesenha()},true);
+  plSnap();const m=plMed(),L=b.dataset.pltam==='g'?m.g:m.p;if(i.w>=i.h)i.w=L;else i.h=L;plDesenha()},true);
 
 /* ================= CANCELAMENTO: a organização escolhe ================= */
 const CX_MODOS=[['escolha','Cada expositor escolhe','Reembolso no Pix ou crédito pra próxima edição. Quem não escolher até o prazo fica com crédito.'],['reembolso','Devolver pra todo mundo','Cada um informa o Pix e você devolve.'],['credito','Crédito pra todo mundo','O valor entra como pagamento na próxima edição desse evento que a marca for confirmada.'],['nada','Sem devolução','Ninguém recebe reembolso nem crédito.']];
