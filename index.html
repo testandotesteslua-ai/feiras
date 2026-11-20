@@ -3244,14 +3244,21 @@ document.addEventListener('click',ev=>{const t=ev.target.closest?.('#e-perg-add,
   S.pergs=S.pergs.filter(q=>q.id!==t.dataset.pergtira);desenhaPergs()},true);
 document.addEventListener('change',ev=>{const t=ev.target;if(t.matches?.('#e-pergs [data-pt=tipo]')){const ta=t.closest('.perg').querySelector('[data-pt=opcoes]');ta.hidden=t.value!=='opcoes';if(!ta.hidden)ta.focus()}});
 /* campos na hora de se inscrever */
+const normalizaSegmento=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function categoriaDaMarca(e){
+  const cats=catsDe(e?.organizacoes),slug=normalizaSegmento(S.marca?.segmento),nome=normalizaSegmento(segNome(S.marca?.segmento));
+  const aliases={tatuagem:['tattoo','flash tattoo','tatuagens'],piercing:['body piercing','piercings'],artesanato:['artesanatos']};
+  const nomes=[slug,nome,...(aliases[slug]||[])].filter(Boolean);
+  return cats.find(c=>nomes.includes(normalizaSegmento(c)))||null;
+}
 function camposInscricao(e){const o=e?.organizacoes||{},cats=catsDe(o),ps=e?.perguntas||[];if(!cats.length&&!ps.length)return '';
   const campo=(q,k)=>{const id='cu-q'+k,rot=`${esc(q.texto)}${q.obrigatoria?' <span style="color:var(--tomate)">*</span>':''}`;
     if(q.tipo==='sim_nao')return `<fieldset class="cu-sn"><legend>${rot}</legend><label class="check" style="margin:0"><input type="radio" name="${id}" value="Sim" data-q="${esc(q.id)}"> Sim</label><label class="check" style="margin:0"><input type="radio" name="${id}" value="Não" data-q="${esc(q.id)}"> Não</label></fieldset>`;
     if(q.tipo==='opcoes')return `<label for="${id}">${rot}</label><select id="${id}" data-q="${esc(q.id)}"><option value="">Escolha…</option>${(q.opcoes||[]).map(x=>`<option>${esc(x)}</option>`).join('')}</select>`;
     return `<label for="${id}">${rot}</label><textarea id="${id}" data-q="${esc(q.id)}" data-livre maxlength="600" style="min-height:64px"></textarea>`};
-  return `<div class="cu-campos">${cats.length?`<label for="cu-cat" style="margin-top:0">Categoria da sua marca nesse evento <span style="color:var(--tomate)">*</span></label><select id="cu-cat"><option value="">Escolha…</option>${cats.map(c=>`<option>${esc(c)}</option>`).join('')}</select>`:''}${ps.map(campo).join('')}</div>`}
+  return `<div class="cu-campos">${cats.length?`<label for="cu-cat" style="margin-top:0">Categoria da sua marca nesse evento</label><input id="cu-cat" value="${esc(categoriaDaMarca(e)||'')}" readonly aria-readonly="true" placeholder="Categoria não disponível" style="background:var(--fundo,#f7f3eb)"><small class="sub">${categoriaDaMarca(e)?'Preenchida automaticamente pelo segmento da sua marca.':'Seu segmento não está entre as categorias aceitas por este evento. Não é possível enviar a inscrição.'}</small>`:'<p class="sub">Segmento da sua marca: <b>${esc(segNome(S.marca?.segmento))}</b></p>'}${ps.map(campo).join('')}</div>`}
 function lerCamposInscricao(f,e){const o=e?.organizacoes||{},cats=catsDe(o),ps=e?.perguntas||[],p={};if(!cats.length&&!ps.length)return {p};
-  if(cats.length){const c=f.querySelector('#cu-cat')?.value||'';if(!c)return {erro:'Escolha a categoria da sua marca.',foco:'#cu-cat'};p.p_categoria=c}
+  if(cats.length){const c=categoriaDaMarca(e);if(!c)return {erro:'Seu segmento não é aceito nas categorias deste evento.',foco:'#cu-cat'};p.p_categoria=c}
   const r={};for(const q of ps){const els=[...f.querySelectorAll(`[data-q="${CSS.escape(q.id)}"]`)];let v='';
     if(q.tipo==='sim_nao')v=(els.find(x=>x.checked)||{}).value||'';else v=(els[0]?.value||'').trim();
     if(q.obrigatoria&&!v)return {erro:`Responda: ${q.texto}`,el:els[0]};if(v)r[q.id]=v}
