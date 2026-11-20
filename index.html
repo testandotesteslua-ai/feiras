@@ -3494,12 +3494,12 @@ abrirCancelar=async function(e){if(!e?.id)return;
   const html=await _blocoCanceladaFinanceiro.apply(this,arguments);
   if(!ins||+ins.cancel_valor<=0||ins.credito_destino)return html;
   const {data:controle,error}=await sb.from('reembolso_controle').select('status,atualizado_em').eq('inscricao_id',ins.id).maybeSingle();
-  if(error)return html.replace(/<b>✅ Reembolso feito<\\/b>/g,'<b>Registro antigo de devolução (não verificado)</b>');
-  if(controle?.status==='confirmado_provedor')return html.replace(/<b>✅ Reembolso feito<\\/b>/g,'<b>Reembolso confirmado pelo provedor</b>');
-  if(ins.reembolsado_em)return html.replace(/<b>✅ Reembolso feito<\\/b>/g,'<b>Registro antigo de devolução (não verificado)</b>');
+  if(error)return html.replaceAll('<b>✅ Reembolso feito</b>','<b>Registro antigo de devolução (não verificado)</b>');
+  if(controle?.status==='confirmado_provedor')return html.replaceAll('<b>✅ Reembolso feito</b>','<b>Reembolso confirmado pelo provedor</b>');
+  if(ins.reembolsado_em)return html.replaceAll('<b>✅ Reembolso feito</b>','<b>Registro antigo de devolução (não verificado)</b>');
   if(controle?.status!=='declarado_manual')return html;
   const aviso=`<div class="painel" style="margin:12px 0 0"><b>📝 Devolução declarada pela organização</b><p style="margin:4px 0 0">A organização informou que realizou a devolução de ${money(+ins.cancel_valor)}. O recebimento ainda não foi confirmado pelo provedor de pagamento.</p></div>`;
-  return html.replace(/<\\/div>\\s*$/,'')+aviso+'</div>';
+  return html.slice(0,html.lastIndexOf('</div>'))+aviso+'</div>';
  };}
 /* evento de vários dias: só mostra o último dia quando marcar */
 document.addEventListener('change',ev=>{if(ev.target.id!=='e-variosdias')return;const on=ev.target.checked,w=$('#e-fim-w'),l=$('#e-data-l');if(w)w.hidden=!on;if(l)l.textContent=on?'Primeiro dia':'Data';
