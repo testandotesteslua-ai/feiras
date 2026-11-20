@@ -1310,13 +1310,19 @@ function previaCores(){const p=$('#cfg-p')?.value,d=$('#cfg-d')?.value;if(!p||!d
   document.querySelectorAll('[data-paleta]').forEach(b=>{const [pp,dd]=PALETAS[+b.dataset.paleta];b.setAttribute('aria-pressed',pp.toLowerCase()===p.toLowerCase()&&dd.toLowerCase()===d.toLowerCase())})}
 
 /* ================= ADMIN ================= */
-TELAS.admin=async()=>{if(!S.admin)return `<h1>Administração</h1><p class="sub">Essa área é só da plataforma.</p>`;const f=S.admFiltro||'pendente';
-  let q=sb.from('organizacoes').select('*').order('criado_em',{ascending:false});if(f!=='todas')q=q.eq('status',f);const {data,error}=await q;if(error)throw error;
-  const st={pendente:['Esperando aprovação',''],ativa:['No ar','ok'],suspensa:['Suspensa','t']};
+TELAS.admin=async()=>{if(!S.admin)return `<h1>Administração</h1><p class="sub">Essa área é só da plataforma.</p>`;
+  const {data:organizacoes,error:erroOrgs}=await sb.from('organizacoes').select('*').order('criado_em',{ascending:false});
+  if(erroOrgs)throw erroOrgs;
+  const lista=organizacoes||[];
+  const totais={pendente:0,ativa:0,suspensa:0,todas:lista.length};
+  lista.forEach(o=>{if(Object.prototype.hasOwnProperty.call(totais,o.status))totais[o.status]++});
+  const f=S.admFiltro||(totais.pendente?'pendente':'ativa');
+  const data=f==='todas'?lista:lista.filter(o=>o.status===f);
+  const st={pendente:['Aguardando aprovação',''],ativa:['Aprovada','ok'],suspensa:['Suspensa','t']};
   return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Administração</h1>${await resumoAdmin()}<h2 style="margin:18px 0 0">Organizações</h2>
-  <div class="tiles" role="group" aria-label="Filtrar eventos">${[['pendente','Pendentes'],['ativa','Aprovadas'],['suspensa','Suspensas'],['todas','Todas']].map(([k,l])=>`<button class="tile" data-admf="${k}" aria-pressed="${f===k}"><span>${l}</span></button>`).join('')}</div>
+  <div class="adm-tabs" role="group" aria-label="Filtrar organizações">${[['pendente','Pendentes'],['ativa','Aprovadas'],['suspensa','Suspensas'],['todas','Todas']].map(([k,l])=>`<button class="adm-tab" data-admf="${k}" aria-pressed="${f===k}"><span>${l}</span><span class="adm-tab-count">${totais[k]}</span></button>`).join('')}</div>
   ${(data||[]).map(o=>{const [t,c]=st[o.status]||[o.status,'n'];return `<div class="painel"><div class="org-it">${o.logo_url?`<img src="${esc(o.logo_url)}" alt="">`:`<span class="org-ph">${esc(String(o.nome).charAt(0).toUpperCase())}</span>`}<div style="flex:1;min-width:0"><b>${esc(o.nome)}</b><div class="sub" style="margin:0;font-size:13px">${esc(o.slug)}${o.cidade?' · '+esc(o.cidade):''} · pedido em ${new Date(o.criado_em).toLocaleDateString('pt-BR')}</div></div><span class="status ${c}">${t}</span></div>
-    <div class="row" style="margin-top:10px">${o.status!=='ativa'?`<button class="mini pri" data-admst="ativa" data-id="${o.id}" style="min-height:44px">Aprovar</button>`:''}${o.status!=='suspensa'?`<button class="mini" data-admst="suspensa" data-id="${o.id}" style="min-height:44px">Suspender</button>`:`<button class="mini" data-admst="pendente" data-id="${o.id}" style="min-height:44px">Voltar pra esperando</button>`}</div></div>`}).join('')||'<p class="sub">Nada por aqui.</p>'}`};
+    <div class="row" style="margin-top:10px">${o.status!=='ativa'?`<button class="mini pri" data-admst="ativa" data-id="${o.id}" style="min-height:44px">Aprovar</button>`:''}${o.status!=='suspensa'?`<button class="mini" data-admst="suspensa" data-id="${o.id}" style="min-height:44px">Suspender</button>`:`<button class="mini" data-admst="pendente" data-id="${o.id}" style="min-height:44px">Voltar pra esperando</button>`}</div></div>`}).join('')||`<div class="adm-empty">${f==='pendente'?'Nenhuma organização aguardando aprovação.':f==='ativa'?'Nenhuma organização aprovada ainda.':f==='suspensa'?'Nenhuma organização suspensa.':'Nenhuma organização cadastrada.'}</div>`}`};
 
 
 TELAS.mapa=async()=>{
@@ -2860,7 +2866,7 @@ async function resumoAdmin(){const {data:r,error}=await sb.rpc('resumo_plataform
   const temMovimento=meses.some(m=>Number(m.v)>0);
   const pendentes=Number(r.pendentes)||0;
   return `<section class="adm-dashboard" aria-label="Resumo administrativo">
-  <div class="adm-dashboard-head"><div><span class="adm-eyebrow">PAINEL DA PLATAFORMA</span><h2>Visão geral</h2></div><span class="adm-periodo">Atualizado ao abrir a página</span></div>
+  <div class="adm-dashboard-head"><div><span class="adm-eyebrow">PAINEL DA PLATAFORMA</span><h2>Visão geral</h2></div></div>
   <div class="adm-stats">
     <div class="adm-stat"><span>Organizações ativas</span><strong>${gNum(r.ativas)}</strong><small>Aprovadas na plataforma</small></div>
     <div class="adm-stat"><span>Para aprovar</span><strong>${gNum(r.pendentes)}</strong><small>${pendentes?'Solicitações aguardando':'Tudo em dia'}</small></div>
