@@ -743,6 +743,14 @@ html body nav.baixo button{border-radius:12px;min-height:48px}
 .adm-detalhes{margin-top:16px;border-bottom:1px solid var(--line);padding:0 0 10px}.adm-detalhes summary{cursor:pointer;display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:700;padding:12px 0;list-style:none}.adm-detalhes summary:after{content:"⌄";font-size:18px}.adm-detalhes summary span{margin-left:auto;color:var(--muted,#777);font-size:11px;font-weight:400}.adm-detalhes[open] summary:after{content:"⌃"}
 @media(max-width:800px){.adm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.adm-stat:nth-child(3):before{display:none}.adm-stat:nth-child(n+3){border-top:1px solid var(--line)}}
 @media(max-width:480px){.adm-dashboard-head{align-items:start}.adm-periodo{max-width:110px;text-align:right}.adm-stat{padding:18px 14px}.adm-stat strong{font-size:32px}.adm-stat>span{font-size:11px}}
+
+/* Administração: filtros compactos e legíveis no celular */
+.adm-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:12px 0 16px}
+.adm-tab{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:43px;padding:9px 5px;border:1px solid var(--line);border-radius:12px;background:var(--card,#fffdfa);color:var(--ink);font:inherit;font-size:12px;font-weight:650;cursor:pointer;white-space:nowrap}
+.adm-tab[aria-pressed="true"]{background:var(--ink);color:var(--card,#fffdfa);border-color:var(--ink)}
+.adm-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 4px;border-radius:99px;background:rgba(120,120,120,.12);font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+.adm-tab[aria-pressed="true"] .adm-tab-count{background:rgba(255,255,255,.18)}
+@media(max-width:420px){.adm-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.adm-tab{font-size:13px;min-height:42px}.adm-stat{padding:15px 12px}.adm-stat strong{font-size:29px}.adm-stat small{font-size:10px}}
 </style><style>
 .pl-adicionar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,155px),1fr));gap:9px;margin-top:14px}
 .pl-adicionar-grid .mini{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:56px;padding:11px 12px;white-space:normal!important;overflow-wrap:break-word;word-break:normal;text-align:center;line-height:1.35;font-size:13px}
