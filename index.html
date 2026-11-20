@@ -2529,9 +2529,11 @@ document.addEventListener('click',async ev=>{
     {const lg0=($('#e-grupo')?.value||'').trim();if(lg0&&!/^https:\/\/chat\.whatsapp\.com\//i.test(lg0)){err.textContent='O link do grupo precisa começar com https://chat.whatsapp.com/';return}}
     b.disabled=true;const r=S.edForm?.id?await sb.from('edicoes').update(reg).eq('id',S.edForm.id).select().single():await sb.from('edicoes').insert({...reg,organizacao_id:S.org.id}).select().single();
     if(r.error){b.disabled=false;err.textContent=erroMsg(r.error);return}
+    // Persistir o ID imediatamente: se um passo posterior falhar, Salvar atualiza a mesma edição.
+    S.edForm={...(S.edForm||{}),...r.data,id:r.data.id};
     const eid=r.data.id;const lg=($('#e-grupo')?.value||'').trim();
     {const rg=await sb.from('edicao_privado').upsert({edicao_id:eid,link_grupo:lg||null});if(rg.error){b.disabled=false;err.textContent=erroMsg(rg.error);return}}
-    await sb.from('edicao_cotas').delete().eq('edicao_id',eid);
+    {const remov=await sb.from('edicao_cotas').delete().eq('edicao_id',eid);if(remov.error){b.disabled=false;err.textContent=erroMsg(remov.error);return}}
     const cotas=[...document.querySelectorAll('[data-cota]')].filter(i=>i.value!=='').map(i=>({edicao_id:eid,segmento:i.dataset.cota,limite:+i.value}));
     if(cotas.length){const r2=await sb.from('edicao_cotas').insert(cotas);if(r2.error){b.disabled=false;err.textContent=erroMsg(r2.error);return}}
     {const cb=await enviaColabsForm(eid);S.edicoes=null;toast(cb.erro?'Edição salva, mas um convite de colab não foi: '+cb.erro:cb.ok?`Edição salva e ${cb.ok===1?'convite de colab enviado':cb.ok+' convites de colab enviados'}`:'Edição salva')}go('org-edicoes');return}
