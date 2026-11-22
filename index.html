@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#1E2235">
-<meta name="app-versao" content="202611190736">
+<meta name="theme-color" content="#FFF3E7">
+<meta name="app-versao" content="202611221640">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ExpoMatch · expositores e eventos</title>
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="ExpoMatch"><meta name="application-name" content="ExpoMatch">
+<title>Colanessa · expositores e eventos</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261122"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261122"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 --ground:#F4EFE6;--card:#FFFCF7;--ink:#1E2235;--ink-2:#6A6458;--line:#E6DCCB;--verde:#B4502E;--verde-soft:#F6E2D8;--verde-esc:#963F21;--on-verde:#FFFFFF;--laranja:#D2603A;--laranja-soft:#FBE9DF;--laranja-esc:#B4502E;--on-laranja:#1E2235;--menta:#1E2235;--menta-soft:#ECE5D8;--oliva:#1E2235;--oliva-esc:#141726;--on-oliva:#F4EFE6;--tomate:#A8323E;--tomate-soft:#F8E1E1;--rosa:#E8B4A0;--vinho:#7A2E36;--wm:#E6D9C3;
---display:"Fraunces",Georgia,"Times New Roman",serif;--body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+--display:"Barlow Condensed","Arial Narrow",var(--body);--body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 html{height:100%}*{box-sizing:border-box}
 body{margin:0;min-height:100%;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -667,7 +667,7 @@ body:has(#e-gratis:checked) .precos-ed{display:none}
 .cx-alerta{margin-top:10px;padding:10px 12px;border-radius:12px;background:#FDECEA;color:#7A1F16;font-size:13.5px;line-height:1.4}
 .pl-tam{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.pl-tam span{font-size:13px;font-weight:600;margin-right:4px}
 
-/* ExpoMatch: melhorias progressivas para telas e interação */
+/* Colanessa: melhorias progressivas para telas e interação */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{overflow-x:clip}
 #tela,.wrap,.painel,.cardfeira,.edcard,.sel,.hero{min-width:0}
@@ -756,6 +756,75 @@ html body nav.baixo button{border-radius:12px;min-height:48px}
 .pl-adicionar-grid .mini{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:56px;padding:11px 12px;white-space:normal!important;overflow-wrap:break-word;word-break:normal;text-align:center;line-height:1.35;font-size:13px}
 @media(max-width:650px){.pl-adicionar-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.pl-adicionar-grid .mini{font-size:13px;min-height:62px;padding:10px 8px}}
 @media(max-width:350px){.pl-adicionar-grid{grid-template-columns:1fr}}
+
+/* Identidade da plataforma */
+:root {
+  --ground: #FFF3E7;
+  --card: #FFFAF4;
+  --ink: #420F2B;
+  --ink-2: #654A58;
+  --line: #EAD8CC;
+  --colanessa-laranja: #FA681C;
+  --colanessa-azul: #1947CE;
+}
+:root:not([data-tema-organizacao]) {
+  --verde: var(--colanessa-laranja);
+  --verde-esc: #A63807;
+  --verde-soft: #FFE5D4;
+  --on-verde: var(--ink);
+  --laranja: var(--colanessa-laranja);
+  --laranja-esc: #A63807;
+  --oliva: #FFF3E7;
+  --oliva-esc: #ECDACC;
+  --on-oliva: var(--ink);
+  --wm: var(--ink);
+}
+.colanessa-simbolo {
+  position: relative;
+  border-radius: 0;
+}
+.colanessa-simbolo::before,.colanessa-simbolo::after,.colanessa-simbolo i {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--colanessa-laranja);
+}
+.colanessa-simbolo::before {
+  clip-path: polygon(5% 27%, 25% 8%, 64% 8%, 47% 25%, 25% 25%, 25% 63%, 5% 63%);
+}
+.colanessa-simbolo::after {
+  clip-path: polygon(27% 91%, 46% 74%, 74% 74%, 74% 54%, 89% 39%, 94% 39%, 94% 80%, 82% 91%);
+}
+.colanessa-simbolo i {
+  background: var(--colanessa-azul);
+  clip-path: polygon(67% 26%, 77% 16%, 89% 16%, 89% 31%, 81% 39%, 67% 39%);
+}
+.hero .b1 .colanessa-simbolo { width: 100% !important; height: 100% !important; }
+:root:not([data-tema-organizacao]) .hero {
+  background: var(--card) !important;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+:root:not([data-tema-organizacao]) .toldo-padrao .l {
+  background: var(--verde-soft) !important;
+}
+:root:not([data-tema-organizacao]) .toldo-padrao .l::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--verde);
+  clip-path: polygon(0 0, 57% 0, 43% 36%, 33% 36%, 8% 100%, 0 100%, 0 0, 100% 100%, 54% 100%, 73% 49%, 100% 49%, 100% 100%);
+}
+:root:not([data-tema-organizacao]) .toldo-padrao .l::after {
+  background: var(--colanessa-azul);
+  clip-path: polygon(81% 0, 100% 0, 100% 27%, 92% 42%, 73% 42%);
+  -webkit-mask: none;
+  mask: none;
+}
+:root:not([data-tema-organizacao]) .busca-exp input[type=search]:focus-visible {
+  border-color: var(--colanessa-azul);
+  box-shadow: 0 0 0 3px #DCE6FF;
+}
 </style></head>
 <body>
 <div class="wrap" id="tela"><p class="sub">Carregando…</p></div>
@@ -765,7 +834,7 @@ html body nav.baixo button{border-radius:12px;min-height:48px}
 const SUPABASE_URL='https://guiieswqphjixidbtzvs.supabase.co';
 const SUPABASE_KEY='sb_publishable_BMKDottWt_NP_8qaUV_X5Q_9qEhMREi';
 /* Nome da plataforma: troque aqui quando decidir a marca */
-const PLAT={nome:'ExpoMatch',curto:'ExpoMatch',peq:'EXPOSITORES + EVENTOS',grande:'Expo<i>Match</i>'};
+const PLAT={nome:'Colanessa',curto:'Colanessa',peq:'EXPOSITORES + EVENTOS',grande:'Colanessa'};
 const lembrar=()=>{try{return localStorage.getItem('pf-lembrar')!=='0'}catch{return true}};
 const guarda={
   getItem:k=>{try{return localStorage.getItem(k)??sessionStorage.getItem(k)}catch{return null}},
@@ -802,7 +871,7 @@ async function blocoMoveis(eid,excluir,modo){const {data,error}=await sb.rpc('mo
 function erroMsg(e){const m=(e&&e.message)||String(e);if(/Invalid login/i.test(m))return'E-mail ou senha incorretos.';if(/already registered/i.test(m))return'Esse e-mail já tem conta. Use "Entrar".';if(/Password should/i.test(m))return'A senha precisa ter pelo menos 6 caracteres.';if(/rate limit|too many|429/i.test(m))return'Muita gente se cadastrando ao mesmo tempo. Espere uns minutos e tente de novo.';if(/not confirmed/i.test(m))return'Seu e-mail ainda não foi confirmado. Fale com a organização que a gente libera.';if(/valid email|invalid.*email|unable to validate email/i.test(m))return'Confira o e-mail: parece que tem algo digitado errado.';if(/Failed to fetch|NetworkError|Load failed/i.test(m))return'Sem conexão. Confira a internet e tente de novo.';return m}
 
 
-function berg(t=28,o){const lg=(o===undefined?orgDaTela():o)?.logo_url;if(lg)return `<img class="berg berg-logo" src="${esc(lg)}" width="${t}" height="${t}" alt="" style="width:${t}px;height:${t}px">`;return `<svg class="berg" width="${t}" height="${t}" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="20" fill="#1E2235"/><path d="M9 11a2 2 0 0 1 2-2h8.4v22H11a2 2 0 0 1-2-2z" fill="#E6D9C3"/><path d="M21.4 9h1.6a8 8 0 0 1 8 8v6a8 8 0 0 1-8 8h-1.6z" fill="#D2603A"/></svg>`}
+function berg(t=28,o){const lg=(o===undefined?orgDaTela():o)?.logo_url;if(lg)return `<img class="berg berg-logo" src="${esc(lg)}" width="${t}" height="${t}" alt="" style="width:${t}px;height:${t}px">`;return `<span class="berg colanessa-simbolo" style="width:${t}px;height:${t}px" aria-hidden="true"><i></i></span>`}
 const wm=(c='')=>S.papel==='organizadora'&&S.org&&c!=='grande'?`<span class="wm ${c}"><small>PAINEL DO EVENTO</small><b>${esc(String(S.org.nome).toUpperCase())}</b></span>`:`<span class="wm ${c}"><small>${PLAT.peq}</small><b>${PLAT.grande}</b></span>`;
 const topo=()=>`<div class="cabeca"><span class="cacho" aria-hidden="true">${S.papel==='organizadora'&&S.org?.logo_url?`<img src="${esc(S.org.logo_url)}" alt="">`:`<span class="c1">${berg(46)}</span>`}</span><div class="linha1">${wm()}<button class="papel" id="trocar-perfil" aria-haspopup="dialog" style="border:0;color:inherit">${S.tela==='admin'?'Admin':S.papel==='organizadora'?'Organização':'Expositor'} ▾</button><button class="atualiza" id="atualizar" aria-label="Atualizar a tela" title="Atualizar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button></div><div class="ola">${S.papel!=='organizadora'&&S.marca?.logo_url?`<img class="logo" src="${esc(S.marca.logo_url)}" alt="" width="26" height="26" style="width:26px;height:26px;border-width:1.5px">`:''}${S.papel==='organizadora'?'Painel da organização'+(S.compNovos&&S.tela!=='org-selecao'?`</div><button class="aviso-comp" data-vercomp="1">📎 ${S.compNovos} comprovante${S.compNovos>1?'s':''} novo${S.compNovos>1?'s':''} pra conferir ›</button><div style="display:none">`:''):S.marca?'Olá, '+esc(S.marca.nome)+'!':'Que bom te ver por aqui!'}</div></div>`;
 const S={sessao:null,papel:'expositor',marca:null,segs:[],tela:'inicio',edicao:null,orgEdicao:null,canal:null,mapaSel:null,vagaSel:null,orgs:[],org:null,admin:false,pushOk:false};
@@ -820,9 +889,9 @@ function coresDe(o){if(!o||!hexOk(o.cor_primaria)||!hexOk(o.cor_destaque))return
     '--laranja':l,'--laranja-esc':mistura(l,'#000000',.8),'--laranja-soft':mistura(l,'#FFFFFF',.22),'--on-laranja':sobre(l),
     '--wm':contraste(d,p)>=3?d:contraste(l,p)>=3?l:sobre(p)}}
 const varsOrg=o=>{const c=coresDe(o);return c?Object.entries(c).map(([k,v])=>k+':'+v).join(';'):''};
-let temaAtual=null;function aplicarTema(o){const c=coresDe(o),chave=c?JSON.stringify(c):'';if(chave===temaAtual)return;temaAtual=chave;const r=document.documentElement.style;
+let temaAtual=null;function aplicarTema(o){const c=coresDe(o),chave=c?JSON.stringify(c):'';document.documentElement.toggleAttribute('data-tema-organizacao',!!c);if(chave===temaAtual)return;temaAtual=chave;const r=document.documentElement.style;
   ['--oliva','--menta','--oliva-esc','--menta-soft','--on-oliva','--verde','--verde-esc','--verde-soft','--on-verde','--laranja','--laranja-esc','--laranja-soft','--on-laranja','--wm'].forEach(k=>r.removeProperty(k));
-  if(c)Object.entries(c).forEach(([k,v])=>r.setProperty(k,v));const m=document.querySelector('meta[name=theme-color]');if(m)m.content=c?c['--oliva']:'#1E2235'}
+  if(c)Object.entries(c).forEach(([k,v])=>r.setProperty(k,v));const m=document.querySelector('meta[name=theme-color]');if(m)m.content=c?c['--oliva']:'#FFF3E7'}
 function temaDaTela(){if(S.tela==='admin')return aplicarTema(null);if(S.tela==='feira-pub')return aplicarTema(S.pubOrg||null);if(S.papel==='organizadora'&&S.org)return aplicarTema(S.org);if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return aplicarTema(S.edicao.organizacoes);aplicarTema(null)}
 const nomeEd=e=>e?.titulo||e?.organizacoes?.nome||S.org?.nome||'Edição';
 const ORGCOLS='id,nome,slug,cor_primaria,cor_destaque,logo_url,status,vaga_menor,vaga_maior,vaga_fundo,cidade,tipo,categorias';
@@ -945,7 +1014,7 @@ document.addEventListener('change',async ev=>{
     const {data,error}=await sb.rpc('definir_perfil_expositor',{p_ativo:ativo});
     if(error||data!==ativo)throw error||new Error('Não foi possível atualizar o perfil.');
     S.expositorAtivo=ativo;
-    if(!ativo){try{localStorage.setItem(chaveU('pf-modo'),'organizacao')}catch{}await escolherModo();if(S.papel==='organizadora'){go('conta');toast('Agora você usa o ExpoMatch somente como organizadora.');return}}
+    if(!ativo){try{localStorage.setItem(chaveU('pf-modo'),'organizacao')}catch{}await escolherModo();if(S.papel==='organizadora'){go('conta');toast('Agora você usa o Colanessa somente como organizadora.');return}}
     toast(ativo?'Perfil de expositora ativado.':'Perfil de expositora desativado.');
   }catch(e){el.checked=!ativo;if(err)err.textContent=erroMsg(e)}
   finally{el.disabled=false}
@@ -1055,7 +1124,7 @@ async function listarProximas(){
 }
 const blocoEdital=e=>e&&e.edital_url?`<a class="edital" href="${hrefSeguro(e.edital_url)}" target="_blank" rel="noopener"><span class="ic">📄</span><span style="flex:1;min-width:0"><b>Edital do evento</b><small>Como vai funcionar ${e.titulo?'a '+esc(nomeEd(e)):'o evento'}. Leia antes de se inscrever!</small></span><span class="vai">Ler</span></a>`:'';
 const tagsEd=e=>tipoTag(e)+(e?.gratuita?'<span class="tag-ed tag-gratis">Grátis pro expositor</span>':'')+(e?.externa?'<span class="tag-ed">🌳 Ao ar livre</span>':'')+(e?.edital_url?'<span class="tag-ed">📄 Tem edital</span>':'');
-function toldo(e,status){const[,m,d]=e.data.split('-');const df=e.data_fim&&e.data_fim!==e.data?e.data_fim.split('-')[2]:null;return `<div class="toldo ${e.capa_url?'capa':''}" ${e.capa_url?`style="background-image:url('${esc(e.capa_url)}')"`:''}>${e.capa_url?'':'<div class="l"></div><div class="f"></div>'}<div class="sombra"></div><span class="pend">${berg(46,e.organizacoes===undefined?undefined:e.organizacoes)}</span><div class="data"><b>${df?(+d)+'–'+(+df):d}</b><span>${MES[+m-1]}</span></div>${status?`<span class="selo ${/abert/i.test(status)?'ab':/Encerrad|participou|preenchid/i.test(status)?'fim':/Abre|fechad|breve/i.test(status)?'pr':''}">${status}</span>`:''}</div>`}
+function toldo(e,status){const[,m,d]=e.data.split('-');const df=e.data_fim&&e.data_fim!==e.data?e.data_fim.split('-')[2]:null;return `<div class="toldo ${e.capa_url?'capa':'toldo-padrao'}" ${e.capa_url?`style="background-image:url('${esc(e.capa_url)}')"`:''}>${e.capa_url?'':'<div class="l"></div><div class="f"></div>'}<div class="sombra"></div><span class="pend">${berg(46,e.organizacoes===undefined?undefined:e.organizacoes)}</span><div class="data"><b>${df?(+d)+'–'+(+df):d}</b><span>${MES[+m-1]}</span></div>${status?`<span class="selo ${/abert/i.test(status)?'ab':/Encerrad|participou|preenchid/i.test(status)?'fim':/Abre|fechad|breve/i.test(status)?'pr':''}">${status}</span>`:''}</div>`}
 
 async function blocoCancelada(e,ins){
   const dest=null,destT='a próxima edição '+(e.organizacoes?.nome?'da '+e.organizacoes.nome:'dessa evento')+' que você participar';
@@ -1286,7 +1355,7 @@ TELAS.conta=()=>{const st={pendente:['Aguardando aprovação',''],ativa:['Aprova
   <button class="btn pri" id="trocar-perfil-2" style="margin-bottom:8px">Trocar de perfil ou de conta</button>${minhas}
   <div class="painel" style="background:var(--laranja-soft);border-color:transparent;margin-top:12px"><b>Organiza um evento?</b><p class="sub" style="margin:4px 0 10px">Cadastre o seu pra receber inscrições, montar o mapa e fazer a curadoria por aqui.</p><button class="btn sec" data-go="nova-feira">Cadastrar minha organização</button></div>
   ${S.admin?`<div class="painel"><b>Administração da plataforma</b><p class="sub" style="margin:4px 0 10px">Aprove eventos novos e suspenda quando precisar.</p><button class="btn pri" data-go="admin">Abrir administração</button></div>`:''}
-  <h2>Sua conta</h2>${S.orgs.length?`<div class="painel"><b>Perfis que você usa</b><p class="sub" style="margin:5px 0 12px">Você pode usar o ExpoMatch só como organizadora. Desativar o modo expositor não apaga seu login, sua marca nem o histórico de inscrições.</p><label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="conta-expositor-ativo" ${S.expositorAtivo!==false?'checked':''} style="width:20px;height:20px;flex:none"><span>Quero usar também como expositora</span></label><p class="erro" id="conta-expositor-erro" role="alert"></p></div>`:''}${blocoPush()}<button class="btn sec" data-go="novasenha" style="margin-bottom:8px">Trocar minha senha</button><button class="btn sec" id="sair">Sair</button><div class="painel" style="margin-top:20px;border-color:var(--tomate)"><b>Excluir minha conta</b><p class="sub" style="margin:6px 0 12px">Exclui permanentemente seu acesso de expositor e seus dados associados. Inscrições e marcas vinculadas também podem ser removidas. Esta ação não pode ser desfeita.</p><button class="btn sec" id="conta-excluir-abrir" style="color:var(--tomate);border-color:var(--tomate)">Excluir minha conta permanentemente</button></div>`};
+  <h2>Sua conta</h2>${S.orgs.length?`<div class="painel"><b>Perfis que você usa</b><p class="sub" style="margin:5px 0 12px">Você pode usar o Colanessa só como organizadora. Desativar o modo expositor não apaga seu login, sua marca nem o histórico de inscrições.</p><label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="conta-expositor-ativo" ${S.expositorAtivo!==false?'checked':''} style="width:20px;height:20px;flex:none"><span>Quero usar também como expositora</span></label><p class="erro" id="conta-expositor-erro" role="alert"></p></div>`:''}${blocoPush()}<button class="btn sec" data-go="novasenha" style="margin-bottom:8px">Trocar minha senha</button><button class="btn sec" id="sair">Sair</button><div class="painel" style="margin-top:20px;border-color:var(--tomate)"><b>Excluir minha conta</b><p class="sub" style="margin:6px 0 12px">Exclui permanentemente seu acesso de expositor e seus dados associados. Inscrições e marcas vinculadas também podem ser removidas. Esta ação não pode ser desfeita.</p><button class="btn sec" id="conta-excluir-abrir" style="color:var(--tomate);border-color:var(--tomate)">Excluir minha conta permanentemente</button></div>`};
 
 /* ================= CADASTRAR EVENTO ================= */
 const slugDe=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40).replace(/-+$/,'');

@@ -1,12 +1,12 @@
 {
-  "name": "ExpoMatch · expositores e eventos",
-  "short_name": "ExpoMatch",
+  "name": "Colanessa · expositores e eventos",
+  "short_name": "Colanessa",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F4EFE6",
-  "theme_color": "#1E2235",
+  "background_color": "#FFF3E7",
+  "theme_color": "#FFF3E7",
   "lang": "pt-BR",
   "icons": [
     {
