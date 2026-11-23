@@ -191,3 +191,15 @@ nav.baixo button svg {stroke-width:2}
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after {scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}
 }
+
+
+/* Marca: pin vetorial proposto, independente das cores de eventos parceiros */
+:root:not([data-tema-organizacao]) .colanessa-simbolo {
+  display:inline-block!important;
+  background:transparent url("colanessa-pin.svg") center/contain no-repeat!important;
+  overflow:visible!important;
+  border-radius:0!important;
+}
+:root:not([data-tema-organizacao]) .colanessa-simbolo::before,
+:root:not([data-tema-organizacao]) .colanessa-simbolo::after,
+:root:not([data-tema-organizacao]) .colanessa-simbolo i {display:none!important}
