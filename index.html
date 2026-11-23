@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#FFF3E7">
-<meta name="app-versao" content="202611231445">
+<meta name="app-versao" content="202611231510">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261122"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261122"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1224,7 +1224,7 @@ async function inicioBase(){
   const ag=passos.findIndex(p=>!p[2]);
   let acao='';
   if(precisaRespMonta(ins,e))acao+=`<div class="painel mr-card"><b class="secao">Quando você vai montar? 🛠️</b><p style="margin:4px 0 8px">${parcial(ins)?'Você vem <b>'+diasTxt(diasIns(ins))+'</b>. ':''}Escolha uma opção:</p>${NOTA_MONTA}${opcoesMonta(e,ins)}</div>`;
-  if(conf&&!ins.pago&&!e.gratuita)acao+=await painelMercadoPagoTeste(ins);
+  if(conf&&!ins.pago&&!e.gratuita)acao+=await painelMercadoPagoTeste(ins,false,!area&&podeAbrirMapaTeste(e,ins));
   if(conf&&!ins.pago){const valor=precoIns(e,ins);const metade=valor!=null?Math.round(valor*50)/100:null;const venc=prazoRestante(e);if(+ins.credito_usado>0&&valor!=null)acao+=`<div class="painel" style="border-color:var(--laranja)"><b>🎟️ ${money(+ins.credito_usado)} de crédito já descontado</b><p style="margin:4px 0 0">Falta pagar <b>${money(Math.max(0,valor-(+ins.valor_pago||0)))}</b>.</p></div>`;
     const parte=ins.pago_sinal?`o restante (segunda metade)${metade!=null?', '+money(metade):''}`:`${e.permite_sinal?'(total '+(valor!=null?money(valor):'')+' ou metade '+(metade!=null?money(metade):'')+')':valor!=null?money(valor):''}`;
     const msgLink=`Oi! Sou da marca ${S.marca.nome}, com presença confirmada na ${nomeEd(e)} (${periodo(e)}). Gostaria do link de pagamento do meu espaço: ${tamLabel(ins.tamanho)}${ins.dia_unico?', só '+dataBR(ins.dia_unico):''}, ${parte}. Estou ciente de que a taxa do link é por minha conta.`;
@@ -1284,7 +1284,10 @@ async function montaVizinhos(){
   ${mini(minha.x,minha.y,2.6,miolo)}
   ${dirs?`<p class="lp-h">Seus vizinhos</p><div class="vzs">${dirs}</div>`:'<p class="sub" style="margin:10px 0 0;font-size:13px">Ninguém do seu lado ainda.</p>'}</div>`;
 }
-AFTER.edicao=async()=>{const el=$('#vizinhos');if(!el)return;el.innerHTML=await montaVizinhos();
+AFTER.edicao=async()=>{
+  const mapaTeste=$('#tela [data-mp-mapa]');
+  if(mapaTeste)setTimeout(()=>{if(mapaTeste.isConnected)abrirMapaTeste(mapaTeste.dataset.mpMapa,true)},0);
+  const el=$('#vizinhos');if(!el)return;el.innerHTML=await montaVizinhos();
   if(S.canal){sb.removeChannel(S.canal);S.canal=null}
   S.canal=sb.channel('viz-'+S.edicao.id).on('postgres_changes',{event:'*',schema:'public',table:'vagas_ocupadas',filter:'edicao_id=eq.'+S.edicao.id},async()=>{const x=$('#vizinhos');if(x)x.innerHTML=await montaVizinhos()}).subscribe()};
 const cardPend=()=>S.pend?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja);color:var(--ink)"><b>Como foi a ${esc(S.pend.titulo)} de ${dataBR(S.pend.data)}?</b><p style="margin:4px 0 10px">Conta pra gente em menos de um minuto. Novas inscrições liberam depois do seu feedback.</p><button class="btn pri" data-go="feedback">Responder agora</button></div>`:'';
@@ -1447,16 +1450,17 @@ TELAS.mapa=async()=>{
   const [mp,vg,oc,bl]=await Promise.all([sb.from('mapas').select('*').eq('id',e.mapa_id).single(),sb.from('mapa_vagas').select('*').eq('mapa_id',e.mapa_id).order('numero'),sb.from('vagas_ocupadas').select('vaga_id,marca_nome,tamanho').eq('edicao_id',e.id),sb.from('edicao_vagas_bloqueadas').select('vaga_id').eq('edicao_id',e.id)]);
   S.tam3=new Set((oc.data||[]).filter(x=>x.tamanho==='3m').map(x=>x.vaga_id));S.bloq=new Set((bl.data||[]).map(x=>x.vaga_id));{const ns=numSeq(vg.data||[],S.bloq);S.vagas=(vg.data||[]).map(v=>ns.has(v.id)?{...v,numero:ns.get(v.id)}:v)}S.ocup=new Map((oc.data||[]).map(x=>[x.vaga_id,x.marca_nome||'']));S.bloq=new Set((bl.data||[]).map(x=>x.vaga_id));S.mapaImg=mp.data?.imagem_url;S.mapaAreas=mp.data?.areas||[];S.minhaArea=areaSeg(mp.data,S.marca?.segmento);
   const {data:oa}=await sb.rpc('ocupacao_areas',{p_edicao:e.id});S.areaCont={};(oa||[]).forEach(x=>{S.areaCont[x.segmento]=(S.areaCont[x.segmento]||0)+1});
-  const minha=S.vagas.find(v=>v.id===ins.vaga_id);
+  const simulando=mapaEmTeste(ins);
+  const minha=S.vagas.find(v=>v.id===vagaSelecionadaNoMapa(ins)&&(!simulando||(!S.bloq.has(v.id)&&!S.ocup.has(v.id))));
   if(S.minhaArea)return `<button class="mini" data-go="edicao" style="border:0;background:none">← Edição</button><h1>Seu lugar no mapa</h1><p class="sub">Expositores de ${esc(segNome(S.marca.segmento))} ficam juntos na área <b>${esc(S.minhaArea.nome)}</b>, marcada em laranja. Não precisa escolher vaga.</p><div class="mapawrap" id="mapa"></div>`;
-  return `<button class="mini" data-go="edicao" style="border:0;background:none">← Edição</button><h1>Escolha sua vaga</h1><p class="sub">Você contratou ${tamLabel(ins.tamanho)}. As vagas já escolhidas mostram o nome da marca.${S.vagas.some(v=>v.tamanho)&&/^[23]m$/.test(ins.tamanho||'')?` <b>As vagas de ${ins.tamanho.replace('m',' m')} estão destacadas</b>, as apagadinhas são de outro tamanho. Ainda livres de ${ins.tamanho.replace('m',' m')}: <b>${S.vagas.filter(v=>v.tamanho===ins.tamanho&&!S.bloq.has(v.id)&&!S.ocup.has(v.id)).length}</b>.`:ins.tamanho==='3m'&&S.vagas.some(v=>v.so_2m)?' <b>Espaços de 3 m ficam nas fileiras do meio.</b> As vagas apagadinhas são só pra 2 m.':''}</p>
+  return `<button class="mini" data-go="edicao" style="border:0;background:none">← Edição</button><h1>${simulando?'Simule a escolha da vaga':'Escolha sua vaga'}</h1>${simulando?'<div class="painel"><b>Pagamento simulado confirmado</b><p class="sub" style="margin:4px 0 0">Escolha uma vaga pra testar. Essa escolha não faz reserva.</p></div>':''}<p class="sub">Você contratou ${tamLabel(ins.tamanho)}. As vagas já escolhidas mostram o nome da marca.${S.vagas.some(v=>v.tamanho)&&/^[23]m$/.test(ins.tamanho||'')?` <b>As vagas de ${ins.tamanho.replace('m',' m')} estão destacadas</b>, as apagadinhas são de outro tamanho. Ainda livres de ${ins.tamanho.replace('m',' m')}: <b>${S.vagas.filter(v=>v.tamanho===ins.tamanho&&!S.bloq.has(v.id)&&!S.ocup.has(v.id)).length}</b>.`:ins.tamanho==='3m'&&S.vagas.some(v=>v.so_2m)?' <b>Espaços de 3 m ficam nas fileiras do meio.</b> As vagas apagadinhas são só pra 2 m.':''}</p>
   ${vagaFechada(e)?`<div class="painel" style="background:var(--tomate-soft);border-color:var(--tomate);color:var(--ink)">${minha?'O prazo pra trocar de vaga acabou. Pra mudar, fale com a organização.':'O prazo pra escolher a vaga acabou. A organização vai escolher o seu lugar.'}</div>`:prazoVaga(e)?`<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja);color:var(--ink)">${minha?'Dá pra trocar':'Escolha'} até <b>${prazoVaga(e).toLocaleString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b>. ${minha?'':'Depois disso, a organização escolhe por você.'}</div>`:''}
   <div class="mapawrap" id="mapa"></div>${S.vagas.some(v=>v.externa)?`<div class="legenda-ext"><span>🏠 Área interna</span><span>☀️ Vaga ao ar livre</span></div>`:''}
-  <p class="sub" style="margin-top:10px">${minha?`Sua vaga: <b>${minha.numero}</b>${S.vagas.some(v=>v.externa)?(minha.externa?' · ☀️ ao ar livre':' · 🏠 área interna'):''}.${vagaFechada(e)?'':' Dá pra trocar enquanto o prazo estiver aberto.'}`:vagaFechada(e)?'':'Toque numa vaga livre pra reservar.'}</p>`;
+  <p class="sub" style="margin-top:10px">${simulando?(minha?`Escolha de teste: <b>${minha.numero}</b>`:'Toque numa vaga livre pra simular a escolha.'):minha?`Sua vaga: <b>${minha.numero}</b>${S.vagas.some(v=>v.externa)?(minha.externa?' · ☀️ ao ar livre':' · 🏠 área interna'):''}.${vagaFechada(e)?'':' Dá pra trocar enquanto o prazo estiver aberto.'}`:vagaFechada(e)?'':'Toque numa vaga livre pra reservar.'}</p>`;
 };
 function desenhaMapaExpositor(){
   const w=$('#mapa');if(!w)return;const ins=S.ins;
-  w.innerHTML=(S.mapaImg?`<img src="${esc(S.mapaImg)}" alt="Planta do evento">`:'<div style="padding:40px;text-align:center" class="sub">Mapa sem imagem</div>')+(S.mapaAreas||[]).map(a=>areaTag(a,(S.areaCont||{})[a.segmento],S.minhaArea&&a.segmento===S.minhaArea.segmento?'minha':'')).join('')+S.vagas.filter(v=>S.bloq.has(v.id)).map(v=>`<span class="vg-tapa" style="left:${v.x}%;top:${v.y}%;width:${v.largura*1.3}%;height:${v.altura*1.3}%"></span>`).join('')+S.vagas.filter(v=>!S.bloq.has(v.id)).map(v=>{const minha=v.id===ins.vaga_id,oc=S.ocup.has(v.id)&&!minha,nome=minha?(S.marca?.nome||''):(S.ocup.get(v.id)||'');
+  w.innerHTML=(S.mapaImg?`<img src="${esc(S.mapaImg)}" alt="Planta do evento">`:'<div style="padding:40px;text-align:center" class="sub">Mapa sem imagem</div>')+(S.mapaAreas||[]).map(a=>areaTag(a,(S.areaCont||{})[a.segmento],S.minhaArea&&a.segmento===S.minhaArea.segmento?'minha':'')).join('')+S.vagas.filter(v=>S.bloq.has(v.id)).map(v=>`<span class="vg-tapa" style="left:${v.x}%;top:${v.y}%;width:${v.largura*1.3}%;height:${v.altura*1.3}%"></span>`).join('')+S.vagas.filter(v=>!S.bloq.has(v.id)).map(v=>{const minha=v.id===vagaSelecionadaNoMapa(ins)&&(!mapaEmTeste(ins)||!S.ocup.has(v.id)),oc=S.ocup.has(v.id)&&!minha,nome=minha?(S.marca?.nome||''):(S.ocup.get(v.id)||'');
   const lg=v.tamanho?v.largura:(minha?ins.tamanho==='3m':S.tam3?.has(v.id))?v.largura*1.5:v.largura,tx=!minha&&!oc&&v.tamanho&&/^[23]m$/.test(ins.tamanho||'')&&v.tamanho!==ins.tamanho,x2=(!minha&&!oc&&v.so_2m&&ins.tamanho==='3m')||tx;return `<button class="vg ${oc?'oc':''} ${minha?'minha':''} ${x2?'so2x':''} ${v.externa?'ext':''}" style="left:${v.x}%;top:${v.y}%;width:${lg}%;height:${v.altura}%" data-escolher="${v.id}" ${tx?`data-tamx="${v.tamanho}"`:x2?'data-so2="1"':''} ${oc||S.minhaArea||x2?'aria-disabled="true"':''} aria-label="Vaga ${v.numero}${nome?', '+esc(nome):''}">${v.numero}${nome?`<span class="vnm">${esc(nome)}</span>`:''}</button>`}).join('');
 }
 AFTER.mapa=()=>{desenhaMapaExpositor();if(!S.edicao)return;
@@ -1680,7 +1684,28 @@ async function consultaMercadoPagoTeste(id,acao='status'){
   }
   return data;
 }
-async function painelMercadoPagoTeste(i,organizacao=false){
+const mapasTesteAbertos=new Set();
+const escolhasMapaTeste=new Map();
+function podeAbrirMapaTeste(e,ins){
+  return S.papel==='expositor'&&ins?.dono===S.sessao?.user?.id&&ins.status==='confirmada'&&!garantiu(ins)&&
+    !!e?.mapa_id&&!e.sem_mapa&&!e.cancelada_em&&fimEd(e)>=hojeLocal()&&!vagaFechada(e)&&!ins.vaga_id&&!ins.divide_com;
+}
+function abrirMapaTeste(id,automatico=false){
+  if(S.tela!=='edicao'||S.ins?.id!==id||!podeAbrirMapaTeste(S.edicao,S.ins))return;
+  const chave='pf-mapa-pagamento-teste:'+id;
+  if(automatico){
+    if(mapasTesteAbertos.has(id))return;
+    try{if(sessionStorage.getItem(chave))return}catch{}
+  }
+  mapasTesteAbertos.add(id);
+  try{sessionStorage.setItem(chave,'1')}catch{}
+  S.mapaTeste=id;
+  go('mapa');
+}
+const mapaEmTeste=ins=>!!ins&&S.mapaTeste===ins.id&&podeAbrirMapaTeste(S.edicao,ins);
+const vagaSelecionadaNoMapa=ins=>mapaEmTeste(ins)?escolhasMapaTeste.get(ins.id):ins.vaga_id;
+
+async function painelMercadoPagoTeste(i,organizacao=false,mapaDisponivel=false){
   if(i.status!=='confirmada')return '';
   let pagamento;
   try{pagamento=await consultaMercadoPagoTeste(i.id)}
@@ -1694,6 +1719,7 @@ async function painelMercadoPagoTeste(i,organizacao=false){
   return `<section class="painel" aria-label="Mercado Pago em teste"><b class="secao">Mercado Pago · teste</b>
     <p class="sub" role="status">${recebido?'Pagamento simulado confirmado':pendente?'Aguardando confirmação':encerrado?'Checkout de teste encerrado':'Pronto para simular o pagamento'} · ${money(pagamento.valor)}. Esse valor não entra no financeiro do evento.</p>
     ${!organizacao&&!recebido&&!encerrado?`<button class="btn pri" data-mpteste="pagar" data-id="${esc(i.id)}">${pendente?'Reabrir checkout de teste':'Pagar em modo teste'}</button>`:''}
+    ${recebido&&mapaDisponivel?`<button class="btn sec" data-mp-mapa="${esc(i.id)}">Simular escolha da vaga</button>`:''}
     ${pendente?`<button class="mini" data-mpteste="status" data-id="${esc(i.id)}">Consultar confirmação</button>`:''}</section>`;
 }
 
@@ -2548,6 +2574,7 @@ document.addEventListener('click',async ev=>{
   if(d.abrirorg){b.disabled=true;await trocarModo('organizacao',d.abrirorg);return}
   if(d.modo==='expositor'){b.disabled=true;await trocarModo('expositor');return}
   if(d.admf){S.admFiltro=d.admf;render();return}
+  if(d.mpMapa){abrirMapaTeste(d.mpMapa);return}
   if(d.mpteste){
     if(d.mpteste==='ativar'&&!confirm('Habilitar cobrança simulada somente para esta inscrição?'))return;
     b.disabled=true;
@@ -2659,6 +2686,15 @@ document.addEventListener('click',async ev=>{
   if(d.escolher&&S.minhaArea){toast(`Seu lugar é na área ${S.minhaArea.nome}`);return}
   if(d.escolher&&S.edicao&&vagaFechada(S.edicao)){toast('O prazo pra escolher a vaga acabou. Fale com a organização.');return}
   if(d.escolher){if(d.tamx){toast(`Essa vaga é de ${d.tamx.replace('m',' m')}. Escolha uma das destacadas.`);return}if(d.so2){toast('Essa vaga é só pra 2 m. Escolha uma das fileiras do meio.');return}if(b.getAttribute('aria-disabled')){toast('Essa vaga já foi escolhida');return}
+    if(S.mapaTeste===S.ins?.id&&!garantiu(S.ins)){
+      if(!mapaEmTeste(S.ins)||S.bloq.has(d.escolher)||S.ocup.has(d.escolher)){toast('Essa vaga não está disponível pro teste.');return}
+      const vaga=S.vagas.find(x=>x.id===d.escolher);
+      if(!vaga)return;
+      escolhasMapaTeste.set(S.ins.id,vaga.id);
+      toast(`Vaga ${vaga.numero} escolhida na simulação`);
+      render();
+      return;
+    }
     const r=await sb.rpc('escolher_vaga',{p_inscricao:S.ins.id,p_vaga:d.escolher});if(r.error){toast(erroMsg(r.error));return}
     S.ins.vaga_id=d.escolher;const v=S.vagas.find(x=>x.id===d.escolher);toast(`Vaga ${v?.numero} reservada${S.vagas.some(x=>x.externa)?(v?.externa?' · ao ar livre ☀️':' · área interna'):''}`);render();return}
   if(b.id==='copiar-pix'){try{await navigator.clipboard.writeText(S.edicao.chave_pix);toast('Chave Pix copiada')}catch{toast('Não deu pra copiar. Segure a chave pra copiar manualmente.')}return}
