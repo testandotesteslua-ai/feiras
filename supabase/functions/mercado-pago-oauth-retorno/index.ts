@@ -98,12 +98,20 @@ async function receive(url: URL) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       client_id: clientId, client_secret: clientSecret, grant_type: "authorization_code",
-      code, redirect_uri: callback, test_token: true,
+      code, redirect_uri: callback, test_token: "true",
     }),
   });
   const seller = String(token?.user_id ?? "");
-  if (token?.live_mode !== false || !/^[0-9]+$/.test(seller) || typeof token.access_token !== "string" ||
-      !Number.isFinite(token.expires_in) || token.expires_in <= 0) return back("ambiente");
+  const hasSeller = /^[0-9]+$/.test(seller);
+  const hasToken = typeof token?.access_token === "string" && token.access_token.length > 0;
+  const hasExpiry = Number.isFinite(token?.expires_in) && token.expires_in > 0;
+  if (token?.live_mode !== false || !hasSeller || !hasToken || !hasExpiry) {
+    console.warn("Mercado Pago OAuth sandbox rejected", {
+      mode: token?.live_mode === false ? "test" : token?.live_mode === true ? "live" : "unknown",
+      hasSeller, hasToken, hasExpiry,
+    });
+    return back("ambiente");
+  }
 
   await database(connections + "?on_conflict=organizacao_id", {
     method: "POST", headers: { Prefer: "resolution=merge-duplicates" },
