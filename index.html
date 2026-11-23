@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#FFF3E7">
-<meta name="app-versao" content="202611231145">
+<meta name="app-versao" content="202611231445">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261122"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261122"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1224,6 +1224,7 @@ async function inicioBase(){
   const ag=passos.findIndex(p=>!p[2]);
   let acao='';
   if(precisaRespMonta(ins,e))acao+=`<div class="painel mr-card"><b class="secao">Quando você vai montar? 🛠️</b><p style="margin:4px 0 8px">${parcial(ins)?'Você vem <b>'+diasTxt(diasIns(ins))+'</b>. ':''}Escolha uma opção:</p>${NOTA_MONTA}${opcoesMonta(e,ins)}</div>`;
+  if(conf&&!ins.pago&&!e.gratuita)acao+=await painelMercadoPagoTeste(ins);
   if(conf&&!ins.pago){const valor=precoIns(e,ins);const metade=valor!=null?Math.round(valor*50)/100:null;const venc=prazoRestante(e);if(+ins.credito_usado>0&&valor!=null)acao+=`<div class="painel" style="border-color:var(--laranja)"><b>🎟️ ${money(+ins.credito_usado)} de crédito já descontado</b><p style="margin:4px 0 0">Falta pagar <b>${money(Math.max(0,valor-(+ins.valor_pago||0)))}</b>.</p></div>`;
     const parte=ins.pago_sinal?`o restante (segunda metade)${metade!=null?', '+money(metade):''}`:`${e.permite_sinal?'(total '+(valor!=null?money(valor):'')+' ou metade '+(metade!=null?money(metade):'')+')':valor!=null?money(valor):''}`;
     const msgLink=`Oi! Sou da marca ${S.marca.nome}, com presença confirmada na ${nomeEd(e)} (${periodo(e)}). Gostaria do link de pagamento do meu espaço: ${tamLabel(ins.tamanho)}${ins.dia_unico?', só '+dataBR(ins.dia_unico):''}, ${parte}. Estou ciente de que a taxa do link é por minha conta.`;
@@ -1671,6 +1672,31 @@ TELAS['org-selecao']=async()=>{
 
 const IG='<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6"/>';
 const ZAP='<path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1c-1-.5-2-1.5-2.5-2.5l1-1-1-2z"/>';
+async function consultaMercadoPagoTeste(id,acao='status'){
+  const {data,error}=await sb.functions.invoke('pagamento-inscricao-teste',{body:{inscricao:id,acao}});
+  if(error){
+    const detalhe=await error.context?.json?.().catch(()=>null);
+    throw new Error(detalhe?.erro||'Não foi possível consultar o pagamento de teste.');
+  }
+  return data;
+}
+async function painelMercadoPagoTeste(i,organizacao=false){
+  if(i.status!=='confirmada')return '';
+  let pagamento;
+  try{pagamento=await consultaMercadoPagoTeste(i.id)}
+  catch(err){return organizacao&&S.admin?`<p class="erro" role="status">${esc(err.message)}</p>`:''}
+  if(pagamento?.estado==='inativo'){
+    return organizacao&&S.admin?`<button class="mini" data-mpteste="ativar" data-id="${esc(i.id)}">Habilitar teste do Mercado Pago</button>`:'';
+  }
+  const recebido=pagamento.estado==='confirmado';
+  const pendente=pagamento.estado==='aguardando';
+  const encerrado=pagamento.estado==='encerrado';
+  return `<section class="painel" aria-label="Mercado Pago em teste"><b class="secao">Mercado Pago · teste</b>
+    <p class="sub" role="status">${recebido?'Pagamento simulado confirmado':pendente?'Aguardando confirmação':encerrado?'Checkout de teste encerrado':'Pronto para simular o pagamento'} · ${money(pagamento.valor)}. Esse valor não entra no financeiro do evento.</p>
+    ${!organizacao&&!recebido&&!encerrado?`<button class="btn pri" data-mpteste="pagar" data-id="${esc(i.id)}">${pendente?'Reabrir checkout de teste':'Pagar em modo teste'}</button>`:''}
+    ${pendente?`<button class="mini" data-mpteste="status" data-id="${esc(i.id)}">Consultar confirmação</button>`:''}</section>`;
+}
+
 TELAS['org-inscrito']=async()=>{
   {const {data:cu}=await sb.from('inscricoes').select('conta_recebimento,edicoes!inner(organizacao_id)').eq('status','confirmada').eq('edicoes.organizacao_id',S.org.id);S.contasUsadas=[...new Set((cu||[]).map(x=>x.conta_recebimento).filter(Boolean))].sort()}
   const {data:i,error}=await sb.from('inscricoes').select('*, marcas(*), decisoes(decisao), edicoes(*)').eq('id',S.perfilId).single();if(error)throw error;
@@ -1717,6 +1743,7 @@ TELAS['org-inscrito']=async()=>{
     <label for="cb-valor">Valor combinado (R$)</label><input id="cb-valor" class="moeda" inputmode="numeric" placeholder="${pad!=null?'Padrão: '+moedaTxt(pad):'0,00'}" value="${i.valor_combinado!=null?moedaTxt(i.valor_combinado):''}">
     <p class="sub" style="margin:4px 0 0;font-size:12px">Vazio = valor padrão${pad!=null?' ('+money(pad)+')':''}. Vale no "falta pagar", no Recebido e no que a expositora vê.</p>
     <div class="row" style="margin-top:10px"><button class="mini pri" id="cb-salvar" data-id="${i.id}" style="min-height:44px">Salvar combinado</button>${combinado(i)?`<button class="mini" id="cb-tirar" data-id="${i.id}" style="min-height:44px">Voltar ao padrão</button>`:''}</div>`:''}</div>`})()}
+  ${await painelMercadoPagoTeste(i,true)}
   ${i.status==='confirmada'?`<div class="painel"><b class="secao">Pagamento</b>${compsL.length?`<p style="margin:6px 0 6px">${compsL.length===1?'1 comprovante anexado.':compsL.length+' comprovantes anexados.'}</p><div class="comp-lista">${compsL.map((c,k)=>`<a class="comp-it" href="${hrefSeguro(compUrls[c.path])}" target="_blank" rel="noopener"><b>📎 Comprovante ${k+1}</b><small>${[c.em?new Date(c.em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'',c.pagador?'Pix de '+esc(c.pagador):'',c.valor!=null?money(c.valor):''].filter(Boolean).join(' · ')||'Toque pra ver'}</small></a>`).join('')}</div>`:'<p class="sub" style="margin:6px 0 10px">Ainda sem comprovante.</p>'}${i.isento?'':`${i.edicoes?.permite_sinal?`<label class="check"><input type="checkbox" data-sinal="${i.id}" ${i.pago_sinal||i.pago?'checked':''} ${i.pago?'disabled':''}> Metade recebida (vaga garantida)</label>`:''}<label class="check"><input type="checkbox" data-pago="${i.id}" ${i.pago?'checked':''}> ${i.edicoes?.permite_sinal?'Pagamento total recebido':'Pagamento recebido'}</label>`}
     ${comp&&!i.isento?`<div class="pix-box"><label for="pagador" style="margin-top:0">Quem fez o Pix</label><input id="pagador" data-pagador="${i.id}" value="${esc(i.pagador_nome||'')}" placeholder="Nome que aparece no comprovante">
       ${i.comprovante_valor!=null?`<p class="sub" style="margin:4px 0 0;font-size:13px">${compsL.length>1?'Soma dos comprovantes':'Valor no comprovante'}: <b>${money(i.comprovante_valor)}</b>${compsL.length<2&&i.comprovante_data?' · '+esc(i.comprovante_data):''}</p>`:''}
@@ -2521,6 +2548,40 @@ document.addEventListener('click',async ev=>{
   if(d.abrirorg){b.disabled=true;await trocarModo('organizacao',d.abrirorg);return}
   if(d.modo==='expositor'){b.disabled=true;await trocarModo('expositor');return}
   if(d.admf){S.admFiltro=d.admf;render();return}
+  if(d.mpteste){
+    if(d.mpteste==='ativar'&&!confirm('Habilitar cobrança simulada somente para esta inscrição?'))return;
+    b.disabled=true;
+    try{
+      const pagamento=await consultaMercadoPagoTeste(d.id,d.mpteste);
+      if(pagamento?.checkout){
+        const destino=new URL(pagamento.checkout);
+        if(destino.origin!=='https://www.mercadopago.com.br')throw new Error('Endereço de checkout inválido.');
+        const painel=b.closest('section');
+        const link=document.createElement('a');
+        link.href=destino.href;
+        link.target='_blank';
+        link.rel='noopener noreferrer';
+        link.className='btn pri';
+        link.textContent='Abrir checkout de teste';
+        const copiar=document.createElement('button');
+        copiar.type='button';
+        copiar.className='mini';
+        copiar.textContent='Copiar link';
+        copiar.addEventListener('click',async()=>{
+          try{await navigator.clipboard.writeText(destino.href);toast('Link de teste copiado')}
+          catch{toast('Abra o checkout pelo link acima')}
+        });
+        const aviso=document.createElement('p');
+        aviso.className='sub';
+        aviso.textContent='Use a conta de comprador de teste no Mercado Pago. Se tua conta pessoal estiver aberta, copia o link para uma janela anônima.';
+        b.replaceWith(aviso,link,copiar);
+        window.addEventListener('focus',()=>{if(painel.isConnected)renderMantendo()},{once:true});
+        return;
+      }
+      await renderMantendo();
+    }catch(err){toast(err.message)}finally{b.disabled=false}
+    return;
+  }
   if(d.admst){if(!S.admin||S.tela!=='admin'){toast('Aprovações são feitas apenas na administração da plataforma.');return}if(d.admst==='suspensa'&&!confirm('Suspender esse evento? Ela sai do ar pros expositores.'))return;b.disabled=true;const r=await sb.rpc('definir_status_organizacao',{p_org:d.id,p_status:d.admst});b.disabled=false;if(r.error){toast(erroMsg(r.error));return}toast(d.admst==='ativa'?'Evento aprovado':d.admst==='suspensa'?'Evento suspenso':'Evento voltou pra esperando');if(S.org?.id===d.id)S.org.status=d.admst;render();return}
   if(d.paleta!==undefined){const [p,dd]=PALETAS[+d.paleta];$('#cfg-p').value=p;$('#cfg-d').value=dd;previaCores();return}
   if(b.id==='nf-ok'){const nome=$('#nf-nome').value.trim(),slug=$('#nf-slug').value.trim(),err=$('#nf-err');err.textContent='';if(!nome){err.textContent='Dê um nome pro evento.';return}
