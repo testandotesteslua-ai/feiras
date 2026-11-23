@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#FFF3E7">
-<meta name="app-versao" content="202611231930">
+<meta name="app-versao" content="202611232030">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261122"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261122"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1122,6 +1122,27 @@ nav.baixo button svg {width:23px;height:23px}
   #tela.wrap .g2>*,#tela.wrap .tiles>* {min-width:0}
 }
 
+
+/* Organização em destaque no cabeçalho */
+.cabeca .wm-org {display:flex;flex:1 1 auto;min-width:0;flex-direction:column;gap:4px;line-height:1.15;color:var(--on-oliva)}
+.cabeca .wm-org small {display:block;font:750 11px/1.3 var(--body);letter-spacing:.105em;text-transform:uppercase;color:inherit;opacity:.74}
+.cabeca .wm-org b {display:block;max-width:none;min-width:0;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;font-family:var(--body);font-size:clamp(23px,2.5vw,34px);font-weight:800!important;line-height:1.13;letter-spacing:-.045em;color:inherit!important}
+.cabeca .linha1 {min-width:0;align-items:flex-start}
+.cabeca .linha1>.papel {flex:none;max-width:160px;line-height:1.25}
+.cabeca .linha1>.atualiza {flex:none}
+@media (min-width:1000px) {
+  .cabeca .wm-org b {font-size:clamp(29px,2.55vw,39px)}
+  .cabeca .wm-org small {font-size:12px}
+  #tela.wrap>.cabeca {padding-top:30px!important;padding-bottom:34px!important}
+  #tela.wrap>.cabeca .linha1 {align-items:center}
+}
+@media (max-width:639px) {
+  .cabeca .wm-org b {font-size:clamp(21px,5.5vw,27px)}
+  .cabeca .wm-org small {font-size:10px}
+  .cabeca .linha1 {gap:8px;align-items:flex-start}
+  .cabeca .linha1>.papel {max-width:105px;font-size:11px;padding:7px}
+}
+
 </style>
 </head>
 <body>
@@ -1170,7 +1191,7 @@ function erroMsg(e){const m=(e&&e.message)||String(e);if(/Invalid login/i.test(m
 
 
 function berg(t=28,o){const lg=(o===undefined?orgDaTela():o)?.logo_url;if(lg)return `<img class="berg berg-logo" src="${esc(lg)}" width="${t}" height="${t}" alt="" style="width:${t}px;height:${t}px">`;return `<span class="berg colanessa-simbolo" style="width:${t}px;height:${t}px" aria-hidden="true"><i></i></span>`}
-const wm=(c='')=>S.tela!=='admin'&&S.papel==='organizadora'&&S.org&&c!=='grande'?`<span class="wm ${c}"><small>PAINEL DO EVENTO</small><b>${esc(String(S.org.nome).toUpperCase())}</b></span>`:`<span class="wm ${c}"><small>${PLAT.peq}</small><b>${PLAT.grande}</b></span>`;
+const wm=(c='')=>S.tela!=='admin'&&S.papel==='organizadora'&&S.org&&c!=='grande'?`<span class="wm wm-org ${c}"><small>PAINEL DO EVENTO</small><b>${esc(String(S.org.nome).toUpperCase())}</b></span>`:`<span class="wm ${c}"><small>${PLAT.peq}</small><b>${PLAT.grande}</b></span>`;
 const topo=()=>`<div class="cabeca"><span class="cacho" aria-hidden="true">${S.tela!=='admin'&&S.papel==='organizadora'&&S.org?.logo_url?`<img src="${esc(S.org.logo_url)}" alt="">`:`<span class="c1">${berg(46)}</span>`}</span><div class="linha1">${wm()}<button class="papel" id="trocar-perfil" aria-haspopup="dialog" style="border:0;color:inherit">${S.tela==='admin'?'Admin':S.papel==='organizadora'?'Organização':'Expositor'} ▾</button><button class="atualiza" id="atualizar" aria-label="Atualizar a tela" title="Atualizar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button></div><div class="ola">${S.tela!=='admin'&&S.papel!=='organizadora'&&S.marca?.logo_url?`<img class="logo" src="${esc(S.marca.logo_url)}" alt="" width="26" height="26" style="width:26px;height:26px;border-width:1.5px">`:''}${S.tela==='admin'?'Painel da plataforma':S.papel==='organizadora'?'Painel da organização'+(S.compNovos&&S.tela!=='org-selecao'?`</div><button class="aviso-comp" data-vercomp="1">📎 ${S.compNovos} comprovante${S.compNovos>1?'s':''} novo${S.compNovos>1?'s':''} pra conferir ›</button><div style="display:none">`:''):S.marca?'Olá, '+esc(S.marca.nome)+'!':'Que bom te ver por aqui!'}</div></div>`;
 const S={sessao:null,papel:'expositor',marca:null,segs:[],tela:'inicio',edicao:null,orgEdicao:null,canal:null,mapaSel:null,vagaSel:null,orgs:[],org:null,admin:false,pushOk:false};
 /* ===== cores: a plataforma é neutra e cada evento usa as cores dela ===== */
