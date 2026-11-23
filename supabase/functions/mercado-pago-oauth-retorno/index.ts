@@ -105,7 +105,17 @@ async function receive(url: URL) {
   const hasSeller = /^[0-9]+$/.test(seller);
   const hasToken = typeof token?.access_token === "string" && token.access_token.length > 0;
   const hasExpiry = Number.isFinite(token?.expires_in) && token.expires_in > 0;
-  if (token?.live_mode !== false || !hasSeller || !hasToken || !hasExpiry) {
+  let sandbox = token?.live_mode === false;
+  if (token?.live_mode == null && hasSeller && hasToken && hasExpiry) {
+    // OAuth can omit live_mode. Only admit a credential whose account is
+    // independently identified as a test user by Mercado Pago.
+    const account = await requestJson(mercadoPago + "/users/me", {
+      headers: { Authorization: "Bearer " + token.access_token },
+    });
+    sandbox = String(account?.id ?? "") === seller &&
+      Array.isArray(account?.tags) && account.tags.includes("test_user");
+  }
+  if (!sandbox || !hasSeller || !hasToken || !hasExpiry) {
     console.warn("Mercado Pago OAuth sandbox rejected", {
       mode: token?.live_mode === false ? "test" : token?.live_mode === true ? "live" : "unknown",
       hasSeller, hasToken, hasExpiry,
