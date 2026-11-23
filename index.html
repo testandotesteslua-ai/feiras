@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#FFF3E7">
-<meta name="app-versao" content="202611232030">
+<meta name="app-versao" content="202611232145">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261122"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261122"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1141,6 +1141,88 @@ nav.baixo button svg {width:23px;height:23px}
   .cabeca .wm-org small {font-size:10px}
   .cabeca .linha1 {gap:8px;align-items:flex-start}
   .cabeca .linha1>.papel {max-width:105px;font-size:11px;padding:7px}
+}
+
+
+/* COLANESSA DESKTOP NAV RECOVERY 2026-11-23 */
+/* Mantém o menu fixo e a área principal no mesmo sistema de coordenadas.
+   O layout não depende de valores de margin-left herdados. */
+@media (min-width:1000px) {
+  html,body {overflow-x:hidden!important}
+  body {position:relative;max-width:100vw}
+  body #nav.baixo:not([hidden]) {
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    transform:none!important;
+    position:fixed!important;
+    inset:0 auto 0 0!important;
+    width:242px!important;
+    min-width:242px!important;
+    height:100vh!important;
+    height:100dvh!important;
+    margin:0!important;
+    padding:24px 13px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    border-radius:0!important;
+    z-index:999!important;
+    flex-flow:column nowrap!important;
+    align-items:stretch!important;
+    justify-content:flex-start!important;
+    background:#fffdfa!important;
+    box-shadow:4px 0 24px rgba(23,31,68,.07)!important;
+  }
+  body #nav.baixo[hidden] {display:none!important}
+  body #nav.baixo:not([hidden]) #navin {
+    display:flex!important;
+    flex-direction:column!important;
+    width:100%!important;
+    min-width:0;
+    gap:8px!important;
+  }
+  body #nav.baixo:not([hidden]) button {
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    flex:0 0 auto!important;
+    white-space:normal!important;
+    color:var(--ink-2);
+    font-size:14px!important;
+    min-height:51px!important;
+    line-height:1.25!important;
+  }
+  body #nav.baixo:not([hidden]) button[aria-current="page"] {color:#fff!important}
+  /* O container ocupa o restante da janela quando há menu ativo */
+  html body:has(#nav.baixo:not([hidden])) > #tela.wrap {
+    position:relative!important;
+    display:block;
+    left:auto!important;right:auto!important;
+    width:calc(100vw - 242px)!important;
+    max-width:calc(100vw - 242px)!important;
+    margin:0 0 0 242px!important;
+    padding:30px clamp(22px,3vw,48px) 64px!important;
+    transform:none!important;
+    overflow-x:clip!important;
+  }
+  html body:has(#nav.baixo[hidden]) > #tela.wrap {
+    width:100%!important;max-width:100%!important;
+    margin-left:0!important;margin-right:0!important;
+  }
+  /* Evita título e cabeçalho estourando a borda esquerda */
+  html body:has(#nav.baixo:not([hidden])) > #tela.wrap > .cabeca {
+    margin:-30px calc(-1 * clamp(22px,3vw,48px)) 28px!important;
+    padding:30px clamp(22px,3vw,48px) 34px!important;
+    width:auto!important;
+    max-width:none!important;
+  }
+  html body:has(#nav.baixo:not([hidden])) > #tela.wrap > :not(.cabeca):not(.toast) {
+    box-sizing:border-box;
+    max-width:min(100%,1160px)!important;
+  }
+  /* Força grid em duas colunas em larguras médias, sem cortar o conteúdo */
+  #tela.wrap .grade-cards {grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr))}
+  #tela.wrap .adm-stats {grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))}
 }
 
 </style>
