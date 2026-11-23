@@ -28,9 +28,25 @@ function back(result: string) {
   return new Response(null, { status: 303, headers: { ...common, Location: app + "?mp-conexao=" + result } });
 }
 
+class OrderError extends Error {
+  constructor(readonly status: number, readonly codes: string[]) {
+    super("Mercado Pago order rejected");
+  }
+}
+
 async function requestJson(url: string, init: RequestInit) {
   const response = await fetch(url, { ...init, signal: AbortSignal.timeout(9000) });
-  if (!response.ok) throw new Error("request:" + response.status);
+  if (!response.ok) {
+    const endpoint = new URL(url);
+    if (endpoint.origin === mercadoPago && endpoint.pathname.startsWith("/v1/orders")) {
+      const error = await response.json().catch(() => null);
+      const rawCodes = [error?.error, ...(Array.isArray(error?.errors) ? error.errors.map((item: { code?: unknown } | null) => item?.code) : [])];
+      const codes = rawCodes.filter((code) => typeof code === "string" && /^[a-z][a-z0-9_]{0,63}$/.test(code)).slice(0, 5);
+      console.warn("Mercado Pago orders request rejected", { status: response.status, codes });
+      throw new OrderError(response.status, codes);
+    }
+    throw new Error("request:" + response.status);
+  }
   const body = await response.text();
   return body ? JSON.parse(body) : null;
 }
@@ -136,8 +152,11 @@ async function receive(url: URL) {
 }
 
 function checkoutUrl(value: string) {
-  const url = new URL(value);
-  if (url.origin !== "https://www.mercadopago.com.br" || url.username || url.password) throw new Error("checkout inválido");
+  const url = URL.canParse(value) ? new URL(value) : null;
+  if (!url || url.origin !== "https://www.mercadopago.com.br" || url.username || url.password) {
+    console.warn("Mercado Pago returned an invalid checkout URL");
+    throw new Error("checkout inválido");
+  }
   return url.href;
 }
 
@@ -155,7 +174,13 @@ async function testSplit(row: any, org: string) {
       }),
     });
   if (!sandboxOrder.test(order?.id ?? "") || order.external_reference !== ref ||
-      Number(order.total_amount) !== 10) throw new Error("order de teste inválida");
+      Number(order.total_amount) !== 10) {
+    console.warn("Mercado Pago test order validation failed", {
+      sandbox: sandboxOrder.test(order?.id ?? ""), referenceMatches: order?.external_reference === ref,
+      amountMatches: Number(order?.total_amount) === 10,
+    });
+    return json({ erro: "O Mercado Pago devolveu uma cobrança que o Cola Nessa não conseguiu confirmar como teste." }, 502);
+  }
   const checkout = checkoutUrl(row.checkout_url ?? order.checkout_url);
   if (!row.order_id) {
     await database(connections + "?organizacao_id=eq." + org + "&tentativa=eq." + row.tentativa, {
@@ -215,6 +240,10 @@ Deno.serve(async (req) => {
   }
   if (req.method !== "POST") return json({ erro: "Método inválido." }, 405);
   try { return await operate(req); } catch (error) {
+    if (error instanceof OrderError) {
+      const diagnostic = [error.status, ...error.codes].join(" · ");
+      return json({ erro: "O Mercado Pago recusou a cobrança de teste. Código: " + diagnostic }, 502);
+    }
     const status = error instanceof Error && /^request:[0-9]{3}$/.test(error.message) ? Number(error.message.slice(8)) : undefined;
     return json({ erro: "Não foi possível concluir o teste do Mercado Pago.", ...(status && { codigo: status }) }, 502);
   }
