@@ -80,12 +80,13 @@ Deno.serve(async (req) => {
     }
     const id = body.inscricao;
     const filter = `?inscricao_id=eq.${id}`;
-    const [ins] = await database(`/rest/v1/inscricoes?id=eq.${id}&select=id,dono,status,isento,pago,pago_sinal,valor_pago,credito_usado,comprovante_path,tamanho,dia_unico,valor_combinado,edicoes(id,organizacao_id,gratuita,cancelada_em,preco_dia,preco_2m,preco_3m,preco_unico)`);
+    const sessionHeaders = { apikey: anonKey, Authorization: authorization };
+    const [ins] = await database(`/rest/v1/inscricoes?id=eq.${id}&select=id,dono,status,isento,pago,pago_sinal,valor_pago,credito_usado,comprovante_path,tamanho,dia_unico,valor_combinado,edicoes(id,organizacao_id,gratuita,cancelada_em,preco_dia,preco_2m,preco_3m,preco_unico)`, { headers: sessionHeaders });
     if (!ins?.edicoes) return reply({ erro: "Inscrição indisponível." }, 404);
     const edition = ins.edicoes;
     const owner = ins.dono === user.id;
     if (!owner || body.acao === "ativar") {
-      const [profile] = await database(`/rest/v1/perfis?id=eq.${user.id}&select=eh_admin`);
+      const [profile] = await database(`/rest/v1/perfis?id=eq.${user.id}&select=eh_admin`, { headers: sessionHeaders });
       if (body.acao === "ativar" && !profile?.eh_admin) return reply({ erro: "Acesso restrito à administração." }, 403);
       if (!owner && !profile?.eh_admin) {
         const [member] = await database(`/rest/v1/membros_organizacao?user_id=eq.${user.id}&organizacao_id=eq.${edition.organizacao_id}&select=user_id`);
