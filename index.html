@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#FFF3E7">
-<meta name="app-versao" content="202611221640">
+<meta name="app-versao" content="202611231100">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261122"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261122"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -2411,10 +2411,12 @@ function abrirCuradoria(params,monta){
   <p style="margin:0 0 14px">As inscrições de ${esc(S.edicao?.organizacoes?.nome||'esse evento')} passam por curadoria da organização.</p>${camposInscricao(S.edicao)}
   <label class="check" style="align-items:flex-start;background:var(--card);border:1.5px solid var(--verde);border-radius:16px;padding:14px;margin:0"><input type="checkbox" id="cu-ok" style="width:22px;min-height:22px;margin-top:2px;accent-color:var(--verde)"><span>Estou ciente de que a inscrição <b>não garante participação</b> e que passa por curadoria.</span></label>
   ${monta?`<div class="aviso-monta" style="margin-top:10px">Você marcou que precisa montar no dia do evento.</div><label class="check" style="align-items:flex-start;background:var(--card);border:1.5px solid var(--tomate);border-radius:16px;padding:14px;margin:10px 0 0"><input type="checkbox" id="cu-monta" style="width:22px;min-height:22px;margin-top:2px;accent-color:var(--tomate)"><span>Estou ciente de que é <b>muito importante montar no dia ${dataBR(S.edicao.data_montagem)}</b> e que, se eu montar no dia do evento, vou chegar cedo pra deixar tudo pronto antes de abrir.</span></label>`:''}
+  ${S.pend?'<div style="margin:12px 0;padding:12px;border:1px solid var(--laranja);border-radius:14px;background:var(--laranja-soft)"><p style="margin:0 0 10px;color:var(--tomate);font-size:13px">Responda o feedback da '+esc(S.pend.titulo)+' de '+dataBR(S.pend.data)+' para liberar a inscrição.</p><button type="button" class="btn sec" id="cu-feedback" style="border:1.5px solid var(--laranja)">Responder feedback</button></div>':''}
   <p class="erro" id="cu-err"></p>
   <div class="row" style="margin-top:6px"><button class="btn sec" id="cu-cancela">Voltar</button><button class="btn pri" id="cu-envia">Enviar inscrição</button></div></div>`;
   document.body.appendChild(f);
   f.querySelector('#cu-cancela').onclick=()=>f.remove();
+  const fbBotao=f.querySelector('#cu-feedback');if(fbBotao){f.querySelector('#cu-envia').disabled=true;fbBotao.onclick=()=>{S.retornoCuradoria={params,monta,edicaoId:S.edicao?.id};f.remove();go('feedback')}}
   f.querySelector('#cu-envia').onclick=async ev=>{if(!f.querySelector('#cu-ok').checked||(monta&&!f.querySelector('#cu-monta').checked)){f.querySelector('#cu-err').textContent=monta?'Marque as duas caixinhas pra continuar.':'Marque a caixinha pra continuar.';return}
     const ex=lerCamposInscricao(f,S.edicao);if(ex.erro){f.querySelector('#cu-err').textContent=ex.erro;(ex.el||f.querySelector(ex.foco))?.focus?.();return}
      const bt=ev.currentTarget;bt.disabled=true;const r=await sb.rpc('inscrever',{...params,p_ciente:true,...ex.p});bt.disabled=false;
@@ -2617,7 +2619,7 @@ document.addEventListener('click',async ev=>{
   if(d.fbk){const v=d.fbv==='true'?true:d.fbv==='false'?false:/^\d$/.test(d.fbv)?+d.fbv:d.fbv;S.fb[d.fbk]=v;const c=$('#fb-com');if(c)S.fbCom=c.value;const y=window.scrollY;await render();window.scrollTo(0,y);return}
   if(b.id==='fb-ok'){const err=$('#fb-err');const falta=PERG.find(([k])=>S.fb[k]===undefined);if(falta){err.textContent='Falta responder: '+(typeof falta[1]==='function'?falta[1]():falta[1]);return}
     b.disabled=true;const r=await sb.from('feedbacks').insert({inscricao_id:S.pend.inscricao_id,edicao_id:S.pend.edicao_id,...S.fb,comentario:($('#fb-com').value||'').trim()||null});b.disabled=false;
-    if(r.error){err.textContent=erroMsg(r.error);return}S.fb={};S.fbCom='';toast('Obrigada pelo feedback!');go('inicio');return}
+    if(r.error){err.textContent=erroMsg(r.error);return}S.fb={};S.fbCom='';await carregaPend(S.edicao?.organizacao_id);toast('Obrigada pelo feedback!');const retorno=S.retornoCuradoria;S.retornoCuradoria=null;if(retorno&&retorno.edicaoId===S.edicao?.id){go('edicao');abrirCuradoria(retorno.params,retorno.monta)}else go('inicio');return}
   /* organizadora */
   if(d.editar){S.edForm=d.editar==='nova'?null:S.edicoes.find(x=>x.id===d.editar);go('org-edicao-form');return}
   if(d.cancelv){S.cancelEd=d.cancelv;go('org-cancel');return}
