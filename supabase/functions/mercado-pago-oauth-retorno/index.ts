@@ -114,36 +114,18 @@ async function receive(url: URL) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       client_id: clientId, client_secret: clientSecret, grant_type: "authorization_code",
-      code, redirect_uri: callback, test_token: "true",
+      code, redirect_uri: callback, test_token: "false",
     }),
   });
   const seller = String(token?.user_id ?? "");
-  const hasSeller = /^[0-9]+$/.test(seller);
-  const hasToken = typeof token?.access_token === "string" && token.access_token.length > 0;
-  const hasExpiry = Number.isFinite(token?.expires_in) && token.expires_in > 0;
-  let sandbox = token?.live_mode === false;
-  if (token?.live_mode == null && hasSeller && hasToken && hasExpiry) {
-    // OAuth can omit live_mode. Only admit a credential whose account is
-    // independently identified as a test user by Mercado Pago.
-    const account = await requestJson(mercadoPago + "/users/me", {
-      headers: { Authorization: "Bearer " + token.access_token },
-    });
-    sandbox = String(account?.id ?? "") === seller &&
-      Array.isArray(account?.tags) && account.tags.includes("test_user");
-  }
-  if (!sandbox || !hasSeller || !hasToken || !hasExpiry) {
-    console.warn("Mercado Pago OAuth sandbox rejected", {
-      mode: token?.live_mode === false ? "test" : token?.live_mode === true ? "live" : "unknown",
-      hasSeller, hasToken, hasExpiry,
-    });
-    return back("ambiente");
-  }
+  if (!/^[0-9]+$/.test(seller) || !Number.isFinite(token?.expires_in) || token.expires_in <= 0 ||
+      !await isOrdersTestSeller(token?.access_token, seller)) return back("ambiente");
 
   await database(connections + "?on_conflict=organizacao_id", {
     method: "POST", headers: { Prefer: "resolution=merge-duplicates" },
     body: JSON.stringify({
       organizacao_id: attempt.organizacao_id, vendedor_id: seller,
-      token_cifrado: await encryptToken(token.access_token, attempt.organizacao_id),
+      token_cifrado: "orders:" + await encryptToken(token.access_token, attempt.organizacao_id),
       expira_em: new Date(Date.now() + token.expires_in * 1000).toISOString(),
       tentativa: crypto.randomUUID(), order_id: null, checkout_url: null,
     }),
@@ -160,8 +142,20 @@ function checkoutUrl(value: string) {
   return url.href;
 }
 
+async function isOrdersTestSeller(token: unknown, seller: string) {
+  if (typeof token !== "string" || !token.startsWith("APP_USR-")) return false;
+  const account = await requestJson(mercadoPago + "/users/me", {
+    headers: { Authorization: "Bearer " + token },
+  });
+  return String(account?.id ?? "") === seller &&
+    Array.isArray(account?.tags) && account.tags.includes("test_user");
+}
+
 async function testSplit(row: any, org: string) {
-  const token = await decryptToken(row.token_cifrado, org);
+  const token = await decryptToken(row.token_cifrado.slice("orders:".length), org);
+  if (!await isOrdersTestSeller(token, row.vendedor_id)) {
+    return json({ erro: "O Mercado Pago não confirmou esta conta como vendedor de teste." }, 409);
+  }
   const headers = { Authorization: "Bearer " + token };
   const ref = "colanessa-split-teste-" + row.tentativa;
   const order = row.order_id
@@ -223,9 +217,9 @@ async function operate(req: Request) {
     return json({ autorizacao: url.href });
   }
 
-  const fields = body.acao === "status" ? "&select=vendedor_id,expira_em,order_id" : "";
+  const fields = body.acao === "status" ? "&select=vendedor_id,expira_em,order_id,token_cifrado" : "";
   const [row] = await database(connections + filter + fields);
-  const active = row && Date.parse(row.expira_em) > Date.now();
+  const active = row?.token_cifrado?.startsWith("orders:") && Date.parse(row.expira_em) > Date.now();
   if (body.acao === "status") {
     return json({ conectada: !!active, vendedor: active ? row.vendedor_id : null, order_id: active ? row.order_id : null });
   }
