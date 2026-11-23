@@ -1,0 +1,2 @@
+[functions.mercado-pago-oauth-retorno]
+verify_jwt = false

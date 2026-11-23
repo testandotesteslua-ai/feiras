@@ -950,6 +950,11 @@ async function carregarUsuario(){
     if(ab==='ed'&&abId){try{history.replaceState(null,'',location.pathname)}catch{}const {data:edA}=await sb.from('edicoes').select('*').eq('id',abId).maybeSingle();if(edA&&S.marca){S.edicao=edA;S.tela='edicao'}}}
   if(S.papel==='organizadora'){await contaComprovantes();ouveComprovantes();if(pushEstado()==='ligado')assinaPush(false).catch(()=>{});
     if(ab){try{history.replaceState(null,'',location.pathname)}catch{}if(ab==='ed'&&abId){S.orgEdicao=abId;S.gAbertos=new Set();S.tela='org-selecao'}S.gAbertos=new Set();if(ab==='reembolso'&&abId){S.cancelEd=abId;S.tela='org-cancel'}else if(ab==='comprovantes'){S.irComp=true;S.tela='org-selecao'}else if(ab==='selecao'){const eN=Object.keys(S.novasEd||{})[0];if(eN)S.orgEdicao=eN;S.filtroSel='novas';S.tela='org-selecao'}}}
+  if(qs.has('mp-conexao')&&podeTestarConexaoMP()){
+    S.retornoMP=qs.get('mp-conexao');qs.delete('mp-conexao');
+    try{history.replaceState(null,'',location.pathname+(qs.size?'?'+qs:'')+location.hash)}catch{}
+    S.tela='org-mercado-pago';
+  }
   render();
 }
 async function escolherModo(){let modo='',oid='';try{modo=localStorage.getItem(chaveU('pf-modo'))||'';oid=localStorage.getItem(chaveU('pf-org'))||''}catch{}
@@ -1395,8 +1400,45 @@ TELAS['nova-feira']=()=>`<button class="mini" data-go="conta" style="border:0;ba
 
 /* ================= DADOS DA EVENTO ================= */
 const PALETAS=[['#17161C','#5B3DF5'],['#0F172A','#0EA5E9'],['#1C1917','#F97316'],['#052E16','#16A34A'],['#3B0764','#DB2777'],['#111827','#CA8A04']];
+function podeTestarConexaoMP(){
+  return S.admin&&S.papel==='organizadora'&&S.org?.status==='ativa'&&S.org.criado_por===S.sessao?.user.id;
+}
+
+async function conexaoMercadoPago(organizacao,acao){
+  const {data,error}=await sb.functions.invoke('mercado-pago-oauth-retorno',{body:{organizacao,acao}});
+  if(error){
+    const detalhe=await error.context?.json?.().catch(()=>null);
+    throw new Error(detalhe?.erro||'Não foi possível acessar o teste do Mercado Pago.');
+  }
+  return data;
+}
+
+TELAS['org-mercado-pago']=async()=>{
+  if(!podeTestarConexaoMP())return TELAS.conta();
+  const volta='<button class="mini" data-go="org-config" style="border:0;background:none">← Dados do evento</button><h1>Mercado Pago</h1>';
+  const mensagens={
+    cancelada:'Autorização cancelada.', invalida:'A autorização expirou ou já foi usada. Inicia a conexão de novo.',
+    ambiente:'O Mercado Pago não retornou uma credencial de teste. Confere se entrou com um vendedor de teste.',
+    configuracao:'As credenciais da aplicação ainda estão indisponíveis.',
+    erro:'O Mercado Pago não concluiu a autorização. Tenta conectar de novo.',
+  };
+  const aviso=Object.hasOwn(mensagens,S.retornoMP)?mensagens[S.retornoMP]:'';
+  S.retornoMP=null;
+  let estado;
+  try{estado=await conexaoMercadoPago(S.org.id,'status')}
+  catch(error){return volta+`<p class="erro" role="status">${esc(error.message)}</p>`}
+  return volta+`<section class="painel"><p class="sub">Ambiente de teste · ${esc(S.org.nome)}</p>
+    ${aviso?`<p class="erro" role="status">${esc(aviso)}</p>`:''}
+    ${estado.conectada?`<p>Vendedor de teste conectado · ${esc(estado.vendedor)}</p>
+      <p class="sub">Cobrança simulada de R$ 10,00 com comissão de R$ 1,00.</p>
+      <button class="btn pri" data-mp-oauth="cobranca">${estado.order_id?'Consultar cobrança de teste':'Criar cobrança de teste'}</button>`
+      :'<p>Autoriza uma conta de vendedor de teste no Mercado Pago.</p><button class="btn pri" data-mp-oauth="conectar">Conectar Mercado Pago</button>'}
+    <div id="mp-oauth-resultado" role="status"></div></section>`;
+};
+
 TELAS['org-config']=()=>{const o=S.org;if(!o)return TELAS.conta();if(S.cfgDe!==o.id){S.cfgDe=o.id;S.cfg={cor_primaria:coresDe(o)?o.cor_primaria:'#17161C',cor_destaque:coresDe(o)?o.cor_destaque:'#5B3DF5',logo_url:o.logo_url}}const c=S.cfg;
   return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Dados do evento</h1><p class="sub">O que aparece pros expositores. <button class="mini" data-divulga="" style="min-height:36px;margin-left:4px">🔗 Link do evento</button></p><div class="painel">
+  ${podeTestarConexaoMP()?'<button class="btn sec" data-go="org-mercado-pago" style="margin-bottom:14px">Mercado Pago · teste</button>':''}
   <label style="margin-top:0">Logo</label><div class="logo-up"><span id="cfg-logo-prev">${c.logo_url?`<img class="logo" src="${esc(c.logo_url)}" alt="Logo" width="84" height="84" style="width:84px;height:84px">`:`<span class="logo-vazio">${berg(40,null)}</span>`}</span><div style="flex:1"><label class="btn sec" for="cfg-logo" style="font-weight:700">${c.logo_url?'Trocar logo':'Escolher logo'}</label><input id="cfg-logo" type="file" accept="image/png,image/jpeg,image/webp" hidden></div></div>
   <label for="cfg-nome">Nome do evento</label><input id="cfg-nome" value="${esc(o.nome)}" maxlength="80">
   <label for="cfg-tipo">Tipo de evento</label><select id="cfg-tipo">${tipoOpcoes(o.tipo||'feira')}</select><p class="sub" style="margin:4px 0 0;font-size:12px">Os expositores filtram os eventos por tipo. Cada edição pode trocar.</p>
@@ -2574,6 +2616,32 @@ document.addEventListener('click',async ev=>{
   if(d.abrirorg){b.disabled=true;await trocarModo('organizacao',d.abrirorg);return}
   if(d.modo==='expositor'){b.disabled=true;await trocarModo('expositor');return}
   if(d.admf){S.admFiltro=d.admf;render();return}
+  if(d.mpOauth){
+    const resultado=$('#mp-oauth-resultado');
+    if(!resultado||!podeTestarConexaoMP())return;
+    b.disabled=true;resultado.textContent='';
+    try{
+      const r=await conexaoMercadoPago(S.org.id,d.mpOauth);
+      if(d.mpOauth==='conectar'){
+        const url=new URL(r.autorizacao);
+        if(url.origin!=='https://auth.mercadopago.com.br')throw new Error('Endereço de autorização inválido.');
+        location.assign(url.href);return;
+      }
+      const mensagem=document.createElement('p');mensagem.className='sub';
+      mensagem.textContent=r.pago?'Pagamento de teste confirmado. Confere o repasse e a comissão no Mercado Pago.':'Entra no checkout com a conta de comprador de teste.';
+      resultado.append(mensagem);
+      if(!r.pago){
+        const url=new URL(r.checkout);
+        if(url.origin!=='https://www.mercadopago.com.br')throw new Error('Endereço de checkout inválido.');
+        const link=document.createElement('a');link.className='btn sec';link.href=url.href;
+        link.target='_blank';link.rel='noopener noreferrer';link.textContent='Abrir checkout de teste';
+        resultado.append(link);
+      }
+      b.textContent='Consultar cobrança de teste';
+    }catch(error){resultado.textContent=erroMsg(error)}
+    finally{b.disabled=false}
+    return;
+  }
   if(d.mpMapa){abrirMapaTeste(d.mpMapa);return}
   if(d.mpteste){
     if(d.mpteste==='ativar'&&!confirm('Habilitar cobrança simulada somente para esta inscrição?'))return;
