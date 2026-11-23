@@ -825,7 +825,28 @@ html body nav.baixo button{border-radius:12px;min-height:48px}
   border-color: var(--colanessa-azul);
   box-shadow: 0 0 0 3px #DCE6FF;
 }
-</style></head>
+</style><style>
+#tela[data-tela="inicio"] { --azul-eventos:#283db5; }
+#tela[data-tela="inicio"]>.cabeca { background:#243398;color:white;padding-bottom:20px;border-radius:0 0 24px 24px;margin-bottom:22px; }
+#tela[data-tela="inicio"] .cabeca .cacho { display:none }
+#tela[data-tela="inicio"] .cabeca :is(.wm,.wm b,.wm small,.ola,.papel,.atualiza) { color:white }
+#tela[data-tela="inicio"] .cabeca :is(.papel,.atualiza) {background:#172577;min-height:44px}
+#tela[data-tela="inicio"] .wm small { display:none }
+#tela[data-tela="inicio"] .wm b { font-size:clamp(26px,7vw,38px) }
+#tela[data-tela="inicio"] .ola {font-size:17px;line-height:1.4}
+#tela[data-tela="inicio"]>h1 {font-size:clamp(44px,12vw,64px);line-height:1.02;margin:18px 0}
+#tela[data-tela="inicio"] .abas {gap:8px;background:transparent;border:0;padding:0;border-radius:0}
+#tela[data-tela="inicio"] .abas button {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;min-height:64px;padding:12px;border:1px solid #c8c3ba;border-radius:14px;font-size:17px;background:white;color:#252136}
+#tela[data-tela="inicio"] .abas button[aria-pressed="true"] {background:var(--azul-eventos);border-color:var(--azul-eventos);color:white}
+#tela[data-tela="inicio"] .abas small {background:#eeeafb;color:#243398;margin:0;font-size:15px}
+#tela[data-tela="inicio"] .busca-exp :is(input[type=search],label) {font-size:17px;min-height:48px}
+#tela[data-tela="inicio"] .vazio {margin:24px 0;padding:26px;text-align:left;background:#fff9ef;border:1px solid #e2cdb9;border-top:6px solid #ed7036;border-radius:18px}
+#tela[data-tela="inicio"] .vazio h2 {font-size:34px;line-height:1.1;margin:0 0 12px}
+#tela[data-tela="inicio"] .vazio .sub {font-size:18px;line-height:1.45;margin:0}
+#tela[data-tela="inicio"] .grade-cards h3 {font-size:23px}
+body:has(#tela[data-tela="inicio"]) #nav button {font-size:15px;min-height:58px}
+</style>
+</head>
 <body>
 <div class="wrap" id="tela"><p class="sub">Carregando…</p></div>
 <nav class="baixo" id="nav" hidden><div class="in" id="navin"></div></nav>
@@ -1318,13 +1339,13 @@ TELAS.inicio=async()=>{
     if(tiposD.length>1)filtroCid=`<div class="cid-filtro tipo-filtro" role="group" aria-label="Filtrar por tipo de evento"><button data-tipoexp="" aria-pressed="${!S.tipoExp}">Todos os tipos</button>${TIPOS.filter(t=>tiposD.includes(t[0])).map(([v,n,ic])=>`<button data-tipoexp="${v}" aria-pressed="${S.tipoExp===v}">${ic} ${n}</button>`).join('')}</div>`+filtroCid;
     const filtradas=S.tipoExp?filtradas0.filter(e=>tipoEd(e)===S.tipoExp):filtradas0;
     const abertasD=filtradas.filter(e=>abertaJa(e)),embreveD=filtradas.filter(e=>!abertaJa(e));
-    corpo=disponiveis.length?(abertasD.length?`<h2 class="gr-ed">Inscrições abertas</h2><div class="grade-cards">${abertasD.map(e=>card(e,null,false)).join('')}</div>`:'')+(embreveD.length?`<h2 class="gr-ed">Em breve</h2><p class="sub" style="margin:-6px 0 10px">Ainda não dá pra se inscrever. Já dá pra ver as informações e deixar a marca pronta.</p><div class="grade-cards">${embreveD.map(e=>card(e,null,false)).join('')}</div>`:''):`<div class="vazio">${berg(64)}<p class="sub">Nenhum evento aberto agora. Assim que o próximo abrir, ele aparece aqui.</p></div>`;
+    corpo=disponiveis.length?(abertasD.length?`<h2 class="gr-ed">Inscrições abertas</h2><div class="grade-cards">${abertasD.map(e=>card(e,null,false)).join('')}</div>`:'')+(embreveD.length?`<h2 class="gr-ed">Em breve</h2><p class="sub" style="margin:-6px 0 10px">Ainda não dá pra se inscrever. Já dá pra ver as informações e deixar a marca pronta.</p><div class="grade-cards">${embreveD.map(e=>card(e,null,false)).join('')}</div>`:''):`<div class="vazio"><h2>Nenhum evento disponível</h2><p class="sub">As próximas edições com inscrições abertas ou previstas vão aparecer aqui.</p></div>`;
   }
   S.avisoRest=futuras.filter(x=>!cancelada(x.edicoes)).find(x=>x.status==='confirmada'&&x.pago_sinal&&!x.pago)||null;
   S.avisoVaga=futuras.filter(x=>!cancelada(x.edicoes)).find(x=>x.status==='confirmada'&&garantiu(x)&&!x.vaga_id&&!x.divide_com&&x.edicoes?.mapa_id&&!vagaFechada(x.edicoes))||null;
   S.avisoAprov=futuras.filter(x=>!cancelada(x.edicoes)&&x.status==='confirmada'&&!x.pago&&!x.pago_sinal).find(x=>{try{return !localStorage.getItem('pf-aprov-'+x.id)}catch{return false}})||null;
   S.avisoMontaDia=futuras.filter(x=>!cancelada(x.edicoes)).find(x=>precisaRespMonta(x,x.edicoes))||null;S.avisoMont=futuras.filter(x=>!cancelada(x.edicoes)).find(x=>x.status==='confirmada'&&!(Array.isArray(x.montagem)?x.montagem.length:x.montagem))||null;
-  return cardPend()+avisoLogo+bannerPush()+`<h1>Eventos</h1>`+abas+(S.abaExp==='disponiveis'?filtroBuscaHTML(true):'')+filtroCid+corpo;
+  return cardPend()+avisoLogo+bannerPush()+`<h1>Eventos</h1>`+abas+(S.abaExp==='disponiveis'&&disponiveis.length?filtroBuscaHTML(true):'')+filtroCid+corpo;
 };
 TELAS.edicao=async()=>{
   if(!S.edicao)return TELAS.inicio();
