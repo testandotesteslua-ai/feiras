@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 146" role="img" aria-labelledby="title">
+<title id="title">Cola Nessa — símbolo de localização</title>
+<defs>
+<linearGradient id="face" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#B48AFF"/><stop offset=".47" stop-color="#6A00FF"/><stop offset="1" stop-color="#3D00AA"/></linearGradient>
+<linearGradient id="base" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6A00FF"/><stop offset="1" stop-color="#25006E"/></linearGradient>
+</defs>
+<path fill="url(#base)" d="M60 141C45 121 12 82 12 58a48 48 0 0 1 96 0c0 24-33 63-48 83Z"/>
+<path fill="url(#face)" d="M60 129C44 108 12 79 12 58a48 48 0 0 1 96 0c0 21-32 50-48 71Z"/>
+<path fill="#fff" d="M60 37a21 21 0 1 0 0 42a21 21 0 0 0 0-42Z"/>
+<path fill="#9B5CFF" opacity=".3" d="M26 32c12-19 40-29 62-9c-23-9-46-2-62 9Z"/>
+</svg>
