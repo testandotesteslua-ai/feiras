@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#FFF3E7">
-<meta name="app-versao" content="202611231815">
+<meta name="app-versao" content="202611231930">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261122"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261122"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1022,6 +1022,104 @@ nav.baixo button svg {width:23px;height:23px}
 @media(prefers-reduced-motion:reduce) {
   html {scroll-behavior:auto}
   .btn,.mini,.adm-tab,.abas button,.cardfeira,.edcard {transition:none}
+}
+
+
+/* COLANESSA DESKTOP LAYOUT FIX 2026-11-23 */
+@media (min-width:1000px) {
+  html,body {width:100%;min-width:0;overflow-x:clip}
+  body {min-height:100vh}
+  /* Uma única largura de navegação para todas as telas */
+  html body nav.baixo:not([hidden]) {
+    position:fixed!important;top:0!important;bottom:0!important;
+    left:0!important;right:auto!important;width:242px!important;
+    height:100dvh!important;max-height:100dvh;
+    display:flex!important;flex-direction:column!important;
+    align-items:stretch!important;justify-content:flex-start!important;
+    overflow-y:auto;overflow-x:hidden;
+    border-radius:0!important;margin:0!important;
+    padding:26px 14px!important;z-index:20;
+  }
+  html body nav.baixo[hidden] {display:none!important}
+  html body nav.baixo:not([hidden]) .in {
+    width:100%!important;max-width:none!important;
+    display:flex!important;flex-direction:column!important;gap:7px;
+  }
+  html body nav.baixo:not([hidden]) button {
+    width:100%;flex:0 0 auto;display:flex;flex-direction:row;
+    align-items:center;justify-content:flex-start;gap:12px;
+    min-width:0;min-height:50px;padding:10px 13px;
+    white-space:normal;text-align:left;overflow-wrap:anywhere;
+  }
+  html body nav.baixo:not([hidden]) button svg {flex:0 0 22px}
+  /* Evita o deslocamento duplo do conteúdo e a largura excedente */
+  html body:has(nav.baixo:not([hidden])) #tela.wrap {
+    width:calc(100% - 242px)!important;max-width:none!important;
+    margin:0 0 0 242px!important;
+    padding:30px clamp(24px,3.4vw,58px) 64px!important;
+  }
+  html body #tela.wrap {
+    width:100%;max-width:none;min-width:0;
+    margin-right:0;
+  }
+  html body #tela.wrap[data-tela="auth"],
+  html body #tela.wrap[data-tela="novasenha"],
+  html body #tela.wrap[data-tela="proposta"] {
+    width:min(100%,560px)!important;
+    margin:0 auto!important;padding:32px 22px 64px!important;
+  }
+  /* Centralização coerente: cabeçalho ocupa a área, conteúdo usa uma coluna */
+  #tela.wrap>.cabeca {
+    max-width:none!important;
+    width:auto!important;
+    margin: -30px calc(-1 * clamp(24px,3.4vw,58px)) 30px!important;
+    padding:25px clamp(24px,3.4vw,58px) 30px!important;
+  }
+  #tela.wrap>.cabeca .linha1,#tela.wrap>.cabeca .ola {
+    max-width:1180px;width:100%;margin-left:auto;margin-right:auto;
+  }
+  #tela.wrap>*:not(.cabeca):not(.recorte-fundo):not(.toast) {
+    width:100%;max-width:1180px;margin-left:auto;margin-right:auto;
+    min-width:0;
+  }
+  #tela.wrap>.mini[data-go] {
+    width:max-content!important;max-width:100%!important;
+    margin-left:max(0px,calc((100% - 1180px)/2))!important;
+    margin-right:0!important;
+  }
+  #tela.wrap>.btn {max-width:1180px}
+  #tela.wrap .grade-cards {
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));
+    align-items:stretch;gap:20px;
+  }
+  #tela.wrap .grade-cards>* {min-width:0}
+  #tela.wrap .g2,#tela.wrap .g3,#tela.wrap .opcoes,
+  #tela.wrap .tiles,#tela.wrap .edcard .nums {min-width:0}
+  #tela.wrap .g2>*,#tela.wrap .g3>*,#tela.wrap .opcoes>*,
+  #tela.wrap .tiles>*,#tela.wrap .edcard .nums>* {min-width:0}
+  #tela.wrap .painel,#tela.wrap .cardfeira,#tela.wrap .edcard,
+  #tela.wrap .sel {max-width:100%;overflow-wrap:break-word}
+  #tela.wrap .tabwrap {max-width:100%;overflow-x:auto}
+  #tela.wrap .topo {flex-wrap:wrap}
+  #tela.wrap .row {min-width:0}
+  #tela.wrap .row>* {min-width:0}
+  #tela.wrap .mapawrap,#tela.wrap #plwrap {max-width:100%}
+  #tela.wrap .adm-stats {grid-template-columns:repeat(4,minmax(0,1fr))}
+  #tela.wrap .adm-tabs {grid-template-columns:repeat(4,minmax(0,1fr))}
+  #tela.wrap .busca-exp {grid-template-columns:minmax(0,1fr) auto;align-items:center}
+  #tela.wrap .busca-exp input {min-width:0}
+  #tela.wrap .hero {min-height:180px}
+}
+@media (min-width:1000px) and (max-width:1250px) {
+  #tela.wrap .grade-cards {grid-template-columns:repeat(2,minmax(0,1fr))}
+  #tela.wrap .adm-stats {grid-template-columns:repeat(2,minmax(0,1fr))}
+  #tela.wrap .adm-stats .adm-stat:nth-child(n+3) {border-top:0}
+}
+@media (min-width:640px) and (max-width:999px) {
+  html body #tela.wrap {max-width:920px!important;width:100%;margin:0 auto!important}
+  #tela.wrap>.cabeca {margin-left:-28px;margin-right:-28px}
+  #tela.wrap .grade-cards {grid-template-columns:repeat(2,minmax(0,1fr))}
+  #tela.wrap .g2>*,#tela.wrap .tiles>* {min-width:0}
 }
 
 </style>
