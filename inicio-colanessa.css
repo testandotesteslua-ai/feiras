@@ -35,7 +35,7 @@ html body #tela[data-tela="auth"]>.auth-layout {
 #tela[data-tela="auth"] .auth-brand{width:100%;min-width:0;display:flex;align-items:center;justify-content:center}
 #tela[data-tela="auth"] .auth-brand-inner{width:100%;max-width:650px;text-align:center}
 #tela[data-tela="auth"] .auth-logo{display:flex;align-items:center;justify-content:center;gap:clamp(10px,1.7vw,24px);margin:0 auto}
-#tela[data-tela="auth"] .auth-pin{display:block;width:clamp(100px,11vw,180px);height:clamp(132px,14vw,225px);flex:0 0 auto;background:url("colanessa-logo-oficial-corrigida.avif?v=20261124-fix02") center/contain no-repeat, url("colanessa-icon.svg") center/contain no-repeat;filter:none;position:relative}
+#tela[data-tela="auth"] .auth-pin{display:block;width:clamp(100px,11vw,180px);height:clamp(132px,14vw,225px);flex:0 0 auto;background:url("colanessa-icon.svg?v=20261124-vector01") center/contain no-repeat;filter:none;position:relative}
 #tela[data-tela="auth"] .auth-pin::after{display:none}
 #tela[data-tela="auth"] .auth-wordmark{text-align:left;min-width:0}
 #tela[data-tela="auth"] .auth-wordmark strong{display:block;color:#190765;font:800 clamp(32px,4.3vw,69px)/1.08 "Montserrat","Inter",sans-serif;letter-spacing:-.07em;white-space:nowrap}
