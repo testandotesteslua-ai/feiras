@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#10083D">
-<meta name="app-versao" content="202611240915">
+<meta name="app-versao" content="202611240920">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261122"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261122"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1259,6 +1259,7 @@ nav.baixo button svg {width:23px;height:23px}
 }
 </style>
 <link rel="stylesheet" href="marca-colanessa.css?v=20261123-01">
+<link rel="stylesheet" href="inicio-colanessa.css?v=20261124-02">
 </head>
 <body>
 <div class="wrap" id="tela"><p class="sub">Carregando…</p></div>
@@ -1462,7 +1463,7 @@ document.addEventListener('change',async ev=>{
 /* ================= AUTENTICAÇÃO ================= */
 let modoAuth='entrar';
 const TELAS={};const AFTER={};
-TELAS.auth=()=>`${LINK.erro?`<div class="painel" style="background:var(--tomate-soft);border-color:var(--tomate);color:var(--ink)"><b>Esse link não vale mais</b><p style="margin:4px 0 0;font-size:14px">${/expired|otp/i.test(LINK.erro)?'Ele expirou ou já foi usado. Se você pediu pra redefinir a senha mais de uma vez, só o <b>último e-mail</b> funciona. Ou toque em "Esqueci minha senha" de novo e use o link novo.':'Tente de novo ou fale com a organização.'}</p></div>`:''}<main class="auth-layout"><section class="auth-brand"><div class="hero"><span class="b1">${berg(96,null)}</span>${wm('grande')}<div class="onda" style="margin:14px 0 10px"></div><p style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;opacity:1">Inscrições</p><p>${modoAuth==='entrar'?'Entre pra se inscrever nos eventos ou organizar o seu.':'Crie sua conta. Leva um minuto.'}</p></div><div class="auth-benefits"><p><span>✦</span> Encontre eventos que combinam com a sua marca.</p><p><span>✦</span> Organize inscrições e acompanhe suas edições.</p><p><span>✦</span> Expositores, organizações e espaços em um só lugar.</p></div></section><section class="auth-side">${blocoContas()}<div class="painel auth-form" style="margin-top:12px">
+TELAS.auth=()=>`${LINK.erro?`<div class="painel" style="background:var(--tomate-soft);border-color:var(--tomate);color:var(--ink)"><b>Esse link não vale mais</b><p style="margin:4px 0 0;font-size:14px">${/expired|otp/i.test(LINK.erro)?'Ele expirou ou já foi usado. Se você pediu pra redefinir a senha mais de uma vez, só o <b>último e-mail</b> funciona. Ou toque em "Esqueci minha senha" de novo e use o link novo.':'Tente de novo ou fale com a organização.'}</p></div>`:''}<main class="auth-layout"><section class="auth-brand" aria-label="Cola Nessa"><div class="auth-brand-inner"><div class="auth-logo"><span class="auth-pin" aria-hidden="true"></span><div class="auth-wordmark"><strong>Colanessa</strong><div class="auth-tag"><i></i> EXPOSITORES <span>•</span> EVENTOS</div></div></div><p class="auth-intro">Conecte-se com eventos e<br>organize sua participação de forma simples.</p><div class="auth-benefits"><div><span class="auth-benefit-icon" aria-hidden="true">▦</span><span>Encontre<br>eventos</span></div><div><span class="auth-benefit-icon" aria-hidden="true">♧</span><span>Conecte-se<br>com expositores</span></div><div><span class="auth-benefit-icon" aria-hidden="true">ϟ</span><span>Organize sua<br>participação</span></div></div></div></section><section class="auth-side">${blocoContas()}<div class="painel auth-form"><div class="auth-form-intro"><h1>${modoAuth==='entrar'?'Bem-vindo(a)!':'Crie sua conta'}</h1><p>${modoAuth==='entrar'?'Entre para continuar no Cola Nessa.':'Comece a participar dos eventos pelo Cola Nessa.'}</p></div>
 ${(()=>{try{if(sessionStorage.getItem('pf-nova')){sessionStorage.removeItem('pf-nova');return '<b class="secao" style="display:block;margin-bottom:4px">Entrar com outra conta</b>'}}catch{}return ''})()}<label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" value="${esc(emailSalvo())}">
 <label for="a-senha">Senha</label><div class="senha"><input id="a-senha" type="password" autocomplete="${modoAuth==='entrar'?'current-password':'new-password'}"><button type="button" class="olho" data-olho="a-senha" aria-label="Mostrar senha" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
 ${modoAuth==='criar'?'<p class="sub" style="margin:4px 0 0;font-size:12px">Mínimo de 6 caracteres.</p>':''}
@@ -1472,7 +1473,7 @@ ${modoAuth==='criar'?'<p class="sub" style="margin:4px 0 0;font-size:12px">Míni
 <button class="btn sec" id="a-troca" style="margin-top:8px">${modoAuth==='entrar'?'Ainda não tenho conta':'Já tenho conta'}</button>
 ${modoAuth==='entrar'?'<button class="mini" id="a-esqueci" style="margin-top:12px;border:0;background:none;color:var(--ink-2)">Esqueci minha senha</button>':''}
 </div>
-<div class="painel auth-space" style="background:var(--laranja-soft);border-color:transparent"><b>Tem um espaço e quer receber um evento?</b><p class="sub" style="margin:4px 0 10px">Só pra donos de shopping, empresa, condomínio ou praça.<br><b>Expositor:</b> não é aqui! Crie sua conta lá em cima pra se inscrever.</p><button class="btn sec" data-go="proposta">Sou dono de um espaço</button></div></section></main>`;
+<div class="painel auth-space"><div class="auth-space-icon" aria-hidden="true">▤</div><div class="auth-space-copy"><b>Tem um espaço e quer receber um evento?</b><p class="sub">Só pra donos de shopping, empresa, condomínio ou praça.<br><b>Expositor:</b> não é aqui! Crie sua conta ali em cima para se inscrever.</p></div><button class="btn sec" data-go="proposta">Sou dono de um espaço</button></div></section></main>`;
 TELAS.novasenha=()=>`<h1>Nova senha</h1><p class="sub">Crie uma senha nova pra sua conta. Mínimo de 6 caracteres.</p><label for="ns">Nova senha</label><div class="senha"><input id="ns" type="password" autocomplete="new-password"><button type="button" class="olho" data-olho="ns" aria-label="Mostrar senha" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div><p class="erro" id="ns-err"></p><button class="btn pri" id="ns-ok">Salvar senha</button>`;
 
 /* ================= PROPOSTA (pública) ================= */
