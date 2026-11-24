@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+<title id="title">Cola Nessa — pin CN</title>
+<defs>
+<linearGradient id="p" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#AD7BFF"/><stop offset=".43" stop-color="#6B21F4"/><stop offset="1" stop-color="#35009A"/></linearGradient>
+<linearGradient id="h" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#E8DEFF"/></linearGradient>
+</defs>
+<path d="M64 121C50 102 16 72 16 53a48 48 0 0 1 96 0c0 19-34 49-48 68Z" fill="url(#p)"/>
+<path d="M64 112C51 94 23 70 23 52a41 41 0 0 1 82 0c0 18-28 42-41 60Z" fill="#A66BFF" opacity=".2"/>
+<circle cx="64" cy="52" r="31" fill="url(#h)"/>
+<path d="M57.5 42.6a14.8 14.8 0 1 0 0 19" fill="none" stroke="#4206A7" stroke-width="6.5" stroke-linecap="round"/>
+<path d="M67 63V41l15 22V41" fill="none" stroke="#4206A7" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M25 42C30 22 51 12 72 17" fill="none" stroke="#FFF" opacity=".28" stroke-width="5" stroke-linecap="round"/>
+</svg>
