@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#10083D">
-<meta name="app-versao" content="202611232215">
+<meta name="app-versao" content="202611240915">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261122"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261122"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1225,6 +1225,38 @@ nav.baixo button svg {width:23px;height:23px}
   #tela.wrap .adm-stats {grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))}
 }
 
+
+/* Cola Nessa — autenticação desktop responsiva (2026-11-24) */
+#tela[data-tela="auth"] .auth-layout{width:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:18px;align-items:stretch}
+#tela[data-tela="auth"] .auth-brand,#tela[data-tela="auth"] .auth-side{min-width:0}
+#tela[data-tela="auth"] .auth-brand{display:flex;flex-direction:column;gap:18px}
+#tela[data-tela="auth"] .auth-brand .hero{margin:0;flex:1;min-height:300px;display:flex;flex-direction:column;justify-content:center;padding:clamp(26px,4vw,64px);border-radius:26px;overflow:hidden}
+#tela[data-tela="auth"] .auth-brand .hero .wm.grande b{font-size:clamp(38px,4.2vw,68px);line-height:1.08}
+#tela[data-tela="auth"] .auth-brand .hero p{max-width:480px}
+#tela[data-tela="auth"] .auth-benefits{display:grid;gap:12px;padding:4px 6px}
+#tela[data-tela="auth"] .auth-benefits p{display:flex;align-items:flex-start;gap:12px;margin:0;font-size:15px;line-height:1.5;color:var(--ink)}
+#tela[data-tela="auth"] .auth-benefits span{font-weight:800;color:#6b21ee}
+#tela[data-tela="auth"] .auth-side{display:flex;flex-direction:column;justify-content:center}
+#tela[data-tela="auth"] .auth-form{padding:clamp(22px,2.5vw,36px)!important;border-radius:24px;box-shadow:0 20px 55px rgba(26,16,70,.07)}
+#tela[data-tela="auth"] .auth-form input:not([type="checkbox"]){min-height:48px}
+#tela[data-tela="auth"] .auth-form .btn{min-height:48px}
+#tela[data-tela="auth"] .auth-space{margin-top:14px!important;border-radius:20px;padding:20px!important}
+@media(min-width:900px){
+  html body #tela.wrap[data-tela="auth"]{width:min(100%,1280px)!important;max-width:1280px!important;margin:0 auto!important;padding:clamp(26px,4vw,58px)!important;box-sizing:border-box!important}
+  html body #tela[data-tela="auth"]>.auth-layout{max-width:none!important;margin:0!important;grid-template-columns:minmax(0,1.05fr) minmax(390px,.95fr);gap:clamp(26px,4vw,64px)}
+  html body #tela[data-tela="auth"]>.auth-layout>*{max-width:none!important;margin:0!important}
+  #tela[data-tela="auth"] .auth-brand .hero{min-height:530px}
+}
+@media(min-width:600px) and (max-width:899px){
+  html body #tela.wrap[data-tela="auth"]{max-width:760px!important;width:100%!important;margin:0 auto!important;padding:28px!important}
+  #tela[data-tela="auth"] .auth-layout{grid-template-columns:1fr 1fr;gap:20px}
+}
+@media(max-width:599px){
+  #tela[data-tela="auth"] .auth-layout{grid-template-columns:minmax(0,1fr);gap:14px}
+  #tela[data-tela="auth"] .auth-brand .hero{min-height:210px;padding:24px;border-radius:20px}
+  #tela[data-tela="auth"] .auth-benefits{display:none}
+  #tela[data-tela="auth"] .auth-form{padding:20px!important}
+}
 </style>
 <link rel="stylesheet" href="marca-colanessa.css?v=20261123-01">
 </head>
@@ -1430,7 +1462,7 @@ document.addEventListener('change',async ev=>{
 /* ================= AUTENTICAÇÃO ================= */
 let modoAuth='entrar';
 const TELAS={};const AFTER={};
-TELAS.auth=()=>`${LINK.erro?`<div class="painel" style="background:var(--tomate-soft);border-color:var(--tomate);color:var(--ink)"><b>Esse link não vale mais</b><p style="margin:4px 0 0;font-size:14px">${/expired|otp/i.test(LINK.erro)?'Ele expirou ou já foi usado. Se você pediu pra redefinir a senha mais de uma vez, só o <b>último e-mail</b> funciona. Ou toque em "Esqueci minha senha" de novo e use o link novo.':'Tente de novo ou fale com a organização.'}</p></div>`:''}<div class="hero"><span class="b1">${berg(96,null)}</span>${wm('grande')}<div class="onda" style="margin:14px 0 10px"></div><p style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;opacity:1">Inscrições</p><p>${modoAuth==='entrar'?'Entre pra se inscrever nos eventos ou organizar o seu.':'Crie sua conta. Leva um minuto.'}</p></div>${blocoContas()}<div class="painel" style="margin-top:12px">
+TELAS.auth=()=>`${LINK.erro?`<div class="painel" style="background:var(--tomate-soft);border-color:var(--tomate);color:var(--ink)"><b>Esse link não vale mais</b><p style="margin:4px 0 0;font-size:14px">${/expired|otp/i.test(LINK.erro)?'Ele expirou ou já foi usado. Se você pediu pra redefinir a senha mais de uma vez, só o <b>último e-mail</b> funciona. Ou toque em "Esqueci minha senha" de novo e use o link novo.':'Tente de novo ou fale com a organização.'}</p></div>`:''}<main class="auth-layout"><section class="auth-brand"><div class="hero"><span class="b1">${berg(96,null)}</span>${wm('grande')}<div class="onda" style="margin:14px 0 10px"></div><p style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;opacity:1">Inscrições</p><p>${modoAuth==='entrar'?'Entre pra se inscrever nos eventos ou organizar o seu.':'Crie sua conta. Leva um minuto.'}</p></div><div class="auth-benefits"><p><span>✦</span> Encontre eventos que combinam com a sua marca.</p><p><span>✦</span> Organize inscrições e acompanhe suas edições.</p><p><span>✦</span> Expositores, organizações e espaços em um só lugar.</p></div></section><section class="auth-side">${blocoContas()}<div class="painel auth-form" style="margin-top:12px">
 ${(()=>{try{if(sessionStorage.getItem('pf-nova')){sessionStorage.removeItem('pf-nova');return '<b class="secao" style="display:block;margin-bottom:4px">Entrar com outra conta</b>'}}catch{}return ''})()}<label for="a-email">E-mail</label><input id="a-email" type="email" autocomplete="email" value="${esc(emailSalvo())}">
 <label for="a-senha">Senha</label><div class="senha"><input id="a-senha" type="password" autocomplete="${modoAuth==='entrar'?'current-password':'new-password'}"><button type="button" class="olho" data-olho="a-senha" aria-label="Mostrar senha" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
 ${modoAuth==='criar'?'<p class="sub" style="margin:4px 0 0;font-size:12px">Mínimo de 6 caracteres.</p>':''}
@@ -1440,7 +1472,7 @@ ${modoAuth==='criar'?'<p class="sub" style="margin:4px 0 0;font-size:12px">Míni
 <button class="btn sec" id="a-troca" style="margin-top:8px">${modoAuth==='entrar'?'Ainda não tenho conta':'Já tenho conta'}</button>
 ${modoAuth==='entrar'?'<button class="mini" id="a-esqueci" style="margin-top:12px;border:0;background:none;color:var(--ink-2)">Esqueci minha senha</button>':''}
 </div>
-<div class="xadrez" style="height:22px;border-radius:12px;margin:4px 0 14px"></div><div class="painel" style="background:var(--laranja-soft);border-color:transparent"><b>Tem um espaço e quer receber um evento?</b><p class="sub" style="margin:4px 0 10px">Só pra donos de shopping, empresa, condomínio ou praça.<br><b>Expositor:</b> não é aqui! Crie sua conta lá em cima pra se inscrever.</p><button class="btn sec" data-go="proposta">Sou dono de um espaço</button></div>`;
+<div class="painel auth-space" style="background:var(--laranja-soft);border-color:transparent"><b>Tem um espaço e quer receber um evento?</b><p class="sub" style="margin:4px 0 10px">Só pra donos de shopping, empresa, condomínio ou praça.<br><b>Expositor:</b> não é aqui! Crie sua conta lá em cima pra se inscrever.</p><button class="btn sec" data-go="proposta">Sou dono de um espaço</button></section></main>`;
 TELAS.novasenha=()=>`<h1>Nova senha</h1><p class="sub">Crie uma senha nova pra sua conta. Mínimo de 6 caracteres.</p><label for="ns">Nova senha</label><div class="senha"><input id="ns" type="password" autocomplete="new-password"><button type="button" class="olho" data-olho="ns" aria-label="Mostrar senha" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div><p class="erro" id="ns-err"></p><button class="btn pri" id="ns-ok">Salvar senha</button>`;
 
 /* ================= PROPOSTA (pública) ================= */
