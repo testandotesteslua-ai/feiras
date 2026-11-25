@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#10083D">
-<meta name="app-versao" content="202611251425">
+<meta name="app-versao" content="202611251510">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/svg+xml" href="colanessa-icon.svg?v=20261124-official"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-2026.png?v=20261124-cn"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1370,14 +1370,14 @@ async function carregarUsuario(){
   if(!S.sessao){S.papel='expositor';S.marca=null;S.tela=S.alvo?'feira-pub':location.hash==='#proposta'?'proposta':'auth';return render()}
   const uid=S.sessao.user.id;
   const [p,m,og,vp]=await Promise.all([sb.from('perfis').select('eh_admin,expositor_ativo').eq('id',uid).maybeSingle(),sb.from('marcas').select('*').eq('dono',uid).maybeSingle(),sb.rpc('minhas_organizacoes'),sb.rpc('vapid_publica')]);
-  S.admin=!!p.data?.eh_admin;S.expositorAtivo=p.data?.expositor_ativo!==false;S.marca=m.data;S.orgs=og.data||[];S.pushOk=!!vp.data;
+  S.admin=!!p.data?.eh_admin;S.expositorAtivo=p.data?.expositor_ativo!==false;S.marca=m.data;S.orgs=og.data||[];S.pushOk=!!vp.data;S.pushRegistered=false;
   await escolherModo();
   S.tela=S.papel==='organizadora'?'org-edicoes':'inicio';
   if(S.alvo){if(S.papel!=='organizadora'&&S.alvo.e){if(!S.marca){S.tela='marca';setTimeout(()=>toast('Antes, cadastre sua marca. Depois o app volta pro evento.'),600)}else{const {data:edL}=await sb.from('edicoes').select(`*,organizacoes(${ORGCOLS}),edicao_colabs(status,organizacoes(${ORGCOLS}))`).eq('id',S.alvo.e).maybeSingle();limpaAlvo();if(edL){S.edicao=edL;S.tela='edicao'}}}else S.tela='feira-pub'}
   const qs=new URLSearchParams(location.search),ab=qs.get('abrir'),abId=qs.get('id');
-  if(S.papel!=='organizadora'){if(pushEstado()==='ligado')assinaPush(false).catch(()=>{});
+  if(S.papel!=='organizadora'){if(S.pushOk&&pushSuporta()&&Notification.permission==='granted')await assinaPush(false).catch(()=>false);
     if(ab==='ed'&&abId){try{history.replaceState(null,'',location.pathname)}catch{}const {data:edA}=await sb.from('edicoes').select('*').eq('id',abId).maybeSingle();if(edA&&S.marca){S.edicao=edA;S.tela='edicao'}}}
-  if(S.papel==='organizadora'){await contaComprovantes();ouveComprovantes();if(pushEstado()==='ligado')assinaPush(false).catch(()=>{});
+  if(S.papel==='organizadora'){await contaComprovantes();ouveComprovantes();if(S.pushOk&&pushSuporta()&&Notification.permission==='granted')await assinaPush(false).catch(()=>false);
     if(ab){try{history.replaceState(null,'',location.pathname)}catch{}if(ab==='ed'&&abId){S.orgEdicao=abId;S.gAbertos=new Set();S.tela='org-selecao'}S.gAbertos=new Set();if(ab==='reembolso'&&abId){S.cancelEd=abId;S.tela='org-cancel'}else if(ab==='comprovantes'){S.irComp=true;S.tela='org-selecao'}else if(ab==='selecao'){const eN=Object.keys(S.novasEd||{})[0];if(eN)S.orgEdicao=eN;S.filtroSel='novas';S.tela='org-selecao'}}}
   if(qs.has('mp-conexao')&&podeTestarConexaoMP()){
     S.retornoMP=qs.get('mp-conexao');qs.delete('mp-conexao');
@@ -1422,7 +1422,7 @@ document.addEventListener('keydown',ev=>{if(ev.key==='Escape')fechaPerfis()});
 const pushSuporta=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
 const ehIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const ehAtalho=()=>window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true;
-const pushEstado=()=>{if(!S.pushOk)return 'off';if(ehIOS()&&!ehAtalho())return 'atalho';if(!pushSuporta())return 'nao';return Notification.permission==='granted'?'ligado':Notification.permission==='denied'?'bloqueado':'desligado'};
+const pushEstado=()=>{if(!S.pushOk)return 'off';if(ehIOS()&&!ehAtalho())return 'atalho';if(!pushSuporta())return 'nao';return Notification.permission==='granted'&&S.pushRegistered?'ligado':Notification.permission==='denied'?'bloqueado':'desligado'};
 function b64u8(b){const p='='.repeat((4-b.length%4)%4);const r=atob((b+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
 async function desligaPushDaConta(){
   if(!pushSuporta()||!S.sessao?.user?.id)return;
@@ -1433,19 +1433,18 @@ async function desligaPushDaConta(){
 async function assinaPush(pedir){if(!pushSuporta())return false;
   if(pedir&&Notification.permission!=='granted'){const pr=await Notification.requestPermission();if(pr!=='granted')return false}
   if(Notification.permission!=='granted')return false;
-  const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+  const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Service worker indisponível')),5000))]);let sub=await reg.pushManager.getSubscription();
   if(!sub){const {data:k,error}=await sb.rpc('vapid_publica');if(error||!k)return false;sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u8(k)})}
-  const j=sub.toJSON();const r=await sb.rpc('salvar_push',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth});return !r.error}
+  const j=sub.toJSON();const r=await sb.rpc('salvar_push',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth});S.pushRegistered=!r.error;return S.pushRegistered}
 function atualizaBadgeIcone(){try{const n=(S.compNovos||0)+(S.insNovas||0);if(navigator.setAppBadge){n>0?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch{}}
 const pushOque=()=>S.papel==='organizadora'?'aviso de inscrição nova e de comprovante novo':'aviso quando sua presença for confirmada, quando o mapa liberar, quando abrir edição nova e quando as inscrições abrirem';
-const blocoPush=()=>{const st=pushEstado();if(st==='off')return '';
-  if(st==='ligado')return `<div class="painel"><b class="secao">🔔 Notificações</b><p style="margin:6px 0 10px;font-size:14px">Ligadas neste celular. Você recebe ${pushOque()}, mesmo com o app fechado.</p><button class="mini" id="push-teste" style="width:100%;min-height:44px">Enviar notificação de teste</button></div>`;
+const blocoPush=()=>{const st=pushEstado();if(st==='off')return `<div class="painel"><b class="secao">🔔 Notificações</b><p class="sub">Serviço temporariamente indisponível. Atualize o aplicativo e tente novamente.</p></div>`;
+  if(st==='ligado')return `<div class="painel"><b class="secao">🔔 Notificações</b><p style="margin:6px 0 10px;font-size:14px">Ativadas neste dispositivo. Você recebe ${pushOque()}, mesmo com o app fechado.</p><button class="mini" id="push-teste" style="width:100%;min-height:44px">Enviar notificação de teste</button></div>`;
   if(st==='atalho')return `<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b class="secao">🔔 Notificações</b><p style="margin:6px 0 0;font-size:14px">No iPhone, as notificações só funcionam pelo <b>atalho na tela de início</b>. Abra o app por lá e ative aqui em Conta.</p><button class="btn pri" data-go="avisos" style="margin-top:10px">Ver passo a passo</button></div>`;
   if(st==='bloqueado')return `<div class="painel"><b class="secao">🔔 Notificações</b><p style="margin:6px 0 0;font-size:14px">As notificações foram bloqueadas neste celular. Pra liberar, vá nos ajustes do celular, procure o app (ou o navegador) e permita notificações.</p><button class="mini" data-go="avisos" style="width:100%;min-height:44px;margin-top:10px">Ver passo a passo</button></div>`;
   if(st==='nao')return `<div class="painel"><b class="secao">🔔 Notificações</b><p style="margin:6px 0 0;font-size:14px">Este navegador não aceita notificações. No iPhone, use o atalho na tela de início (iOS 16.4 ou mais novo).</p></div>`;
   return `<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja)"><b class="secao">🔔 Ativar notificações</b><p style="margin:6px 0 10px;font-size:14px">Receba ${pushOque()} neste celular, mesmo com o app fechado.</p><button class="btn pri" id="push-ligar">Ativar notificações</button></div>`};
-const bannerPush=()=>{const st=pushEstado();if(!['desligado','atalho'].includes(st)||S.pushDispensado)return '';try{const d=+localStorage.getItem('pushDisp')||0;if(Date.now()-d<5*86400000)return ''}catch{}
-  return `<div class="painel" style="background:var(--laranja-soft);border-color:var(--laranja);display:flex;gap:10px;align-items:center"><span style="font-size:22px">🔔</span><div style="flex:1;font-size:14px">${st==='atalho'?'Quer receber os avisos no iPhone? Veja como ativar em 1 minutinho.':S.papel==='organizadora'?'Ative as notificações pra saber na hora de inscrição e comprovante novo.':'Ative as notificações pra saber na hora quando abrir inscrição, quando for confirmada e quando o mapa liberar.'}</div>${st==='desligado'?`<button class="mini pri" id="push-ligar" style="min-height:40px">Ativar</button>`:`<button class="mini pri" data-go="avisos" style="min-height:40px">Ver como</button>`}<button class="mini" id="push-dispensa" aria-label="Fechar" style="min-height:40px">✕</button></div>`};
+const bannerPush=()=>{const st=pushEstado();const label=st==='ligado'?'Ativadas neste dispositivo':st==='atalho'?'Ative pelo ícone na tela de início':st==='bloqueado'?'Bloqueadas nos ajustes':st==='off'?'Serviço indisponível':st==='nao'?'Ver compatibilidade':'Receba os avisos do Colanessa';return `<div class="painel" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="font-size:22px" aria-hidden="true">🔔</span><div style="flex:1;min-width:120px"><b>Notificações</b><div class="sub" style="font-size:13px;margin:3px 0 0">${label}</div></div><button class="mini ${st==='desligado'||st==='atalho'?'pri':''}" data-go="avisos" style="min-height:44px">${st==='desligado'?'Ativar':'Gerenciar'}</button></div>`};
 const emAppSocial=()=>/Instagram|FBAN|FBAV|FB_IAB|WhatsApp|Line\//i.test(navigator.userAgent);
 const icShare='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
 const icAdd='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-4px"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
@@ -3948,10 +3947,10 @@ async function enviaColabsForm(eid){if(!document.getElementById('e-colab-on')?.c
   return {ok,erro}}
 
 TELAS.avisos=()=>{const st=pushEstado(),ios=ehIOS();
-  const topo=`<div class="vazio" style="padding-bottom:4px"><span style="font-size:54px">🔔</span></div><h1 style="text-align:center">Receba os avisos do app</h1><p class="sub" style="text-align:center">Saiba na hora quando sua inscrição for aprovada, quando o mapa liberar e quando abrir evento novo. Leva 1 minutinho!</p>`;
-  const depois=`<button class="btn sec" data-go="inicio" style="margin-top:6px">${st==='ligado'?'Continuar':'Agora não'}</button>`;
+  const topo=`<div class="vazio" style="padding-bottom:4px"><span style="font-size:54px">🔔</span></div><h1 style="text-align:center">Receba os avisos do app</h1><p class="sub" style="text-align:center">Receba ${pushOque()} neste dispositivo, mesmo com o app fechado.</p>`;
+  const depois=`<button class="btn sec" data-go="${S.papel==='organizadora'?'org-edicoes':'inicio'}" style="margin-top:6px">${st==='ligado'?'Continuar':'Agora não'}</button>`;
   let c='';
-  if(st==='ligado')c=`<div class="painel" style="text-align:center"><b style="font-size:18px">✅ Tudo certo!</b><p style="margin:6px 0 0">As notificações estão ligadas neste celular.</p></div>`;
+  if(st==='ligado')c=`<div class="painel" style="text-align:center"><b style="font-size:18px">✅ Tudo certo!</b><p style="margin:6px 0 0">As notificações estão ativadas neste dispositivo.</p><button class="btn sec" id="push-teste" style="margin-top:12px">Enviar notificação de teste</button></div>`;
   else if(st==='atalho')c=`<div class="painel"><b class="secao">No iPhone é assim:</b>${passos([
       ...(emAppSocial()?[`Você abriu pelo Instagram ou WhatsApp. Toque nos <b>•••</b> e em <b>Abrir no navegador</b> (Safari).`]:[]),
       `Toque no botão <b>Compartilhar</b> ${icShare} na barra do Safari.`,
@@ -3959,8 +3958,9 @@ TELAS.avisos=()=>{const st=pushEstado(),ios=ehIOS();
       `Toque em <b>Adicionar</b>. O ícone do app aparece na tela do celular.`,
       `Abra o app <b>pelo ícone novo</b> e toque em <b>Ativar notificações</b>.`,
       `Quando o iPhone perguntar, toque em <b>Permitir</b>.`])}</div><p class="sub" style="font-size:13px">Precisa do iOS 16.4 ou mais novo.</p>`;
-  else if(st==='desligado')c=`<div class="painel"><b class="secao">É só isso:</b>${passos([`Toque no botão <b>Ativar notificações</b> aqui embaixo.`,`Quando o celular perguntar, toque em <b>Permitir</b>.`])}<button class="btn pri" id="push-ligar">Ativar notificações</button></div>${!ios&&!ehAtalho()?`<p class="sub" style="font-size:13px">Dica: no Chrome, toque nos <b>⋮</b> e em <b>Adicionar à tela inicial</b> pra abrir a Bêrga como um app.</p>`:''}`;
+  else if(st==='desligado')c=`<div class="painel"><b class="secao">É só isso:</b>${passos([`Toque no botão <b>Ativar notificações</b> aqui embaixo.`,`Quando o celular perguntar, toque em <b>Permitir</b>.`])}<button class="btn pri" id="push-ligar">Ativar notificações</button></div>${!ios&&!ehAtalho()?`<p class="sub" style="font-size:13px">Dica: no Chrome, toque nos <b>⋮</b> e em <b>Adicionar à tela inicial</b> pra abrir o Colanessa como um app.</p>`:''}`;
   else if(st==='bloqueado')c=`<div class="painel"><b class="secao">As notificações estão bloqueadas. Pra liberar:</b>${passos(ios?[`Abra os <b>Ajustes</b> do iPhone.`,`Toque em <b>Notificações</b> e procure <b>${PLAT.curto}</b>.`,`Ligue <b>Permitir Notificações</b>.`]:[`Toque no <b>cadeado</b> (ou nos ⚙) ao lado do endereço do site.`,`Toque em <b>Permissões</b> ou <b>Notificações</b>.`,`Escolha <b>Permitir</b> e recarregue a página.`])}</div>`;
+  else if(st==='off')c=`<div class="painel"><p>Serviço temporariamente indisponível. Atualize o aplicativo e tente novamente.</p></div>`;
   else c=`<div class="painel"><p style="margin:0">${emAppSocial()?'Você abriu pelo Instagram ou WhatsApp, que não aceitam notificações. Toque nos <b>•••</b> e em <b>Abrir no navegador</b>, depois volte aqui.':'Este navegador não aceita notificações. Tente abrir pelo Chrome (Android) ou Safari (iPhone).'}</p></div>`;
   return topo+c+depois};
 /* ================= QUALQUER TIPO DE EVENTO ================= */
