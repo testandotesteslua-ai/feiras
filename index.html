@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#10083D">
-<meta name="app-versao" content="202611251510">
+<meta name="app-versao" content="202611251540">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/svg+xml" href="colanessa-icon.svg?v=20261124-official"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-2026.png?v=20261124-cn"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1465,6 +1465,11 @@ async function render(){
 document.addEventListener('toggle',ev=>{const d=ev.target;if(!d.dataset||!d.dataset.grupo)return;S.gAbertos=S.gAbertos||new Set();if(d.open)S.gAbertos.add(d.dataset.grupo);else S.gAbertos.delete(d.dataset.grupo)},true);
 function go(t){fechaPerfis();if(t==='org-planta'&&S.tela!=='org-planta'){S.plFoto=null;S.plFotoOriginal=null;S.plAvisosIA=null;S.plDesenhar=false;S.plDraft=null;S.plMedidasOk=!!S.plMapa}if(S.papel!=='organizadora'&&/^org-(?!config)/.test(t))t='inicio';if(t==='org-selecao')S.gAbertos=new Set();if(S.canal){sb.removeChannel(S.canal);S.canal=null}S.tela=t;render()}
 
+document.addEventListener('change',async ev=>{
+  const el=ev.target;if(!el?.dataset?.pushPref||!S.sessao)return;
+  const ativo=el.checked;el.disabled=true;
+  try{const {error}=await sb.from('push_preferencias').upsert({user_id:S.sessao.user.id,tipo:el.dataset.pushPref,ativo},{onConflict:'user_id,tipo'});if(error)throw error;toast('Preferência salva')}catch(e){el.checked=!ativo;toast('Não foi possível salvar a preferência')}finally{el.disabled=false}
+});
 document.addEventListener('change',async ev=>{
   if(ev.target?.id!=='conta-expositor-ativo')return;
   const el=ev.target,ativo=el.checked,err=document.getElementById('conta-expositor-erro');
@@ -3946,7 +3951,11 @@ async function enviaColabsForm(eid){if(!document.getElementById('e-colab-on')?.c
   for(const org of novos){const r=await sb.rpc('convidar_colab',{p_edicao:eid,p_org:org});if(r.error)erro=erroMsg(r.error);else ok++}
   return {ok,erro}}
 
-TELAS.avisos=()=>{const st=pushEstado(),ios=ehIOS();
+TELAS.avisos=async()=>{const st=pushEstado(),ios=ehIOS();
+  const tipos=[['nova','Novas inscrições'],['confirmada','Inscrição aprovada'],['mapa','Liberação do mapa'],['vaga','Vaga atribuída'],['cancelada','Cancelamento de evento'],['edicao_nova','Novas edições'],['abertura','Abertura de inscrições'],['alteracao','Alterações de eventos'],['lembrete_evento','Lembretes de eventos'],['pedir_feedback','Solicitação de feedback'],['novo_feedback','Feedback recebido'],['reembolso','Solicitação de reembolso'],['reembolsado','Reembolso registrado'],['comprovante','Comprovantes (pagamento manual)']];
+  const {data:preferencias,error:prefError}=await sb.from('push_preferencias').select('tipo,ativo').eq('user_id',S.sessao.user.id);
+  const prefs=Object.fromEntries((preferencias||[]).map(p=>[p.tipo,p.ativo]));
+  const painelPrefs=prefError?'<div class="painel"><p>Não foi possível carregar suas preferências. Atualize a tela.</p></div>':`<div class="painel"><h2>Preferências de notificações</h2><p class="sub">Escolha quais avisos deseja receber em todos os seus dispositivos.</p>${tipos.map(([tipo,label])=>`<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;border-bottom:1px solid var(--linha)"><span>${label}</span><input type="checkbox" data-push-pref="${tipo}" ${prefs[tipo]!==false?'checked':''} style="width:22px;height:22px;flex:none"></label>`).join('')}</div>`;
   const topo=`<div class="vazio" style="padding-bottom:4px"><span style="font-size:54px">🔔</span></div><h1 style="text-align:center">Receba os avisos do app</h1><p class="sub" style="text-align:center">Receba ${pushOque()} neste dispositivo, mesmo com o app fechado.</p>`;
   const depois=`<button class="btn sec" data-go="${S.papel==='organizadora'?'org-edicoes':'inicio'}" style="margin-top:6px">${st==='ligado'?'Continuar':'Agora não'}</button>`;
   let c='';
@@ -3962,7 +3971,7 @@ TELAS.avisos=()=>{const st=pushEstado(),ios=ehIOS();
   else if(st==='bloqueado')c=`<div class="painel"><b class="secao">As notificações estão bloqueadas. Pra liberar:</b>${passos(ios?[`Abra os <b>Ajustes</b> do iPhone.`,`Toque em <b>Notificações</b> e procure <b>${PLAT.curto}</b>.`,`Ligue <b>Permitir Notificações</b>.`]:[`Toque no <b>cadeado</b> (ou nos ⚙) ao lado do endereço do site.`,`Toque em <b>Permissões</b> ou <b>Notificações</b>.`,`Escolha <b>Permitir</b> e recarregue a página.`])}</div>`;
   else if(st==='off')c=`<div class="painel"><p>Serviço temporariamente indisponível. Atualize o aplicativo e tente novamente.</p></div>`;
   else c=`<div class="painel"><p style="margin:0">${emAppSocial()?'Você abriu pelo Instagram ou WhatsApp, que não aceitam notificações. Toque nos <b>•••</b> e em <b>Abrir no navegador</b>, depois volte aqui.':'Este navegador não aceita notificações. Tente abrir pelo Chrome (Android) ou Safari (iPhone).'}</p></div>`;
-  return topo+c+depois};
+  return topo+c+painelPrefs+depois};
 /* ================= QUALQUER TIPO DE EVENTO ================= */
 const TIPOS=[['feira','Feira','🛍️'],['brecho','Brechó','👗'],['arte','Arte','🎨'],['artesanato','Artesanato','🧶'],['gastronomia','Gastronomia','🍴'],['musica','Música','🎶'],['natal','Natal','🎄'],['moda','Moda','🧵'],['outro','Outro','✨']];
 const tipoEd=e=>e?.tipo||e?.organizacoes?.tipo||'feira';
