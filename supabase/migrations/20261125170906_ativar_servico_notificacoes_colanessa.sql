@@ -1,0 +1,1 @@
+update public.push_config set function_url='https://guiieswqphjixidbtzvs.supabase.co/functions/v1/notificacoes-colanessa' where id=1 and vapid_public is not null and vapid_private is not null;
