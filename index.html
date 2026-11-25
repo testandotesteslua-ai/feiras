@@ -1260,6 +1260,21 @@ nav.baixo button svg {width:23px;height:23px}
 </style>
 <link rel="stylesheet" href="marca-colanessa.css?v=20261123-01">
 <link rel="stylesheet" href="inicio-colanessa.css?v=20261124-vector07">
+<style>
+.adm-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.adm-stat:nth-child(4n+1):before{display:none}
+.adm-stat:nth-child(n+5){border-top:1px solid var(--line)}
+.adm-stat strong{overflow-wrap:anywhere}
+.adm-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.adm-nav .mini{flex:1;min-width:110px;min-height:42px}
+[id^="adm-"]{scroll-margin-top:20px}
+.adm-fin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.adm-edicoes{display:grid;gap:8px}
+.adm-edicao{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0}
+.adm-edicao>div{min-width:0;overflow-wrap:anywhere}
+.adm-edicao .status{flex-shrink:0;white-space:normal;text-align:center;max-width:42%}
+@media(max-width:800px){.adm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.adm-stat:nth-child(odd):before{display:none}.adm-stat:nth-child(n+3){border-top:1px solid var(--line)}}
+</style>
 </head>
 <body>
 <div class="wrap" id="tela"><p class="sub">Carregando…</p></div>
@@ -1887,18 +1902,23 @@ function previaCores(){const p=$('#cfg-p')?.value,d=$('#cfg-d')?.value;if(!p||!d
 
 /* ================= ADMIN ================= */
 TELAS.admin=async()=>{if(!S.admin)return `<h1>Administração</h1><p class="sub">Essa área é só da plataforma.</p>`;
-  const {data:organizacoes,error:erroOrgs}=await sb.from('organizacoes').select('*').order('criado_em',{ascending:false});
+  const [{data:organizacoes,error:erroOrgs},{data:resumo,error:erroResumo}]=await Promise.all([
+    sb.from('organizacoes').select('id,nome,slug,cidade,logo_url,status,criado_em').order('criado_em',{ascending:false}),
+    sb.rpc('painel_administrativo')
+  ]);
   if(erroOrgs)throw erroOrgs;
   const lista=organizacoes||[];
+  if(erroResumo)throw erroResumo;
+  const detalhes=new Map((resumo.organizacoes_detalhes||[]).map(o=>[o.id,o]));
   const totais={pendente:0,ativa:0,suspensa:0,todas:lista.length};
   lista.forEach(o=>{if(Object.prototype.hasOwnProperty.call(totais,o.status))totais[o.status]++});
   const f=S.admFiltro||(totais.pendente?'pendente':'ativa');
   const data=f==='todas'?lista:lista.filter(o=>o.status===f);
   const st={pendente:['Aguardando aprovação',''],ativa:['Aprovada','ok'],suspensa:['Suspensa','t']};
-  return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Administração</h1>${await resumoAdmin()}<h2 style="margin:18px 0 0">Organizações</h2>
+  return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Administração</h1>${resumoAdmin(resumo)}<h2 style="margin:18px 0 0" id="adm-organizacoes">Organizações</h2>
   <div class="adm-tabs" role="group" aria-label="Filtrar organizações">${[['pendente','Pendentes'],['ativa','Aprovadas'],['suspensa','Suspensas'],['todas','Todas']].map(([k,l])=>`<button class="adm-tab" data-admf="${k}" aria-pressed="${f===k}"><span>${l}</span><span class="adm-tab-count">${totais[k]}</span></button>`).join('')}</div>
   ${(data||[]).map(o=>{const [t,c]=st[o.status]||[o.status,'n'];return `<div class="painel"><div class="org-it">${o.logo_url?`<img src="${esc(o.logo_url)}" alt="">`:`<span class="org-ph">${esc(String(o.nome).charAt(0).toUpperCase())}</span>`}<div style="flex:1;min-width:0"><b>${esc(o.nome)}</b><div class="sub" style="margin:0;font-size:13px">${esc(o.slug)}${o.cidade?' · '+esc(o.cidade):''} · pedido em ${new Date(o.criado_em).toLocaleDateString('pt-BR')}</div></div><span class="status ${c}">${t}</span></div>
-    <div class="row" style="margin-top:10px">${o.status!=='ativa'?`<button class="mini pri" data-admst="ativa" data-id="${o.id}" style="min-height:44px">Aprovar</button>`:''}${o.status!=='suspensa'?`<button class="mini" data-admst="suspensa" data-id="${o.id}" style="min-height:44px">Suspender</button>`:`<button class="mini" data-admst="pendente" data-id="${o.id}" style="min-height:44px">Voltar pra esperando</button>`}</div></div>`}).join('')||`<div class="adm-empty">${f==='pendente'?'Nenhuma organização aguardando aprovação.':f==='ativa'?'Nenhuma organização aprovada ainda.':f==='suspensa'?'Nenhuma organização suspensa.':'Nenhuma organização cadastrada.'}</div>`}`};
+    <p class="sub" style="margin:8px 0 0">${gNum(detalhes.get(o.id)?.edicoes)} edições · ${gNum(detalhes.get(o.id)?.inscricoes)} inscrições</p><div class="row" style="margin-top:10px">${o.status!=='ativa'?`<button class="mini pri" data-admst="ativa" data-id="${o.id}" style="min-height:44px">Aprovar</button>`:''}${o.status!=='suspensa'?`<button class="mini" data-admst="suspensa" data-id="${o.id}" style="min-height:44px">Suspender</button>`:`<button class="mini" data-admst="pendente" data-id="${o.id}" style="min-height:44px">Voltar pra esperando</button>`}</div></div>`}).join('')||`<div class="adm-empty">${f==='pendente'?'Nenhuma organização aguardando aprovação.':f==='ativa'?'Nenhuma organização aprovada ainda.':f==='suspensa'?'Nenhuma organização suspensa.':'Nenhuma organização cadastrada.'}</div>`}`};
 
 
 TELAS.mapa=async()=>{
@@ -3029,7 +3049,8 @@ document.addEventListener('click',async ev=>{
   if(b.id==='sair'){const id=S.sessao?.user?.id;await sb.auth.signOut();if(id)removeConta(id);render();return}
   if(d.abrirorg){b.disabled=true;await trocarModo('organizacao',d.abrirorg);return}
   if(d.modo==='expositor'){b.disabled=true;await trocarModo('expositor');return}
-  if(d.admf){S.admFiltro=d.admf;render();return}
+  if(d.admsec&&S.admin&&S.tela==='admin'){document.getElementById(d.admsec)?.scrollIntoView({behavior:'smooth',block:'start'});return}
+  if(d.admf){S.admFiltro=d.admf;await render();document.getElementById('adm-organizacoes')?.scrollIntoView({block:'start'});return}
   if(d.mpOauth){
     const resultado=$('#mp-oauth-resultado');
     if(!resultado||!podeTestarConexaoMP())return;
@@ -3558,21 +3579,35 @@ function resumoOrg(ed,cnt,fin){
   return `<details class="painel presumo" ${S.resumoFechado===false?'open':''} id="resumo-org"><summary><b class="secao" style="margin:0">Resumo</b><span class="sub" style="margin:0;font-size:12px">${esc(nomeEd(ref))} · ${dataBR(ref.data)}</span></summary><div class="resumo-c">
   <div class="tiles kpis">${kpi(c.t,'Inscrições',dif==null?'':dif===0?'igual à anterior':`${dif>0?'+':''}${dif} que a anterior`)}${kpi(c.c,'Confirmadas',c.t?Math.round(c.c/c.t*100)+'% das inscrições':'')}${kpi(c.p,'Pagas',c.c?`de ${c.c} confirmadas`:'')}${kpi(recT>=10000?'R$ '+(recT/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mil':money(recT).replace(',00',''),'Recebido no total',faltaT?'falta '+money(faltaT).replace(',00',''):'')}</div>
   ${gs1?`<div class="g-par">${gs1}${gs2}</div>`:''}</div></details>`}
-async function resumoAdmin(){const {data:r,error}=await sb.rpc('resumo_plataforma');if(error||!r)return '';
+function resumoAdmin(r){
   const meses=(r.por_mes||[]).map(x=>{const d=new Date(x.mes+'-15T12:00:00');return {rot:d.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''),nomeLongo:d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}),v:x.n,tip:`${d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}\n${x.n} ${x.n===1?'inscrição':'inscrições'}`}});
   const temMovimento=meses.some(m=>Number(m.v)>0);
   const pendentes=Number(r.pendentes)||0;
   return `<section class="adm-dashboard" aria-label="Resumo administrativo">
-  <div class="adm-dashboard-head"><div><span class="adm-eyebrow">PAINEL DA PLATAFORMA</span><h2>Visão geral</h2></div></div>
+  <div class="adm-dashboard-head"><div><h2>Visão geral</h2></div></div><div class="adm-nav" aria-label="Seções da administração"><button class="mini" data-admsec="adm-organizacoes">Organizações</button><button class="mini" data-admsec="adm-edicoes">Edições</button><button class="mini" data-admsec="adm-financeiro">Financeiro</button><button class="mini" data-admsec="adm-suporte">Suporte</button></div>
   <div class="adm-stats">
     <div class="adm-stat"><span>Organizações ativas</span><strong>${gNum(r.ativas)}</strong><small>Aprovadas na plataforma</small></div>
     <div class="adm-stat"><span>Para aprovar</span><strong>${gNum(r.pendentes)}</strong><small>${pendentes?'Solicitações aguardando':'Tudo em dia'}</small></div>
     <div class="adm-stat"><span>Marcas</span><strong>${gNum(r.marcas)}</strong><small>Expositores cadastrados</small></div>
     <div class="adm-stat"><span>Inscrições no mês</span><strong>${gNum(r.mes)}</strong><small>Todos os status</small></div>
+    <div class="adm-stat"><span>Usuários cadastrados</span><strong>${gNum(r.usuarios)}</strong><small>Contas da plataforma</small></div>
+    <div class="adm-stat"><span>Edições</span><strong>${gNum(r.edicoes)}</strong><small>${gNum(r.edicoes_abertas)} com inscrições abertas</small></div>
+    <div class="adm-stat"><span>Inscrições totais</span><strong>${gNum(r.inscricoes)}</strong><small>${gNum(r.confirmadas)} confirmadas</small></div>
+    <div class="adm-stat"><span>Pagas registradas</span><strong>${gNum(r.pagas_registradas)}</strong><small>Inscrições marcadas como pagas</small></div>
   </div>
   ${pendentes?`<button type="button" class="adm-action" data-admf="pendente"><span><b>${pendentes} ${pendentes===1?'solicitação precisa':'solicitações precisam'} da tua aprovação</b><small>Confira os novos cadastros de organizações</small></span><span class="adm-action-arrow" aria-hidden="true">→</span></button>`:''}
   ${temMovimento?`<details class="adm-detalhes"><summary>Ver desempenho das inscrições <span>Últimos 6 meses</span></summary><div class="g-par">${grafColunas({titulo:'Inscrições por mês',desc:'Inscrições recebidas nos últimos 6 meses',itens:meses})}${(r.por_feira||[]).length?grafRanking({titulo:'Organizações com mais inscrições (90 dias)',itens:r.por_feira.map(x=>({rot:x.nome,v:x.n}))}):''}</div></details>`:''}
-  </section>`}
+  <h2 id="adm-financeiro" style="margin:24px 0 12px">Financeiro</h2>
+  <div class="adm-stats adm-fin-stats">
+    <div class="adm-stat"><span>Valores informados nas inscrições</span><strong>${money(r.valor_registrado)}</strong><small>Valor explicitamente registrado pelas organizações</small></div>
+    <div class="adm-stat"><span>Pagamentos simulados</span><strong>${gNum(r.pagamentos_teste)}</strong><small>Testes confirmados, sem receita real</small></div>
+  </div>
+  <div class="painel" style="margin-top:12px"><b>Comissões e planos</b><p class="sub" style="margin:6px 0 0">Cobrança da plataforma ainda não ativada. Split em análise; regras comerciais aguardam implementação.</p></div>
+  <h2 id="adm-edicoes" style="margin:24px 0 12px">Edições recentes</h2>
+  <div class="adm-edicoes">${(r.edicoes_recentes||[]).map(e=>`<div class="painel adm-edicao"><div><b>${esc(e.titulo||'Edição')}</b><div class="sub" style="margin:4px 0">${esc(e.organizacao)} · ${dataBR(e.data)}</div><small>${gNum(e.inscricoes)} inscrições · ${gNum(e.confirmadas)} confirmadas</small></div><span class="status">${e.cancelada?'Cancelada':e.inscricoes_abertas?'Inscrições abertas':'Inscrições fechadas'}</span></div>`).join('')||'<p class="sub">Nenhuma edição cadastrada.</p>'}</div>
+  <h2 id="adm-suporte" style="margin:24px 0 12px">Suporte e integrações</h2>
+  <div class="painel"><b>Mercado Pago</b><p class="sub" style="margin:6px 0 12px">Consultar andamento da integração e do split de pagamentos.</p><a class="btn sec" href="https://www.mercadopago.com.br/developers/pt/support/center" target="_blank" rel="noopener noreferrer">Abrir suporte do Mercado Pago</a></div>
+  </section>` }
 
 /* dica ao passar o dedo/mouse */
 (()=>{let tip=null;const mostra=el=>{if(!tip){tip=document.createElement('div');tip.className='g-tip';tip.setAttribute('role','tooltip');document.body.appendChild(tip)}tip.textContent=el.dataset.tip;tip.style.display='block';
