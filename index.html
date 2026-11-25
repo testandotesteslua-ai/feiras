@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#10083D">
-<meta name="app-versao" content="202611241116">
+<meta name="app-versao" content="202611251350">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/svg+xml" href="colanessa-icon.svg?v=20261124-official"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-2026.png?v=20261124-cn"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1865,8 +1865,18 @@ TELAS['org-mercado-pago']=async()=>{
     <div id="mp-oauth-resultado" role="status"></div></section>`;
 };
 
+/* Gestão de equipe: apenas a proprietária da organização. */
+const podeGerenciarEquipe=()=>S.papel==='organizadora'&&S.org?.papel==='dona';
+TELAS['org-equipe']=async()=>{
+  const volta='<button class="mini" data-go="org-config" style="border:0;background:none">← Dados do evento</button><h1>Equipe</h1>';
+  if(!podeGerenciarEquipe())return volta+'<p class="sub">Somente a proprietária pode gerenciar a equipe.</p>';
+  const {data,error}=await sb.rpc('listar_equipe',{p_org:S.org.id});
+  if(error)return volta+`<p class="erro" role="alert">${esc(erroMsg(error))}</p>`;
+  return volta+`<p class="sub">Gerencie quem trabalha com você em ${esc(S.org.nome)}.</p><div class="painel"><h2 style="margin-top:0">Integrantes (${data?.length||0})</h2>${(data||[]).map(m=>`<div class="kv" style="gap:8px;align-items:center;flex-wrap:wrap"><div style="min-width:0;overflow-wrap:anywhere"><b>${esc(m.email)}</b><p class="sub" style="margin:4px 0">${m.papel==='dona'?'Proprietária':'Equipe · gestão do evento'}</p></div>${m.papel==='equipe'?`<button class="mini" data-equipe-remover="${esc(m.user_id)}">Remover</button>`:'<span class="status ok">Proprietária</span>'}</div>`).join('')}</div><div class="painel"><h2 style="margin-top:0">Adicionar colaborador</h2><p class="sub">A pessoa precisa ter uma conta confirmada no Colanessa. O perfil Equipe permite gerenciar o evento, mas não adicionar ou remover integrantes nem acessar a administração da plataforma.</p><label for="eq-email">E-mail da conta</label><input id="eq-email" type="email" maxlength="254" autocomplete="off" placeholder="nome@email.com"><p class="erro" id="eq-erro" role="alert"></p><button class="btn pri" id="eq-add">Adicionar à equipe</button></div>`;
+};
 TELAS['org-config']=()=>{const o=S.org;if(!o)return TELAS.conta();if(S.cfgDe!==o.id){S.cfgDe=o.id;S.cfg={cor_primaria:coresDe(o)?o.cor_primaria:'#17161C',cor_destaque:coresDe(o)?o.cor_destaque:'#5B3DF5',logo_url:o.logo_url}}const c=S.cfg;
   return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Dados do evento</h1><p class="sub">O que aparece pros expositores. <button class="mini" data-divulga="" style="min-height:36px;margin-left:4px">🔗 Link do evento</button></p><div class="painel">
+  ${podeGerenciarEquipe()?'<button class="btn sec" data-go="org-equipe" style="margin-bottom:14px">Equipe · gerenciar colaboradores</button>':''}
   ${podeTestarConexaoMP()?'<button class="btn sec" data-go="org-mercado-pago" style="margin-bottom:14px">Mercado Pago · teste</button>':''}
   <label style="margin-top:0">Logo</label><div class="logo-up"><span id="cfg-logo-prev">${c.logo_url?`<img class="logo" src="${esc(c.logo_url)}" alt="Logo" width="84" height="84" style="width:84px;height:84px">`:`<span class="logo-vazio">${berg(40,null)}</span>`}</span><div style="flex:1"><label class="btn sec" for="cfg-logo" style="font-weight:700">${c.logo_url?'Trocar logo':'Escolher logo'}</label><input id="cfg-logo" type="file" accept="image/png,image/jpeg,image/webp" hidden></div></div>
   <label for="cfg-nome">Nome do evento</label><input id="cfg-nome" value="${esc(o.nome)}" maxlength="80">
@@ -3118,6 +3128,17 @@ document.addEventListener('click',async ev=>{
     if(!/^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/.test(slug)){err.textContent='O link precisa ter de 3 a 40 letras minúsculas, números ou hífen, sem hífen no começo ou no fim.';return}
     const premiosN=[...new Set(($('#nf-premios')?.value||'').split('\n').map(x=>x.trim()).filter(Boolean))].slice(0,12);b.disabled=true;const r=await sb.rpc('criar_organizacao',{p_nome:nome,p_slug:slug});b.disabled=false;if(r.error){err.textContent=erroMsg(r.error);return}await sb.from('organizacoes').update({premios:premiosN,tipo:$('#nf-tipo')?.value||'feira'}).eq('id',r.data);
     toast('Evento cadastrado! Agora é só esperar a aprovação.');try{localStorage.setItem(chaveU('pf-modo'),'organizacao');localStorage.setItem(chaveU('pf-org'),r.data)}catch{}const {data:og}=await sb.rpc('minhas_organizacoes');S.orgs=og||[];await escolherModo();S.edicoes=null;go('org-config');return}
+  if(b.id==='eq-add'){
+    if(!podeGerenciarEquipe())return;const campo=$('#eq-email'),err=$('#eq-erro');err.textContent='';
+    if(!campo.value.trim()||!campo.checkValidity()){err.textContent='Informe um e-mail válido.';return}
+    b.disabled=true;const r=await sb.rpc('adicionar_equipe',{p_org:S.org.id,p_email:campo.value.trim()});b.disabled=false;
+    if(r.error){err.textContent=erroMsg(r.error);return}toast('Equipe atualizada');await render();return;
+  }
+  if(d.equipeRemover){
+    if(!podeGerenciarEquipe())return;if(!confirm('Remover esta pessoa da equipe? Ela perde o acesso à gestão deste evento.'))return;
+    b.disabled=true;const r=await sb.rpc('remover_equipe',{p_org:S.org.id,p_user:d.equipeRemover});b.disabled=false;
+    if(r.error){toast(erroMsg(r.error));return}toast('Colaborador removido');await render();return;
+  }
   if(b.id==='cfg-ok'){const err=$('#cfg-err');err.textContent='';const nome=$('#cfg-nome').value.trim();if(!nome){err.textContent='Dê um nome pro evento.';return}
     const nmed=(id,d)=>{const x=parseFloat(String($(id)?.value||'').replace(',','.'));return x>0&&x<50?Math.round(x*100)/100:d};const vp=nmed('#cfg-vp',2),vg=nmed('#cfg-vg',3),vf=nmed('#cfg-vf',1.3);if(vg<vp){err.textContent='A vaga maior não pode ser menor que a vaga menor.';return}
     const premios=[...new Set(($('#cfg-premios')?.value||'').split('\n').map(x=>x.trim()).filter(Boolean))].slice(0,12);
