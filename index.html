@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#10083D">
-<meta name="app-versao" content="202611251830">
+<meta name="app-versao" content="202611251900">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/svg+xml" href="colanessa-icon.svg?v=20261124-official"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-2026.png?v=20261124-cn"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1332,8 +1332,9 @@ function erroMsg(e){const m=(e&&e.message)||String(e);if(/Invalid login/i.test(m
 
 
 function berg(t=28,o){const lg=(o===undefined?orgDaTela():o)?.logo_url;if(lg)return `<img class="berg berg-logo" src="${esc(lg)}" width="${t}" height="${t}" alt="" style="width:${t}px;height:${t}px">`;return `<span class="berg colanessa-simbolo" style="width:${t}px;height:${t}px" aria-hidden="true"><i></i></span>`}
-const wm=(c='')=>S.tela!=='admin'&&S.papel==='organizadora'&&S.org&&c!=='grande'?`<span class="wm wm-org ${c}"><small>PAINEL DO EVENTO</small><b>${esc(String(S.org.nome).toUpperCase())}</b></span>`:`<span class="wm ${c}"><small>${PLAT.peq}</small><b>${PLAT.grande}</b></span>`;
-const topo=()=>`<div class="cabeca"><span class="cacho" aria-hidden="true">${S.tela!=='admin'&&S.papel==='organizadora'&&S.org?.logo_url?`<img src="${esc(S.org.logo_url)}" alt="">`:`<span class="c1">${berg(46)}</span>`}</span><div class="linha1">${wm()}<button class="papel" id="trocar-perfil" aria-haspopup="dialog" style="border:0;color:inherit">${S.tela==='admin'?'Admin':S.papel==='organizadora'?'Organização':'Expositor'} ▾</button><button class="atualiza" id="atualizar" aria-label="Atualizar a tela" title="Atualizar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button></div><div class="ola">${S.tela!=='admin'&&S.papel!=='organizadora'&&S.marca?.logo_url?`<img class="logo" src="${esc(S.marca.logo_url)}" alt="" width="26" height="26" style="width:26px;height:26px;border-width:1.5px">`:''}${S.tela==='admin'?'Painel da plataforma':S.papel==='organizadora'?'Painel da organização'+(S.compNovos&&S.tela!=='org-selecao'?`</div><button class="aviso-comp" data-vercomp="1">📎 ${S.compNovos} comprovante${S.compNovos>1?'s':''} novo${S.compNovos>1?'s':''} pra conferir ›</button><div style="display:none">`:''):S.marca?'Olá, '+esc(S.marca.nome)+'!':'Que bom te ver por aqui!'}</div></div>`;
+const telaAdmin=(t=S.tela,st=S)=>Boolean(st.admin&&(t==='admin'||t.startsWith('admin-')||(t==='cn-chat'&&st.cnChatAdmin)));
+const wm=(c='')=>!telaAdmin()&&S.papel==='organizadora'&&S.org&&c!=='grande'?`<span class="wm wm-org ${c}"><small>PAINEL DO EVENTO</small><b>${esc(String(S.org.nome).toUpperCase())}</b></span>`:`<span class="wm ${c}"><small>${PLAT.peq}</small><b>${PLAT.grande}</b></span>`;
+const topo=()=>`<div class="cabeca"><span class="cacho" aria-hidden="true">${!telaAdmin()&&S.papel==='organizadora'&&S.org?.logo_url?`<img src="${esc(S.org.logo_url)}" alt="">`:`<span class="c1">${berg(46)}</span>`}</span><div class="linha1">${wm()}<button class="papel" id="trocar-perfil" aria-haspopup="dialog" style="border:0;color:inherit">${telaAdmin()?'Admin':S.papel==='organizadora'?'Organização':'Expositor'} ▾</button><button class="atualiza" id="atualizar" aria-label="Atualizar a tela" title="Atualizar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button></div><div class="ola">${!telaAdmin()&&S.papel!=='organizadora'&&S.marca?.logo_url?`<img class="logo" src="${esc(S.marca.logo_url)}" alt="" width="26" height="26" style="width:26px;height:26px;border-width:1.5px">`:''}${telaAdmin()?'Painel da plataforma':S.papel==='organizadora'?'Painel da organização'+(S.compNovos&&S.tela!=='org-selecao'?`</div><button class="aviso-comp" data-vercomp="1">📎 ${S.compNovos} comprovante${S.compNovos>1?'s':''} novo${S.compNovos>1?'s':''} pra conferir ›</button><div style="display:none">`:''):S.marca?'Olá, '+esc(S.marca.nome)+'!':'Que bom te ver por aqui!'}</div></div>`;
 const S={sessao:null,papel:'expositor',marca:null,segs:[],tela:'inicio',edicao:null,orgEdicao:null,canal:null,mapaSel:null,vagaSel:null,orgs:[],org:null,admin:false,pushOk:false};
 /* ===== cores: a plataforma é neutra e cada evento usa as cores dela ===== */
 const hexOk=h=>/^#[0-9a-f]{6}$/i.test(h||'');
@@ -1352,7 +1353,7 @@ const varsOrg=o=>{const c=coresDe(o);return c?Object.entries(c).map(([k,v])=>k+'
 let temaAtual=null;function aplicarTema(o){const c=coresDe(o),chave=c?JSON.stringify(c):'';document.documentElement.toggleAttribute('data-tema-organizacao',!!c);if(chave===temaAtual)return;temaAtual=chave;const r=document.documentElement.style;
   ['--oliva','--menta','--oliva-esc','--menta-soft','--on-oliva','--verde','--verde-esc','--verde-soft','--on-verde','--laranja','--laranja-esc','--laranja-soft','--on-laranja','--wm'].forEach(k=>r.removeProperty(k));
   if(c)Object.entries(c).forEach(([k,v])=>r.setProperty(k,v));const m=document.querySelector('meta[name=theme-color]');if(m)m.content=c?c['--oliva']:'#FFF3E7'}
-function temaDaTela(){if(S.tela==='admin')return aplicarTema(null);if(S.tela==='feira-pub')return aplicarTema(S.pubOrg||null);if(S.papel==='organizadora'&&S.org)return aplicarTema(S.org);if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return aplicarTema(S.edicao.organizacoes);aplicarTema(null)}
+function temaDaTela(){if(telaAdmin())return aplicarTema(null);if(S.tela==='feira-pub')return aplicarTema(S.pubOrg||null);if(S.papel==='organizadora'&&S.org)return aplicarTema(S.org);if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return aplicarTema(S.edicao.organizacoes);aplicarTema(null)}
 const nomeEd=e=>e?.titulo||e?.organizacoes?.nome||S.org?.nome||'Edição';
 const ORGCOLS='id,nome,slug,cor_primaria,cor_destaque,logo_url,status,vaga_menor,vaga_maior,vaga_fundo,cidade,tipo,categorias';
 
@@ -1415,14 +1416,14 @@ const itPerfil=(attr,nome,sub,img,on)=>`<button class="perfil-it ${on?'on':''}" 
 const blocoContas=()=>{const cs=contasSalvas();if(!cs.length)return '';return `<div class="painel" style="margin-top:12px"><b class="secao">Continuar como</b><div style="margin-top:8px">${cs.map(c=>`<div class="perfil-linha">${itPerfil(`data-usarconta="${c.id}"`,c.nome||c.email.split('@')[0],c.email,null,false)}<button class="mini" data-rmconta="${c.id}" aria-label="Tirar ${esc(c.email)} deste aparelho">✕</button></div>`).join('')}</div><p class="sub" style="margin:4px 0 0;font-size:13px">Ou entre com outro e-mail aqui embaixo.</p></div>`};
 function fechaPerfis(){document.getElementById('perfis-fundo')?.remove()}
 function abrirPerfis(){fechaPerfis();if(!S.sessao)return;const eu=S.sessao.user;
-  const perfis=[...(S.expositorAtivo!==false?[itPerfil('data-pmodo="expositor"',S.marca?.nome||'Perfil de expositor',S.marca?'Expositor':'Expositor · cadastre sua marca',S.marca?.logo_url,S.papel==='expositor'&&S.tela!=='admin')]:[]),
-    ...S.orgs.map(o=>itPerfil(`data-pmodo="${o.id}"`,o.nome,'Organização'+(o.status==='pendente'?' · esperando aprovação':o.status==='suspensa'?' · suspensa':''),S.org?.id===o.id?S.org.logo_url:null,S.papel==='organizadora'&&S.org?.id===o.id&&S.tela!=='admin')),
-    ...(S.admin?[itPerfil('data-pmodo="admin"','Administração','Plataforma',null,S.tela==='admin')]:[])];
+  const perfis=[...(S.expositorAtivo!==false?[itPerfil('data-pmodo="expositor"',S.marca?.nome||'Perfil de expositor',S.marca?'Expositor':'Expositor · cadastre sua marca',S.marca?.logo_url,S.papel==='expositor'&&!telaAdmin())]:[]),
+    ...S.orgs.map(o=>itPerfil(`data-pmodo="${o.id}"`,o.nome,'Organização'+(o.status==='pendente'?' · esperando aprovação':o.status==='suspensa'?' · suspensa':''),S.org?.id===o.id?S.org.logo_url:null,S.papel==='organizadora'&&S.org?.id===o.id&&!telaAdmin())),
+    ...(S.admin?[itPerfil('data-pmodo="admin"','Administração','Plataforma',null,telaAdmin())]:[])];
   const outras=contasSalvas().filter(c=>c.id!==eu.id);
   const f=document.createElement('div');f.className='recorte-fundo';f.id='perfis-fundo';
   f.innerHTML=`<div class="recorte-folha folha-perfis" role="dialog" aria-modal="true" aria-labelledby="pf-t"><div class="topo"><h2 id="pf-t" style="margin:0">Trocar de perfil</h2><button class="mini" id="pf-fecha" aria-label="Fechar">✕</button></div><p class="sub" style="margin:2px 0 12px">${esc(eu.email)}</p>${perfis.join('')}
     ${outras.length?`<h3>Outras contas neste aparelho</h3>${outras.map(c=>`<div class="perfil-linha">${itPerfil(`data-usarconta="${c.id}"`,c.nome||c.email.split('@')[0],c.email,null,false)}<button class="mini" data-rmconta="${c.id}" aria-label="Tirar ${esc(c.email)} deste aparelho">✕</button></div>`).join('')}`:''}
-    <button class="btn sec" data-novaconta="1" style="margin-top:10px">+ Entrar com outra conta</button><button class="btn sec" data-go="conta" style="margin-top:8px">Conta e configurações</button></div>`;
+    <button class="btn sec" data-novaconta="1" style="margin-top:10px">+ Entrar com outra conta</button>${telaAdmin()?'':'<button class="btn sec" data-go="conta" style="margin-top:8px">Conta e configurações</button>'}</div>`;
   document.body.appendChild(f);f.addEventListener('click',ev=>{if(ev.target===f||ev.target.closest('#pf-fecha'))fechaPerfis()});f.querySelector('.perfil-it.on,.perfil-it')?.focus()}
 async function usarConta(id){const c=contasSalvas().find(x=>x.id===id);if(!c)return;if(S.sessao?.user?.id===id){fechaPerfis();return}toast('Trocando de conta…');await desligaPushDaConta();
   const {error}=await sb.auth.refreshSession({refresh_token:c.rt});if(error){removeConta(id);fechaPerfis();toast('Essa conta precisa entrar de novo');if(!S.sessao){try{localStorage.setItem('pf-email',c.email)}catch{}render()}return}}
@@ -1463,7 +1464,7 @@ const segNome=s=>S.segs.find(x=>x.slug===s)?.nome||s;
 
 const NI={inicio:'<path d="M4 8h16v12H4z"/><path d="M4 8l2-4h12l2 4M9 20v-6h6v6"/>',marca:'<path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',conta:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>','org-edicoes':'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>','org-selecao':'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 11l2 2 4-4"/>','org-mapas':'<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>','org-lista':'<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>','org-feedback':'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>','org-propostas':'<path d="M4 21V5l8-2v18M12 8h8v13M4 21h16"/>'};
 function nav(){
-  const n=$('#nav');if(!S.sessao||S.tela==='admin'){n.hidden=true;return}n.hidden=false;
+  const n=$('#nav');if(!S.sessao){n.hidden=true;return}n.hidden=false;if(telaAdmin()){const itens=[['admin','Painel','<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>'],['admin-central','Atendimento','<path d="M21 11a8 8 0 0 1-8 8H7l-4 3V11a9 9 0 0 1 18 0Z"/>'],['admin-avisos','Notificações','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>']];$('#navin').innerHTML=itens.map(([t,l,ic])=>`<button data-go="${t}" ${S.tela===t||(t==='admin-central'&&S.tela==='cn-chat')?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg>${l}</button>`).join('');return}
   const itens=S.papel==='organizadora'?[['org-edicoes','Edições'],['org-selecao','Seleção'],['org-mapas','Mapas'],['org-lista','Lista'],['org-feedback','Feedback'],['org-propostas','Espaços']]:[['inicio','Eventos'],['marca','Minha marca'],['conta','Conta']];
   $('#navin').innerHTML=itens.map(([t,l])=>`<button data-go="${t}" ${S.tela===t||(t==='inicio'&&['edicao','mapa','montagem','feedback'].includes(S.tela))||(t==='org-selecao'&&S.tela==='org-inscrito')||(t==='org-edicoes'&&S.tela==='org-edicao-form')?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true">${NI[t]||''}</svg>${l}${t==='org-selecao'&&S.compNovos?`<i class="badge">${S.compNovos}</i>`:''}${t==='org-edicoes'&&S.insNovas?`<i class="badge">${S.insNovas}</i>`:''}</button>`).join('');
 }
@@ -1473,7 +1474,7 @@ async function render(){
   window.scrollTo(0,0);enfeitaDatas();filtrarCardsExp();if(AFTER[S.tela])AFTER[S.tela]();
 }
 document.addEventListener('toggle',ev=>{const d=ev.target;if(!d.dataset||!d.dataset.grupo)return;S.gAbertos=S.gAbertos||new Set();if(d.open)S.gAbertos.add(d.dataset.grupo);else S.gAbertos.delete(d.dataset.grupo)},true);
-function go(t){fechaPerfis();if(t==='org-planta'&&S.tela!=='org-planta'){S.plFoto=null;S.plFotoOriginal=null;S.plAvisosIA=null;S.plDesenhar=false;S.plDraft=null;S.plMedidasOk=!!S.plMapa}if(S.papel!=='organizadora'&&/^org-(?!config)/.test(t))t='inicio';if(t==='org-selecao')S.gAbertos=new Set();if(S.canal){sb.removeChannel(S.canal);S.canal=null}S.tela=t;render()}
+function go(t){fechaPerfis();if((t==='admin'||t.startsWith('admin-'))&&!S.admin){toast('Acesso restrito');return}if(telaAdmin(t)){if(S.canalComp){sb.removeChannel(S.canalComp);S.canalComp=null}}if(t==='org-planta'&&S.tela!=='org-planta'){S.plFoto=null;S.plFotoOriginal=null;S.plAvisosIA=null;S.plDesenhar=false;S.plDraft=null;S.plMedidasOk=!!S.plMapa}if(S.papel!=='organizadora'&&/^org-(?!config)/.test(t))t='inicio';if(t==='org-selecao')S.gAbertos=new Set();if(S.canal){sb.removeChannel(S.canal);S.canal=null}S.tela=t;render()}
 
 document.addEventListener('change',async ev=>{
   const el=ev.target;if(!el?.dataset?.pushPref||!S.sessao)return;
@@ -3042,7 +3043,7 @@ document.addEventListener('click',async ev=>{
   if(b.id==='pl-foto-cortar'){await plRecortar();return}
   if(b.id==='pl-foto-tirar'){S.plFoto=null;S.plFotoOriginal=null;S.plAvisosIA=null;await plRedesenhaTela();return}
   if(b.id==='org-excluir'){b.disabled=true;await abrirExcluirFeira();b.disabled=false;return}
-  if(d.pmodo){fechaPerfis();if(d.pmodo==='admin'){go('admin');return}if(d.pmodo==='expositor'){if(S.papel==='expositor')go('inicio');else await trocarModo('expositor');return}if(S.papel==='organizadora'&&S.org?.id===d.pmodo){go('org-edicoes');return}await trocarModo('organizacao',d.pmodo);return}
+  if(d.pmodo){fechaPerfis();if(d.pmodo==='admin'){if(S.admin)go('admin');return}if(d.pmodo==='expositor'){if(S.papel==='expositor'&&!telaAdmin())go('inicio');else await trocarModo('expositor');return}if(S.papel==='organizadora'&&S.org?.id===d.pmodo&&!telaAdmin()){go('org-edicoes');return}await trocarModo('organizacao',d.pmodo);return}
   if(d.usarconta){b.disabled=true;await usarConta(d.usarconta);b.disabled=false;return}
   if(d.rmconta){removeConta(d.rmconta);toast('Conta tirada deste aparelho');if(document.getElementById('perfis-fundo'))abrirPerfis();else render();return}
   if(d.novaconta){b.disabled=true;await novaConta();return}
@@ -3678,12 +3679,12 @@ function resumoAdmin(r){
   addEventListener('scroll',esconde,{passive:true})})();
 
 /* ================= DO JEITO DE CADA FEIRA: logo, tamanho da vaga e nome do prêmio ================= */
-function orgDaTela(){if(S.tela==='admin')return null;if(S.tela==='feira-pub')return S.pubOrg||null;if(S.papel==='organizadora'&&S.org)return S.org;if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return S.edicao.organizacoes;return null}
+function orgDaTela(){if(telaAdmin())return null;if(S.tela==='feira-pub')return S.pubOrg||null;if(S.papel==='organizadora'&&S.org)return S.org;if(['edicao','mapa','montagem'].includes(S.tela)&&S.edicao?.organizacoes)return S.edicao.organizacoes;return null}
 const nM=n=>String(Math.round(n*100)/100).replace('.',',');
 function medDe(o){const n=(v,d)=>{const x=+v;return x>0?x:d};return {p:n(o?.vaga_menor,2),g:n(o?.vaga_maior,3),f:n(o?.vaga_fundo,1.3)}}
 const medAttr=o=>{const m=medDe(o);return `${m.p}|${m.g}|${m.f}`};
 function premiosOrg(extra){const l=[...(S.org?.premios||[])];if(extra&&!l.includes(extra))l.push(extra);return l}
-function edDaTela(){if(S.papel==='organizadora'){if(S.tela==='org-edicao-form')return S.edForm||null;return (S.edicoes||[]).find(x=>x.id===S.orgEdicao)||null}return S.edicao||null}
+function edDaTela(){if(telaAdmin())return null;if(S.papel==='organizadora'){if(S.tela==='org-edicao-form')return S.edForm||null;return (S.edicoes||[]).find(x=>x.id===S.orgEdicao)||null}return S.edicao||null}
 function trocaMed(txt,m){if(m.p===2&&m.g===3&&m.f===1.3)return txt;
   return txt.replace(/(^|[^\d,])2 × 1,30/g,(_,a)=>a+nM(m.p)+' × '+nM(m.f)).replace(/(^|[^\d,])([23]) m\b|1,30 m\b/g,(t,a,d)=>d?a+nM(d==='2'?m.p:m.g)+' m':nM(m.f)+' m')}
 function trocaPremio(txt,n){if(!n||n==='Roleta premiada'||!/oleta/.test(txt))return txt;
