@@ -63,8 +63,9 @@ Deno.serve(async (req) => {
     if (!owner) return reply({ erro: "Apenas a pessoa responsável pelo evento pode gerenciar essa conexão." }, 403);
     const filter = "?organizacao_id=eq." + org;
     const [row] = await database(table + filter);
-    const key = Deno.env.get("ASAAS_SANDBOX_API_KEY");
-    if (body.acao === "status") return reply({ configurado: !!key, carteira: row?.wallet_id ?? null, checkout: row?.checkout_id ?? null, estado: row?.checkout_estado ?? null });
+    const key = Deno.env.get("ASAAS_SANDBOX_ORGANIZER_API_KEY");
+    const platformWallet = Deno.env.get("ASAAS_SANDBOX_PLATFORM_WALLET_ID");
+    if (body.acao === "status") return reply({ configurado: !!key && !!platformWallet && uuid.test(platformWallet), carteira: row?.wallet_id ?? null, checkout: row?.checkout_id ?? null, estado: row?.checkout_estado ?? null });
     if (body.acao === "salvar") {
       const wallet = body.carteira?.trim?.();
       if (typeof wallet !== "string" || !uuid.test(wallet)) return reply({ erro: "Informe um Wallet ID de sandbox válido." }, 400);
@@ -77,9 +78,23 @@ Deno.serve(async (req) => {
       return reply({ salvo: true });
     }
     if (body.acao !== "checkout") return reply({ erro: "Ação inválida." }, 400);
-    if (!row || !key) return reply({ erro: "Configure a credencial da plataforma e a carteira de teste." }, 409);
+    if (!row || !key || !platformWallet || !uuid.test(platformWallet)) return reply({ erro: "Configure a credencial do organizador e a carteira do Colanessa no Sandbox." }, 409);
     if (row.checkout_id && row.checkout_estado === "aguardando") return reply({ checkout: row.checkout_id });
     if (row.checkout_estado === "pago") return reply({ erro: "O pagamento deste teste já foi confirmado." }, 409);
+    if (!["avulso", "essencial", "pro"].includes(body.plano)) return reply({ erro: "Selecione a modalidade de teste." }, 400);
+    const wallets = await fetch("https://api-sandbox.asaas.com/v3/wallets/", {
+      headers: { access_token: key, "User-Agent": "Colanessa" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!wallets.ok) return reply({ erro: "Não foi possível verificar a carteira emissora no Asaas Sandbox." }, 502);
+    const walletData = await wallets.json();
+    if (!Array.isArray(walletData?.data) || !walletData.data.some((wallet: { id?: string }) => wallet.id === row.wallet_id)) {
+      return reply({ erro: "A credencial emissora não pertence à carteira de teste cadastrada nesta organização." }, 409);
+    }
+    if (platformWallet.toLowerCase() === row.wallet_id) return reply({ erro: "O emissor e o Colanessa precisam de carteiras Sandbox distintas." }, 409);
+    const valorCentavos = 1000;
+    const comissaoCentavos = body.plano === "avulso" ? Math.min(500, Math.round(valorCentavos * 3 / 100)) : 0;
+    const totalCentavos = valorCentavos + (body.repassar === true ? comissaoCentavos : 0);
     const attempt = crypto.randomUUID();
     const [claimed] = await database(table + filter + "&wallet_id=eq." + row.wallet_id + (row.checkout_id ? "&checkout_id=eq." + row.checkout_id + "&checkout_estado=eq." + row.checkout_estado : "&tentativa=is.null"), {
       method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ tentativa: attempt, checkout_id: null, checkout_estado: null }),
@@ -92,8 +107,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         billingTypes: ["CREDIT_CARD"], chargeTypes: ["DETACHED"], minutesToExpire: 60,
         callback: { successUrl: site + "/?asaas=concluido", cancelUrl: site + "/?asaas=cancelado", expiredUrl: site + "/?asaas=expirado" },
-        items: [{ name: "Inscrição simulada Colanessa", quantity: 1, value: 10 }],
-        splits: [{ walletId: claimed.wallet_id, percentualValue: 90 }],
+        items: [{ name: "Inscrição simulada Colanessa", quantity: 1, value: totalCentavos / 100 }],
+        ...(comissaoCentavos > 0 ? { splits: [{ walletId: platformWallet, fixedValue: comissaoCentavos / 100 }] } : {}),
       }),
     });
     if (!response.ok) {
