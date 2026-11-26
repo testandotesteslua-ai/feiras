@@ -59,11 +59,8 @@ function database(path: string, init: RequestInit = {}) {
 }
 
 async function canConnect(user: string, org: string) {
-  const [[profile], [organization]] = await Promise.all([
-    database("/rest/v1/perfis?select=eh_admin&id=eq." + user),
-    database("/rest/v1/organizacoes?select=id&id=eq." + org + "&criado_por=eq." + user + "&status=eq.ativa"),
-  ]);
-  return profile?.eh_admin === true && !!organization;
+  const [organization] = await database("/rest/v1/organizacoes?select=id&id=eq." + org + "&criado_por=eq." + user + "&status=eq.ativa");
+  return !!organization;
 }
 
 function b64(bytes: Uint8Array) {
@@ -419,7 +416,7 @@ async function operate(req: Request) {
   if (typeof org !== "string" || !uuid.test(org) || !["status", "conectar", "cobranca", "cobranca-sem-comissao", "cobranca-direta", "plano"].includes(body.acao)) {
     return json({ erro: "Dados do teste inválidos." }, 400);
   }
-  if (!await canConnect(user.id, org)) return json({ erro: "Teste disponível à administração na própria organização ativa." }, 403);
+  if (!await canConnect(user.id, org)) return json({ erro: "Disponível à proprietária da organização ativa." }, 403);
   if (!clientId || !clientSecret) return json({ erro: "Client ID ou Client Secret ainda ausente no Supabase." }, 503);
   if (body.acao === "plano") {
     if (!plans.includes(body.plano) || (body.primeira && (typeof body.primeira !== "string" || !uuid.test(body.primeira)))) {
@@ -434,6 +431,10 @@ async function operate(req: Request) {
       body: JSON.stringify({ organizacao_id: org, plano: body.plano, repassar: body.repassar === true, primeira_edicao_id: body.primeira || null }),
     });
     return json({ salvo: true });
+  }
+  if (["cobranca", "cobranca-sem-comissao", "cobranca-direta"].includes(body.acao)) {
+    const [profile] = await database("/rest/v1/perfis?select=eh_admin&id=eq." + user.id);
+    if (profile?.eh_admin !== true) return json({ erro: "Teste legado restrito à administração da plataforma." }, 403);
   }
   const controle = body.acao === "cobranca-sem-comissao";
   const controleDisponivel = org === feiraA || org === feiraB;
