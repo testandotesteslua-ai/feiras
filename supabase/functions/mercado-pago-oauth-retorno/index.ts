@@ -114,7 +114,7 @@ async function receive(url: URL) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       client_id: clientId, client_secret: clientSecret, grant_type: "authorization_code",
-      code, redirect_uri: callback, test_token: "false",
+      code, redirect_uri: callback, test_token: false,
     }),
   });
   const seller = String(token?.user_id ?? "");
@@ -144,8 +144,8 @@ function checkoutUrl(value: string) {
   return url.href;
 }
 
-async function isOrdersTestSeller(token: unknown, seller: string, direta = false) {
-  if (typeof token !== "string" || !(token.startsWith("APP_USR-") || (direta && token.startsWith("TEST-")))) return false;
+async function isOrdersTestSeller(token: unknown, seller: string) {
+  if (typeof token !== "string" || !(token.startsWith("APP_USR-") || token.startsWith("TEST-"))) return false;
   const account = await requestJson(mercadoPago + "/users/me", {
     headers: { Authorization: "Bearer " + token },
   });
@@ -160,7 +160,7 @@ async function testSplit(row: any, org: string, controle: boolean, direta: boole
   if (direta && (!token || row.vendedor_id !== "3870233502")) {
     return json({ erro: "Credencial direta indisponível para comparar com este vendedor de teste." }, 409);
   }
-  if (!await isOrdersTestSeller(token, row.vendedor_id, direta)) {
+  if (!await isOrdersTestSeller(token, row.vendedor_id)) {
     return json({ erro: "O Mercado Pago não confirmou esta conta como vendedor de teste." }, 409);
   }
   const headers = { Authorization: "Bearer " + token };
@@ -310,6 +310,100 @@ async function testPreference(row: any, org: string, controle: boolean) {
   return json({ checkout, id: preference.id, status: "created", pago: false });
 }
 
+
+const planTable = "/rest/v1/mp_planos_teste";
+const chargeTable = "/rest/v1/mp_inscricoes_checkout_teste";
+const plans = ["avulso", "gestao", "essencial", "pro"];
+function quote(base: number, plan: string, exempt: boolean, pass: boolean) {
+  const fee = plan === "avulso" && !exempt ? Math.min(500, Math.round(base * 3 / 100)) : 0;
+  return { base_centavos: base, comissao_centavos: fee, total_centavos: base + (pass ? fee : 0) };
+}
+async function inscriptionCheckout(user: string, body: any) {
+  const id = body.inscricao;
+  if (typeof id !== "string" || !uuid.test(id)) return json({ erro: "Inscrição inválida." }, 400);
+  const [ins] = await database("/rest/v1/inscricoes?id=eq." + id + "&dono=eq." + user +
+    "&select=id,edicao_id,status,isento,pago,pago_sinal,valor_pago,credito_usado,comprovante_path,tamanho,dia_unico,valor_combinado,edicoes(organizacao_id,gratuita,cancelada_em,preco_dia,preco_2m,preco_3m,preco_unico)");
+  if (!ins?.edicoes) return json({ erro: "Inscrição indisponível." }, 404);
+  const edition = ins.edicoes;
+  const org = edition.organizacao_id;
+  const filter = "?inscricao_id=eq." + id;
+  const [[plan], [connection], [charge], [organization]] = await Promise.all([
+    database(planTable + "?organizacao_id=eq." + org),
+    database(connections + "?organizacao_id=eq." + org),
+    database(chargeTable + filter),
+    database("/rest/v1/organizacoes?select=id&id=eq." + org + "&status=eq.ativa"),
+  ]);
+  const price = ins.valor_combinado ?? (ins.dia_unico && edition.preco_dia != null
+    ? edition.preco_dia : ({ unico: edition.preco_unico, "2m": edition.preco_2m, "3m": edition.preco_3m } as Record<string, unknown>)[ins.tamanho]);
+  const base = Math.round(Number(price) * 100);
+  const eligible = !!organization && ins.status === "confirmada" && !ins.isento && !ins.pago && !ins.pago_sinal &&
+    !(Number(ins.valor_pago) > 0) && !(Number(ins.credito_usado) > 0) && !ins.comprovante_path &&
+    !edition.gratuita && !edition.cancelada_em && Number.isSafeInteger(base) && base > 0 && base <= 2147483000;
+  const active = !!connection?.token_cifrado?.startsWith("orders:") && Date.parse(connection.expira_em) > Date.now();
+  const available = eligible && active && !!plan && plan.plano !== "gestao";
+  const values = charge ?? (available ? quote(base, plan.plano, plan.primeira_edicao_id === ins.edicao_id, plan.repassar) : null);
+  const response = (row: any, checkout?: string) => json({
+    disponivel: available || !!row?.preferencia_id, aprovado: !!row?.aprovado_em,
+    ...(values && { base_centavos: values.base_centavos, comissao_centavos: values.comissao_centavos, total_centavos: values.total_centavos }),
+    ...(checkout && { checkout }),
+  });
+  if (body.acao === "inscricao-status") return response(charge);
+  if (charge?.aprovado_em) return response(charge);
+  if (!active || !organization || (charge && charge.vendedor_id !== connection.vendedor_id)) {
+    return json({ erro: "A conexão do vendedor de teste está indisponível." }, 409);
+  }
+  const token = await decryptToken(connection.token_cifrado.slice("orders:".length), org);
+  if (!token.startsWith("APP_USR-") || !await isOrdersTestSeller(token, connection.vendedor_id)) return json({ erro: "Reconecte o vendedor de teste para emitir a credencial usada pelo Checkout Pro." }, 409);
+  const headers = { Authorization: "Bearer " + token };
+  if (charge?.preferencia_id) {
+    const query = new URLSearchParams({ external_reference: charge.referencia, limit: "50" });
+    const payments = await requestJson(mercadoPago + "/v1/payments/search?" + query, { headers });
+    const payment = Array.isArray(payments?.results) && payments.results.find((entry: any) =>
+      entry.live_mode === false && entry.status === "approved" && entry.currency_id === "BRL" &&
+      entry.external_reference === charge.referencia && String(entry.collector_id) === charge.vendedor_id &&
+      Math.round(Number(entry.transaction_amount) * 100) === charge.total_centavos && /^[0-9]+$/.test(String(entry.id)));
+    if (payment) {
+      await database(chargeTable + filter + "&aprovado_em=is.null", {
+        method: "PATCH", body: JSON.stringify({ pagamento_id: String(payment.id), aprovado_em: new Date().toISOString() }),
+      });
+      return response({ ...charge, aprovado_em: true });
+    }
+    return response(charge, eligible ? checkoutUrl(charge.checkout_url) : undefined);
+  }
+  if (!available) return json({ erro: "O checkout não está disponível para esta inscrição." }, 409);
+  if (charge) return json({ erro: "Já existe uma tentativa em processamento para esta inscrição." }, 409);
+  const [created] = await database(chargeTable + "?on_conflict=inscricao_id", {
+    method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=representation" },
+    body: JSON.stringify({ inscricao_id: id, organizacao_id: org, plano: plan.plano, vendedor_id: connection.vendedor_id, ...values }),
+  });
+  if (!created) return json({ erro: "Já existe uma tentativa em processamento para esta inscrição." }, 409);
+  const paymentRef = filter + "&referencia=eq." + created.referencia;
+  const upstream = await fetch(mercadoPago + "/checkout/preferences", {
+    method: "POST", headers: { ...headers, "Content-Type": "application/json" }, signal: AbortSignal.timeout(12000),
+    body: JSON.stringify({
+      external_reference: created.referencia,
+      items: [{ id, title: "Inscrição de teste Colanessa", quantity: 1, currency_id: "BRL", unit_price: created.total_centavos / 100 }],
+      ...(created.comissao_centavos > 0 ? { marketplace_fee: created.comissao_centavos / 100 } : {}),
+      back_urls: { success: app, pending: app, failure: app },
+    }),
+  });
+  if (!upstream.ok) {
+    if ([400, 401, 403, 422].includes(upstream.status)) await database(chargeTable + paymentRef, { method: "DELETE" });
+    return json({ erro: "Mercado Pago recusou a preferência de teste (HTTP " + upstream.status + ")." }, 502);
+  }
+  const preference = await upstream.json();
+  if (!preferenceId.test(preference.id ?? "") || preference.external_reference !== created.referencia ||
+      String(preference.collector_id) !== created.vendedor_id ||
+      Math.round(Number(preference.marketplace_fee ?? 0) * 100) !== created.comissao_centavos) {
+    return json({ erro: "A preferência retornada não corresponde à cobrança de teste." }, 502);
+  }
+  const checkout = checkoutUrl(preference.init_point);
+  await database(chargeTable + paymentRef, {
+    method: "PATCH", body: JSON.stringify({ preferencia_id: preference.id, checkout_url: checkout }),
+  });
+  return response({ ...created, preferencia_id: preference.id }, checkout);
+}
+
 async function operate(req: Request) {
   const authorization = req.headers.get("Authorization");
   if (!authorization?.startsWith("Bearer ")) return json({ erro: "Entre no Cola Nessa." }, 401);
@@ -320,12 +414,27 @@ async function operate(req: Request) {
   const user = await userResponse.json();
   if (!uuid.test(user.id ?? "") || user.is_anonymous) return json({ erro: "Entre no Cola Nessa." }, 401);
   const body = await req.json().catch(() => null);
+  if (body?.acao === "inscricao-status" || body?.acao === "inscricao-checkout") return inscriptionCheckout(user.id, body);
   const org = body?.organizacao;
-  if (typeof org !== "string" || !uuid.test(org) || !["status", "conectar", "cobranca", "cobranca-sem-comissao", "cobranca-direta"].includes(body.acao)) {
+  if (typeof org !== "string" || !uuid.test(org) || !["status", "conectar", "cobranca", "cobranca-sem-comissao", "cobranca-direta", "plano"].includes(body.acao)) {
     return json({ erro: "Dados do teste inválidos." }, 400);
   }
   if (!await canConnect(user.id, org)) return json({ erro: "Teste disponível à administração na própria organização ativa." }, 403);
   if (!clientId || !clientSecret) return json({ erro: "Client ID ou Client Secret ainda ausente no Supabase." }, 503);
+  if (body.acao === "plano") {
+    if (!plans.includes(body.plano) || (body.primeira && (typeof body.primeira !== "string" || !uuid.test(body.primeira)))) {
+      return json({ erro: "Configuração de teste inválida." }, 400);
+    }
+    if (body.primeira) {
+      const [edition] = await database("/rest/v1/edicoes?select=id&id=eq." + body.primeira + "&organizacao_id=eq." + org);
+      if (!edition) return json({ erro: "A edição não pertence à organização." }, 400);
+    }
+    await database(planTable + "?on_conflict=organizacao_id", {
+      method: "POST", headers: { Prefer: "resolution=merge-duplicates" },
+      body: JSON.stringify({ organizacao_id: org, plano: body.plano, repassar: body.repassar === true, primeira_edicao_id: body.primeira || null }),
+    });
+    return json({ salvo: true });
+  }
   const controle = body.acao === "cobranca-sem-comissao";
   const controleDisponivel = org === feiraA || org === feiraB;
   const direta = body.acao === "cobranca-direta";
@@ -353,6 +462,7 @@ async function operate(req: Request) {
   const active = row?.token_cifrado?.startsWith("orders:") && Date.parse(row.expira_em) > Date.now();
   if (body.acao === "status") {
     return json({
+      plano_teste: (await database(planTable + filter))[0] ?? null,
       conectada: !!active,
       vendedor: active ? row.vendedor_id : null,
       order_id: active && (org !== feiraA || preferenceId.test(row.order_id ?? "")) ? row.order_id : null,
