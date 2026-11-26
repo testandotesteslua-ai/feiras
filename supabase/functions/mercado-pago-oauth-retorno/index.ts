@@ -152,45 +152,54 @@ async function isOrdersTestSeller(token: unknown, seller: string) {
     Array.isArray(account?.tags) && account.tags.includes("test_user");
 }
 
-async function testSplit(row: any, org: string) {
+async function testSplit(row: any, org: string, controle: boolean) {
   const token = await decryptToken(row.token_cifrado.slice("orders:".length), org);
   if (!await isOrdersTestSeller(token, row.vendedor_id)) {
     return json({ erro: "O Mercado Pago não confirmou esta conta como vendedor de teste." }, 409);
   }
   const headers = { Authorization: "Bearer " + token };
-  const ref = "colanessa-split-teste-" + row.tentativa;
+  const idColumn = controle ? "controle_preferencia_id" : "order_id";
+  const urlColumn = controle ? "controle_checkout_url" : "checkout_url";
+  const id = row[idColumn];
+  const key = controle ? row.tentativa + "-controle-orders" : row.tentativa;
+  const ref = "colanessa-split-teste-" + key;
   const returnUrls = {
     success_url: app + "?mp-conexao=pedido-aprovado",
     failure_url: app + "?mp-conexao=pedido-rejeitado",
     pending_url: app + "?mp-conexao=pedido-pendente",
     auto_return: "approved",
   };
-  const order = row.order_id
-    ? await requestJson(mercadoPago + "/v1/orders/" + row.order_id, { headers })
+  const order = id
+    ? await requestJson(mercadoPago + "/v1/orders/" + id, { headers })
     : await requestJson(mercadoPago + "/v1/orders", {
-      method: "POST", headers: { ...headers, "Content-Type": "application/json", "X-Idempotency-Key": row.tentativa },
+      method: "POST", headers: { ...headers, "Content-Type": "application/json", "X-Idempotency-Key": key },
       body: JSON.stringify({
-        type: "online", processing_mode: "manual", total_amount: "10.00", marketplace_fee: "1.00",
+        type: "online", processing_mode: "manual", total_amount: "10.00",
+        ...(controle ? {} : { marketplace_fee: "1.00" }),
         external_reference: ref, items: [{ title: "Teste de divisão Cola Nessa", quantity: 1, unit_price: "10.00" }],
         config: { online: returnUrls },
       }),
     });
   if (!sandboxOrder.test(order?.id ?? "") || order.external_reference !== ref ||
-      Number(order.total_amount) !== 10) {
+      (id && order.id !== id) || Number(order.total_amount) !== 10 ||
+      (controle && Number(order.marketplace_fee ?? 0) !== 0)) {
     console.warn("Mercado Pago test order validation failed", {
       sandbox: sandboxOrder.test(order?.id ?? ""), referenceMatches: order?.external_reference === ref,
       amountMatches: Number(order?.total_amount) === 10,
     });
     return json({ erro: "O Mercado Pago devolveu uma cobrança que o Cola Nessa não conseguiu confirmar como teste." }, 502);
   }
-  const checkout = checkoutUrl(row.checkout_url ?? order.checkout_url);
-  if (!row.order_id) {
+  const checkout = checkoutUrl(row[urlColumn] ?? order.checkout_url);
+  if (!id) {
     console.info("Retorno da cobrança Orders de teste", {
-      confirmado: Object.entries(returnUrls).every(([key, value]) => order.config?.online?.[key] === value),
+      controle, confirmado: Object.entries(returnUrls).every(([key, value]) => order.config?.online?.[key] === value),
     });
-    await database(connections + "?organizacao_id=eq." + org + "&tentativa=eq." + row.tentativa, {
-      method: "PATCH", body: JSON.stringify({ order_id: order.id, checkout_url: checkout }),
+    const [saved] = await database(connections + "?organizacao_id=eq." + org +
+      "&tentativa=eq." + row.tentativa + "&" + idColumn + "=is.null", {
+      method: "PATCH", headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ [idColumn]: order.id, [urlColumn]: checkout }),
     });
+    if (!saved) return json({ erro: "A cobrança de teste mudou. Consulta de novo no painel." }, 409);
   }
   const code = (value: unknown) => typeof value === "string" && /^[a-z0-9_]{1,80}$/i.test(value) ? value : undefined;
   const payments = Array.isArray(order.transactions?.payments) ? order.transactions.payments : [];
@@ -199,8 +208,8 @@ async function testSplit(row: any, org: string) {
     ...payments.slice(-5).flatMap((p: any) => [code(p?.status), code(p?.status_detail)]),
   ].filter(Boolean))];
   const paid = Number(order.total_paid_amount) === 10;
-  if (!paid && row.order_id) {
-    console.info("Consulta da divisão de teste", { status: details });
+  if (id) {
+    console.info("Consulta de Orders de teste", { controle, status: details, pagamentos: payments.length, pago: paid });
     if (["failed", "rejected", "expired", "canceled", "cancelled"].includes(order.status)) {
       return json({ erro: "Mercado Pago: " + details.join(" · ") }, 409);
     }
@@ -209,6 +218,7 @@ async function testSplit(row: any, org: string) {
 }
 
 const feiraA = "efbef4e2-687c-4d21-9dd6-502fc377bd71";
+const feiraB = "58bcfaa0-2945-4929-b18b-c33e02761476";
 const preferenceId = /^[0-9]+-[a-z0-9-]+$/i;
 
 async function testPreference(row: any, org: string, controle: boolean) {
@@ -301,7 +311,8 @@ async function operate(req: Request) {
   if (!await canConnect(user.id, org)) return json({ erro: "Teste disponível à administração na própria organização ativa." }, 403);
   if (!clientId || !clientSecret) return json({ erro: "Client ID ou Client Secret ainda ausente no Supabase." }, 503);
   const controle = body.acao === "cobranca-sem-comissao";
-  if (controle && org !== feiraA) return json({ erro: "Teste sem comissão disponível na Feira A." }, 403);
+  const controleDisponivel = org === feiraA || org === feiraB;
+  if (controle && !controleDisponivel) return json({ erro: "Teste sem comissão disponível nas feiras A e B." }, 403);
   const filter = "?organizacao_id=eq." + org;
   if (body.acao === "conectar") {
     const state = crypto.randomUUID() + crypto.randomUUID();
@@ -327,12 +338,13 @@ async function operate(req: Request) {
       conectada: !!active,
       vendedor: active ? row.vendedor_id : null,
       order_id: active && (org !== feiraA || preferenceId.test(row.order_id ?? "")) ? row.order_id : null,
-      controle_disponivel: !!active && org === feiraA,
-      controle_criado: !!active && org === feiraA && preferenceId.test(row.controle_preferencia_id ?? ""),
+      controle_disponivel: !!active && controleDisponivel,
+      controle_criado: !!active && controleDisponivel &&
+        (org === feiraA ? preferenceId : sandboxOrder).test(row.controle_preferencia_id ?? ""),
     });
   }
   if (!active) return json({ erro: "Conecta uma conta de vendedor de teste primeiro." }, 409);
-  return org === feiraA ? testPreference(row, org, controle) : testSplit(row, org);
+  return org === feiraA ? testPreference(row, org, controle) : testSplit(row, org, controle);
 }
 
 Deno.serve(async (req) => {
