@@ -342,7 +342,7 @@ async function inscriptionCheckout(user: string, body: any) {
   const values = charge ?? (available ? quote(base, plan.plano, plan.primeira_edicao_id === ins.edicao_id, plan.repassar) : null);
   const response = (row: any, checkout?: string) => json({
     disponivel: available || !!row?.preferencia_id, aprovado: !!row?.aprovado_em,
-    ...(values && { base_centavos: values.base_centavos, comissao_centavos: values.comissao_centavos, total_centavos: values.total_centavos }),
+    ...(values && { base_centavos: values.base_centavos, total_centavos: values.total_centavos }),
     ...(checkout && { checkout }),
   });
   if (body.acao === "inscricao-status") return response(charge);
