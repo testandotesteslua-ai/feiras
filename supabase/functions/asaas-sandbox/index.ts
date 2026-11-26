@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       headers: { access_token: key, "Content-Type": "application/json", "User-Agent": "Colanessa" },
       signal: AbortSignal.timeout(12000),
       body: JSON.stringify({
-        billingTypes: ["PIX", "CREDIT_CARD"], chargeTypes: ["DETACHED"], minutesToExpire: 60,
+        billingTypes: ["CREDIT_CARD"], chargeTypes: ["DETACHED"], minutesToExpire: 60,
         callback: { successUrl: site + "/?asaas=concluido", cancelUrl: site + "/?asaas=cancelado", expiredUrl: site + "/?asaas=expirado" },
         items: [{ name: "Inscrição simulada Colanessa", quantity: 1, value: 10 }],
         splits: [{ walletId: claimed.wallet_id, percentualValue: 90 }],
