@@ -1390,10 +1390,10 @@ async function carregarUsuario(){
     if(ab==='ed'&&abId){try{history.replaceState(null,'',location.pathname)}catch{}const {data:edA}=await sb.from('edicoes').select('*').eq('id',abId).maybeSingle();if(edA&&S.marca){S.edicao=edA;S.tela='edicao'}}}
   if(S.papel==='organizadora'){await contaComprovantes();ouveComprovantes();if(S.pushOk&&pushSuporta()&&Notification.permission==='granted')await assinaPush(false).catch(()=>false);
     if(ab){try{history.replaceState(null,'',location.pathname)}catch{}if(ab==='ed'&&abId){S.orgEdicao=abId;S.gAbertos=new Set();S.tela='org-selecao'}S.gAbertos=new Set();if(ab==='reembolso'&&abId){S.cancelEd=abId;S.tela='org-cancel'}else if(ab==='comprovantes'){S.irComp=true;S.tela='org-selecao'}else if(ab==='selecao'){const eN=Object.keys(S.novasEd||{})[0];if(eN)S.orgEdicao=eN;S.filtroSel='novas';S.tela='org-selecao'}}}
-  if(qs.has('mp-conexao')&&podeTestarConexaoMP()){
-    S.retornoMP=qs.get('mp-conexao');qs.delete('mp-conexao');
-    try{history.replaceState(null,'',location.pathname+(qs.size?'?'+qs:'')+location.hash)}catch{}
-    S.tela='org-mercado-pago';
+  if(qs.has('asaas')&&podeGerenciarAsaas()){
+    qs.delete('asaas');
+    history.replaceState(null,'',location.pathname+(qs.size?'?'+qs:'')+location.hash);
+    S.tela='org-asaas';
   }
   render();
 }
@@ -1679,7 +1679,6 @@ async function inicioBase(){
   const ag=passos.findIndex(p=>!p[2]);
   let acao='';
   if(precisaRespMonta(ins,e))acao+=`<div class="painel mr-card"><b class="secao">Quando você vai montar? 🛠️</b><p style="margin:4px 0 8px">${parcial(ins)?'Você vem <b>'+diasTxt(diasIns(ins))+'</b>. ':''}Escolha uma opção:</p>${NOTA_MONTA}${opcoesMonta(e,ins)}</div>`;
-  if(conf&&!ins.pago&&!e.gratuita)acao+=await painelMercadoPagoTeste(ins,false,!area&&podeAbrirMapaTeste(e,ins));
   if(conf&&!ins.pago){const valor=precoIns(e,ins);const metade=valor!=null?Math.round(valor*50)/100:null;const venc=prazoRestante(e);if(+ins.credito_usado>0&&valor!=null)acao+=`<div class="painel" style="border-color:var(--laranja)"><b>🎟️ ${money(+ins.credito_usado)} de crédito já descontado</b><p style="margin:4px 0 0">Falta pagar <b>${money(Math.max(0,valor-(+ins.valor_pago||0)))}</b>.</p></div>`;
     const parte=ins.pago_sinal?`o restante (segunda metade)${metade!=null?', '+money(metade):''}`:`${e.permite_sinal?'(total '+(valor!=null?money(valor):'')+' ou metade '+(metade!=null?money(metade):'')+')':valor!=null?money(valor):''}`;
     const msgLink=`Oi! Sou da marca ${S.marca.nome}, com presença confirmada na ${nomeEd(e)} (${periodo(e)}). Gostaria do link de pagamento do meu espaço: ${tamLabel(ins.tamanho)}${ins.dia_unico?', só '+dataBR(ins.dia_unico):''}, ${parte}. Estou ciente de que a taxa do link é por minha conta.`;
@@ -1850,63 +1849,40 @@ TELAS['nova-feira']=()=>`<button class="mini" data-go="conta" style="border:0;ba
 
 /* ================= DADOS DA EVENTO ================= */
 const PALETAS=[['#17161C','#5B3DF5'],['#0F172A','#0EA5E9'],['#1C1917','#F97316'],['#052E16','#16A34A'],['#3B0764','#DB2777'],['#111827','#CA8A04']];
-function podeTestarConexaoMP(){
-  return S.admin&&S.papel==='organizadora'&&S.org?.status==='ativa'&&S.org.criado_por===S.sessao?.user.id;
+function podeGerenciarAsaas(){
+  return S.papel==='organizadora'&&S.org?.status==='ativa'&&S.org.criado_por===S.sessao?.user.id;
 }
 
-async function conexaoMercadoPago(organizacao,acao){
-  const {data,error}=await sb.functions.invoke('mercado-pago-oauth-retorno',{body:{organizacao,acao}});
+async function conexaoAsaas(acao,carteira){
+  const {data,error}=await sb.functions.invoke('asaas-sandbox',{body:{organizacao:S.org.id,acao,carteira}});
   if(error){
     const detalhe=await error.context?.json?.().catch(()=>null);
-    throw new Error(detalhe?.erro||'Não foi possível acessar o teste do Mercado Pago.');
+    throw new Error(detalhe?.erro||'Não foi possível acessar o Asaas de teste.');
   }
   return data;
 }
 
-TELAS['org-mercado-pago']=async()=>{
-  if(!podeTestarConexaoMP())return TELAS.conta();
-  const volta='<button class="mini" data-go="org-config" style="border:0;background:none">← Dados do evento</button><h1>Mercado Pago</h1>';
-  const mensagens={
-    cancelada:'Autorização cancelada.', invalida:'A autorização expirou ou já foi usada. Inicia a conexão de novo.',
-    ambiente:'O Mercado Pago não retornou uma credencial de teste. Confere se entrou com um vendedor de teste.',
-    configuracao:'As credenciais da aplicação ainda estão indisponíveis.',
-    erro:'O Mercado Pago não concluiu a autorização. Tenta conectar de novo.',
-  };
-  const aviso=Object.hasOwn(mensagens,S.retornoMP)?mensagens[S.retornoMP]:'';
-  S.retornoMP=null;
-  let estado;
-  try{estado=await conexaoMercadoPago(S.org.id,'status')}
-  catch(error){return volta+`<p class="erro" role="status">${esc(error.message)}</p>`}
-  return volta+`<section class="painel"><p class="sub">Ambiente de teste · ${esc(S.org.nome)}</p>
-    ${aviso?`<p class="erro" role="status">${esc(aviso)}</p>`:''}
-    ${estado.conectada?`<p>Vendedor de teste conectado · ${esc(estado.vendedor)}</p>
-      <button class="btn sec" data-mp-oauth="conectar">Reconectar vendedor de teste</button>
-      <p class="sub">Cobrança simulada de R$ 10,00 com comissão de R$ 1,00.</p>
-      <button class="btn pri" data-mp-oauth="cobranca">${estado.order_id?'Consultar cobrança de teste':'Criar cobrança de teste'}</button>
-      ${estado.controle_disponivel?`<p class="sub">Cobrança simulada de R$ 10,00 sem comissão.</p>
-      <button class="btn sec" data-mp-oauth="cobranca-sem-comissao">${estado.controle_criado?'Consultar teste sem comissão':'Criar teste sem comissão'}</button>
-      <div id="mp-controle-resultado" role="status"></div>`:''}
-      ${estado.direta_disponivel?`<p class="sub">Cobrança simulada de R$ 10,00 sem comissão com a credencial direta da aplicação.</p>
-      <button class="btn sec" data-mp-oauth="cobranca-direta">${estado.direta_criada?'Consultar teste com credencial direta':'Criar teste com credencial direta'}</button>
-      <div id="mp-direta-resultado" role="status"></div>`:''}`
-      :'<p>Autoriza uma conta de vendedor de teste no Mercado Pago.</p><button class="btn pri" data-mp-oauth="conectar">Conectar Mercado Pago</button>'}
-    <div id="mp-oauth-resultado" role="status"></div></section>`;
+TELAS['org-asaas']=async()=>{
+  if(!podeGerenciarAsaas())return TELAS.conta();
+  const volta='<button class="mini" data-go="org-config">← Dados do evento</button><h1>Asaas</h1>';
+  try{
+    const estado=await conexaoAsaas('status');
+    return volta+'<section class="painel"><p class="sub">Ambiente de teste · '+esc(S.org.nome)+'</p>'
+      +'<label for="asaas-carteira">Wallet ID da conta Asaas de teste do organizador</label>'
+      +'<input id="asaas-carteira" autocomplete="off" maxlength="36" value="'+esc(estado.carteira||'')+'">'
+      +'<button class="btn sec" data-asaas="salvar">Salvar carteira de teste</button>'
+      +(estado.estado==='pago'?'<p class="sub">Pagamento de teste confirmado pelo Asaas.</p>':'')
+      +(estado.configurado&&estado.carteira&&estado.estado!=='pago'
+        ?'<p class="sub">Cobrança de teste de R$ 10,00. A carteira do organizador recebe 90% do valor líquido.</p><button class="btn pri" data-asaas="checkout">'+(estado.estado==='aguardando'?'Abrir checkout de teste':'Criar checkout de teste')+'</button>'
+        :estado.estado==='pago'?'':'<p class="sub">'+(estado.configurado?'Salve a carteira de teste para criar o checkout.':'A credencial de sandbox do Colanessa precisa ser configurada para criar o checkout.')+'</p>')
+      +'<p id="asaas-resultado" role="status"></p></section>';
+  }catch(error){return volta+'<p class="erro" role="status">'+esc(error.message)+'</p>'}
 };
 
-/* Gestão de equipe: apenas a proprietária da organização. */
-const podeGerenciarEquipe=()=>S.papel==='organizadora'&&S.org?.papel==='dona';
-const mensagemEquipe=()=>`Oi! Acesse o Colanessa para trabalhar na equipe de ${S.org.nome}.\n${baseLink()}\nEntre com o e-mail que a organização cadastrou na equipe. Se ainda não tiver conta, crie e confirme seu e-mail e informe a organização para liberar seu acesso.`;
-TELAS['org-equipe']=async()=>{
-  const volta='<button class="mini" data-go="org-config" style="border:0;background:none">← Dados do evento</button><h1>Equipe</h1>';
-  if(!podeGerenciarEquipe())return volta+'<p class="sub">Somente a proprietária pode gerenciar a equipe.</p>';
-  const {data,error}=await sb.rpc('listar_equipe_detalhes',{p_org:S.org.id});
-  if(error)return volta+`<p class="erro" role="alert">${esc(erroMsg(error))}</p>`;
-  return volta+`<p class="sub">Gerencie quem trabalha com você em ${esc(S.org.nome)}.</p><div class="painel"><details><summary style="cursor:pointer;font-weight:700;padding:8px 0">🔗 Compartilhar acesso à equipe</summary><p class="sub">Envie o acesso ao Colanessa. Só as contas já vinculadas podem gerenciar este evento.</p><textarea id="eq-mensagem" readonly aria-label="Mensagem de acesso à equipe" rows="5">${esc(mensagemEquipe())}</textarea><div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="btn sec" id="eq-copiar">Copiar convite</button><a class="btn pri" style="text-align:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent(mensagemEquipe())}" target="_blank" rel="noopener noreferrer">Compartilhar no WhatsApp</a></div>${navigator.share?'<button class="btn sec" id="eq-share" style="margin-top:8px">Outros aplicativos</button>':''}</details></div><div class="painel"><h2 style="margin-top:0">Integrantes (${data?.length||0})</h2>${(data||[]).map(m=>`<div class="kv" style="gap:8px;align-items:center;flex-wrap:wrap"><div style="min-width:0;overflow-wrap:anywhere"><b>${esc(m.email)}</b><p class="sub" style="margin:4px 0">${m.papel==='dona'?'Proprietária':'Equipe · gestão do evento'}</p></div>${m.papel==='equipe'?`<button class="mini" data-equipe-remover="${esc(m.user_id)}">Remover</button><div style="flex-basis:100%;padding:8px 0" data-equipe-permissoes="${esc(m.user_id)}"><p class="sub" style="margin:0 0 8px">Permissões adicionais</p><label class="check"><input type="checkbox" data-eq-editar ${m.pode_editar_dados?'checked':''}> Editar dados, logo e cores do evento</label><label class="check"><input type="checkbox" data-eq-limpar ${m.pode_limpar_dados?'checked':''}> Apagar CPFs e placas em lote após o evento</label><button class="mini" data-equipe-salvar="${esc(m.user_id)}">Salvar permissões</button></div>`:'<span class="status ok">Proprietária</span>'}</div>`).join('')}</div><div class="painel"><h2 style="margin-top:0">Adicionar colaborador</h2><p class="sub">A pessoa precisa ter uma conta confirmada no Colanessa. O perfil Equipe mantém a gestão operacional. A proprietária pode liberar edição dos dados do evento e limpeza de dados pessoais para cada integrante.</p><label for="eq-email">E-mail da conta</label><input id="eq-email" type="email" maxlength="254" autocomplete="off" placeholder="nome@email.com"><p class="erro" id="eq-erro" role="alert"></p><button class="btn pri" id="eq-add">Adicionar à equipe</button></div>`;
-};
 TELAS['org-config']=async()=>{const o=S.org;if(!o)return TELAS.conta();if(!podeGerenciarEquipe()){const {data:ok}=await sb.rpc('equipe_pode',{p_org:o.id,p_permissao:'editar_dados'});if(!ok)return '<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Dados do evento</h1><p class="sub">A proprietária ainda não liberou a edição dos dados deste evento para sua conta.</p>';} if(S.cfgDe!==o.id){S.cfgDe=o.id;S.cfg={cor_primaria:coresDe(o)?o.cor_primaria:'#17161C',cor_destaque:coresDe(o)?o.cor_destaque:'#5B3DF5',logo_url:o.logo_url}}const c=S.cfg;
   return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Dados do evento</h1><p class="sub">O que aparece pros expositores. <button class="mini" data-divulga="" style="min-height:36px;margin-left:4px">🔗 Link do evento</button></p><div class="painel">
   ${podeGerenciarEquipe()?'<button class="btn sec" data-go="org-equipe" style="margin-bottom:14px">Equipe · gerenciar colaboradores</button>':''}
-  ${podeTestarConexaoMP()?'<button class="btn sec" data-go="org-mercado-pago" style="margin-bottom:14px">Mercado Pago · teste</button>':''}
+  ${podeGerenciarAsaas()?'<button class="btn sec" data-go="org-asaas" style="margin-bottom:14px">Asaas · teste</button>':''}
   <label style="margin-top:0">Logo</label><div class="logo-up"><span id="cfg-logo-prev">${c.logo_url?`<img class="logo" src="${esc(c.logo_url)}" alt="Logo" width="84" height="84" style="width:84px;height:84px">`:`<span class="logo-vazio">${berg(40,null)}</span>`}</span><div style="flex:1"><label class="btn sec" for="cfg-logo" style="font-weight:700">${c.logo_url?'Trocar logo':'Escolher logo'}</label><input id="cfg-logo" type="file" accept="image/png,image/jpeg,image/webp" hidden></div></div>
   <label for="cfg-nome">Nome do evento</label><input id="cfg-nome" value="${esc(o.nome)}" maxlength="80">
   <label for="cfg-tipo">Tipo de evento</label><select id="cfg-tipo">${tipoOpcoes(o.tipo||'feira')}</select><p class="sub" style="margin:4px 0 0;font-size:12px">Os expositores filtram os eventos por tipo. Cada edição pode trocar.</p>
@@ -2191,14 +2167,6 @@ TELAS['org-selecao']=async()=>{
 
 const IG='<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6"/>';
 const ZAP='<path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1c-1-.5-2-1.5-2.5-2.5l1-1-1-2z"/>';
-async function consultaMercadoPagoTeste(id,acao='status'){
-  const {data,error}=await sb.functions.invoke('pagamento-inscricao-teste',{body:{inscricao:id,acao}});
-  if(error){
-    const detalhe=await error.context?.json?.().catch(()=>null);
-    throw new Error(detalhe?.erro||'Não foi possível consultar o pagamento de teste.');
-  }
-  return data;
-}
 const mapasTesteAbertos=new Set();
 const escolhasMapaTeste=new Map();
 function podeAbrirMapaTeste(e,ins){
@@ -2219,24 +2187,6 @@ function abrirMapaTeste(id,automatico=false){
 }
 const mapaEmTeste=ins=>!!ins&&S.mapaTeste===ins.id&&podeAbrirMapaTeste(S.edicao,ins);
 const vagaSelecionadaNoMapa=ins=>mapaEmTeste(ins)?escolhasMapaTeste.get(ins.id):ins.vaga_id;
-
-async function painelMercadoPagoTeste(i,organizacao=false,mapaDisponivel=false){
-  if(i.status!=='confirmada')return '';
-  let pagamento;
-  try{pagamento=await consultaMercadoPagoTeste(i.id)}
-  catch(err){return organizacao&&S.admin?`<p class="erro" role="status">${esc(err.message)}</p>`:''}
-  if(pagamento?.estado==='inativo'){
-    return organizacao&&S.admin?`<button class="mini" data-mpteste="ativar" data-id="${esc(i.id)}">Habilitar teste do Mercado Pago</button>`:'';
-  }
-  const recebido=pagamento.estado==='confirmado';
-  const pendente=pagamento.estado==='aguardando';
-  const encerrado=pagamento.estado==='encerrado';
-  return `<section class="painel" aria-label="Mercado Pago em teste"><b class="secao">Mercado Pago · teste</b>
-    <p class="sub" role="status">${recebido?'Pagamento simulado confirmado':pendente?'Aguardando confirmação':encerrado?'Checkout de teste encerrado':'Pronto para simular o pagamento'} · ${money(pagamento.valor)}. Esse valor não entra no financeiro do evento.</p>
-    ${!organizacao&&!recebido&&!encerrado?`<button class="btn pri" data-mpteste="pagar" data-id="${esc(i.id)}">${pendente?'Reabrir checkout de teste':'Pagar em modo teste'}</button>`:''}
-    ${recebido&&mapaDisponivel?`<button class="btn sec" data-mp-mapa="${esc(i.id)}">Simular escolha da vaga</button>`:''}
-    ${pendente?`<button class="mini" data-mpteste="status" data-id="${esc(i.id)}">Consultar confirmação</button>`:''}</section>`;
-}
 
 TELAS['org-inscrito']=async()=>{
   {const {data:cu}=await sb.from('inscricoes').select('conta_recebimento,edicoes!inner(organizacao_id)').eq('status','confirmada').eq('edicoes.organizacao_id',S.org.id);S.contasUsadas=[...new Set((cu||[]).map(x=>x.conta_recebimento).filter(Boolean))].sort()}
@@ -2284,7 +2234,6 @@ TELAS['org-inscrito']=async()=>{
     <label for="cb-valor">Valor combinado (R$)</label><input id="cb-valor" class="moeda" inputmode="numeric" placeholder="${pad!=null?'Padrão: '+moedaTxt(pad):'0,00'}" value="${i.valor_combinado!=null?moedaTxt(i.valor_combinado):''}">
     <p class="sub" style="margin:4px 0 0;font-size:12px">Vazio = valor padrão${pad!=null?' ('+money(pad)+')':''}. Vale no "falta pagar", no Recebido e no que a expositora vê.</p>
     <div class="row" style="margin-top:10px"><button class="mini pri" id="cb-salvar" data-id="${i.id}" style="min-height:44px">Salvar combinado</button>${combinado(i)?`<button class="mini" id="cb-tirar" data-id="${i.id}" style="min-height:44px">Voltar ao padrão</button>`:''}</div>`:''}</div>`})()}
-  ${await painelMercadoPagoTeste(i,true)}
   ${i.status==='confirmada'?`<div class="painel"><b class="secao">Pagamento</b>${compsL.length?`<p style="margin:6px 0 6px">${compsL.length===1?'1 comprovante anexado.':compsL.length+' comprovantes anexados.'}</p><div class="comp-lista">${compsL.map((c,k)=>`<a class="comp-it" href="${hrefSeguro(compUrls[c.path])}" target="_blank" rel="noopener"><b>📎 Comprovante ${k+1}</b><small>${[c.em?new Date(c.em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'',c.pagador?'Pix de '+esc(c.pagador):'',c.valor!=null?money(c.valor):''].filter(Boolean).join(' · ')||'Toque pra ver'}</small></a>`).join('')}</div>`:'<p class="sub" style="margin:6px 0 10px">Ainda sem comprovante.</p>'}${i.isento?'':`${i.edicoes?.permite_sinal?`<label class="check"><input type="checkbox" data-sinal="${i.id}" ${i.pago_sinal||i.pago?'checked':''} ${i.pago?'disabled':''}> Metade recebida (vaga garantida)</label>`:''}<label class="check"><input type="checkbox" data-pago="${i.id}" ${i.pago?'checked':''}> ${i.edicoes?.permite_sinal?'Pagamento total recebido':'Pagamento recebido'}</label>`}
     ${comp&&!i.isento?`<div class="pix-box"><label for="pagador" style="margin-top:0">Quem fez o Pix</label><input id="pagador" data-pagador="${i.id}" value="${esc(i.pagador_nome||'')}" placeholder="Nome que aparece no comprovante">
       ${i.comprovante_valor!=null?`<p class="sub" style="margin:4px 0 0;font-size:13px">${compsL.length>1?'Soma dos comprovantes':'Valor no comprovante'}: <b>${money(i.comprovante_valor)}</b>${compsL.length<2&&i.comprovante_data?' · '+esc(i.comprovante_data):''}</p>`:''}
@@ -3103,71 +3052,23 @@ document.addEventListener('click',async ev=>{
   if(d.modo==='expositor'){b.disabled=true;await trocarModo('expositor');return}
   if(d.admsec&&S.admin&&S.tela==='admin'){document.getElementById(d.admsec)?.scrollIntoView({behavior:'smooth',block:'start'});return}
   if(d.admf){S.admFiltro=d.admf;await render();document.getElementById('adm-organizacoes')?.scrollIntoView({block:'start'});return}
-  if(d.mpOauth){
-    const controle=d.mpOauth==='cobranca-sem-comissao';
-    const direta=d.mpOauth==='cobranca-direta';
-    const resultado=$(direta?'#mp-direta-resultado':controle?'#mp-controle-resultado':'#mp-oauth-resultado');
-    if(!resultado||!podeTestarConexaoMP())return;
+  if(d.asaas){
+    const resultado=$('#asaas-resultado');
+    if(!resultado||!podeGerenciarAsaas())return;
     b.disabled=true;resultado.textContent='';
     try{
-      const r=await conexaoMercadoPago(S.org.id,d.mpOauth);
-      if(d.mpOauth==='conectar'){
-        const url=new URL(r.autorizacao);
-        if(url.origin!=='https://auth.mercadopago.com.br')throw new Error('Endereço de autorização inválido.');
-        location.assign(url.href);return;
-      }
-      const mensagem=document.createElement('p');mensagem.className='sub';
-      mensagem.textContent=r.pago
-        ?((controle||direta)?'Pagamento de teste sem comissão confirmado.':'Pagamento de teste confirmado. Confere o repasse e a comissão no Mercado Pago.')
-        :'Entra no checkout com a conta de comprador de teste.';
-      resultado.append(mensagem);
-      if(!r.pago){
-        const url=new URL(r.checkout);
-        if(url.origin!=='https://www.mercadopago.com.br')throw new Error('Endereço de checkout inválido.');
-        const link=document.createElement('a');link.className='btn sec';link.href=url.href;
-        link.target='_blank';link.rel='noopener noreferrer';link.textContent=direta?'Abrir checkout com credencial direta':controle?'Abrir checkout sem comissão':'Abrir checkout de teste';
-        resultado.append(link);
-      }
-      b.textContent=direta?'Consultar teste com credencial direta':controle?'Consultar teste sem comissão':'Consultar cobrança de teste';
+      const data=await conexaoAsaas(d.asaas,$('#asaas-carteira')?.value);
+      if(d.asaas==='salvar'){await renderMantendo();return}
+      const url=new URL('https://sandbox.asaas.com/checkoutSession/show');
+      url.searchParams.set('id',data.checkout);
+      const link=document.createElement('a');
+      link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Abrir checkout no Asaas';
+      resultado.append(link);
     }catch(error){resultado.textContent=erroMsg(error)}
     finally{b.disabled=false}
     return;
   }
   if(d.mpMapa){abrirMapaTeste(d.mpMapa);return}
-  if(d.mpteste){
-    if(d.mpteste==='ativar'&&!confirm('Habilitar cobrança simulada somente para esta inscrição?'))return;
-    b.disabled=true;
-    try{
-      const pagamento=await consultaMercadoPagoTeste(d.id,d.mpteste);
-      if(pagamento?.checkout){
-        const destino=new URL(pagamento.checkout);
-        if(destino.origin!=='https://www.mercadopago.com.br')throw new Error('Endereço de checkout inválido.');
-        const painel=b.closest('section');
-        const link=document.createElement('a');
-        link.href=destino.href;
-        link.target='_blank';
-        link.rel='noopener noreferrer';
-        link.className='btn pri';
-        link.textContent='Abrir checkout de teste';
-        const copiar=document.createElement('button');
-        copiar.type='button';
-        copiar.className='mini';
-        copiar.textContent='Copiar link';
-        copiar.addEventListener('click',async()=>{
-          try{await navigator.clipboard.writeText(destino.href);toast('Link de teste copiado')}
-          catch{toast('Abra o checkout pelo link acima')}
-        });
-        const aviso=document.createElement('p');
-        aviso.className='sub';
-        aviso.textContent='Use a conta de comprador de teste no Mercado Pago. Se tua conta pessoal estiver aberta, copia o link para uma janela anônima.';
-        b.replaceWith(aviso,link,copiar);
-        window.addEventListener('focus',()=>{if(painel.isConnected)renderMantendo()},{once:true});
-        return;
-      }
-      await renderMantendo();
-    }catch(err){toast(err.message)}finally{b.disabled=false}
-    return;
-  }
   if(d.admst){if(!S.admin||S.tela!=='admin'){toast('Aprovações são feitas apenas na administração da plataforma.');return}if(d.admst==='suspensa'&&!confirm('Suspender esse evento? Ela sai do ar pros expositores.'))return;b.disabled=true;const r=await sb.rpc('definir_status_organizacao',{p_org:d.id,p_status:d.admst});b.disabled=false;if(r.error){toast(erroMsg(r.error));return}toast(d.admst==='ativa'?'Evento aprovado':d.admst==='suspensa'?'Evento suspenso':'Evento voltou pra esperando');if(S.org?.id===d.id)S.org.status=d.admst;render();return}
   if(d.paleta!==undefined){const [p,dd]=PALETAS[+d.paleta];$('#cfg-p').value=p;$('#cfg-d').value=dd;previaCores();return}
   if(b.id==='nf-ok'){const nome=$('#nf-nome').value.trim(),slug=$('#nf-slug').value.trim(),err=$('#nf-err');err.textContent='';if(!nome){err.textContent='Dê um nome pro evento.';return}
