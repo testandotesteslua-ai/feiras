@@ -161,7 +161,7 @@ async function testSplit(row: any, org: string, controle: boolean) {
   const idColumn = controle ? "controle_preferencia_id" : "order_id";
   const urlColumn = controle ? "controle_checkout_url" : "checkout_url";
   const id = row[idColumn];
-  const key = controle ? row.tentativa + "-controle-orders" : row.tentativa;
+  const key = controle ? row.tentativa + "-ctrl" : row.tentativa;
   const ref = "colanessa-split-teste-" + key;
   const returnUrls = {
     success_url: app + "?mp-conexao=pedido-aprovado",
