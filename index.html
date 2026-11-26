@@ -1890,7 +1890,9 @@ async function painelMPInscricao(ins){
   try{
     const r=await mercadoPagoTeste('inscricao-status',{inscricao:ins.id});
     if(!r.disponivel)return '';
-    const valores='Inscrição '+mpReais(r.base_centavos)+' · Comissão '+mpReais(r.comissao_centavos)+' · Total '+mpReais(r.total_centavos);
+    const taxa=r.total_centavos-r.base_centavos;
+    const valores=(taxa>0?'Inscrição '+mpReais(r.base_centavos)+' · Taxa de transação '+mpReais(taxa)+' · ':'')
+      +'Total a pagar '+mpReais(r.total_centavos);
     return '<section class="painel"><b>Mercado Pago · teste</b><p class="sub">'+esc(valores)+'</p>'
       +(r.aprovado?'<p>Pagamento simulado confirmado.</p>':'<button class="btn sec" data-mp-fluxo="inscricao-checkout" data-id="'+esc(ins.id)+'">Abrir ou consultar checkout de teste</button>')
       +'<p id="mp-inscricao-resultado" role="status"></p></section>';
