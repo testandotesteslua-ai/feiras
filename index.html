@@ -1851,7 +1851,7 @@ TELAS['nova-feira']=()=>`<button class="mini" data-go="conta" style="border:0;ba
 /* ================= DADOS DA EVENTO ================= */
 const PALETAS=[['#17161C','#5B3DF5'],['#0F172A','#0EA5E9'],['#1C1917','#F97316'],['#052E16','#16A34A'],['#3B0764','#DB2777'],['#111827','#CA8A04']];
 function podeGerenciarMP(){
-  return S.admin&&S.papel==='organizadora'&&S.org?.status==='ativa'&&S.org.criado_por===S.sessao?.user.id;
+  return S.papel==='organizadora'&&S.org?.status==='ativa'&&S.org.criado_por===S.sessao?.user.id;
 }
 
 async function mercadoPagoTeste(acao,campos={}){
