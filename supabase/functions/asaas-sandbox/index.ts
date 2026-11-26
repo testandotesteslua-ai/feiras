@@ -100,7 +100,19 @@ Deno.serve(async (req) => {
       if (response.status < 500) await database(table + filter + "&tentativa=eq." + attempt, {
         method: "PATCH", body: JSON.stringify({ tentativa: null }),
       });
-      return reply({ erro: "O Asaas recusou o checkout de teste (HTTP " + response.status + ")." }, 502);
+      const payload = await response.json().catch(() => null);
+      const errors = Array.isArray(payload?.errors) ? payload.errors.slice(0, 3) : [];
+      const details = errors.flatMap((item: { code?: unknown; description?: unknown }) => {
+        if (!item || typeof item.code !== "string" || !/^[a-zA-Z0-9_.-]{1,80}$/.test(item.code)) return [];
+        const description = typeof item.description === "string"
+          ? item.description.replaceAll(key, "[oculto]").replace(/[\r\n]+/g, " ").trim().slice(0, 240)
+          : "";
+        return [description ? item.code + ": " + description : item.code];
+      });
+      return reply({
+        erro: "O Asaas recusou o checkout de teste (HTTP " + response.status + ")." +
+          (details.length ? " " + details.join(" · ") : ""),
+      }, 502);
     }
     const checkout = await response.json();
     if (typeof checkout.id !== "string" || !checkoutId.test(checkout.id)) throw new Error("Checkout inválido.");
