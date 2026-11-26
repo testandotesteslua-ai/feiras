@@ -1853,8 +1853,8 @@ function podeGerenciarAsaas(){
   return S.papel==='organizadora'&&S.org?.status==='ativa'&&S.org.criado_por===S.sessao?.user.id;
 }
 
-async function conexaoAsaas(acao,carteira){
-  const {data,error}=await sb.functions.invoke('asaas-sandbox',{body:{organizacao:S.org.id,acao,carteira}});
+async function conexaoAsaas(acao,carteira,plano,repassar){
+  const {data,error}=await sb.functions.invoke('asaas-sandbox',{body:{organizacao:S.org.id,acao,carteira,plano,repassar}});
   if(error){
     const detalhe=await error.context?.json?.().catch(()=>null);
     throw new Error(detalhe?.erro||'Não foi possível acessar o Asaas de teste.');
@@ -1873,8 +1873,8 @@ TELAS['org-asaas']=async()=>{
       +'<button class="btn sec" data-asaas="salvar">Salvar carteira de teste</button>'
       +(estado.estado==='pago'?'<p class="sub">Pagamento de teste confirmado pelo Asaas.</p>':'')
       +(estado.configurado&&estado.carteira&&estado.estado!=='pago'
-        ?'<p class="sub">Cobrança de teste de R$ 10,00. A carteira do organizador recebe 90% do valor líquido.</p><button class="btn pri" data-asaas="checkout">'+(estado.estado==='aguardando'?'Abrir checkout de teste':'Criar checkout de teste')+'</button>'
-        :estado.estado==='pago'?'':'<p class="sub">'+(estado.configurado?'Salve a carteira de teste para criar o checkout.':'A credencial de sandbox do Colanessa precisa ser configurada para criar o checkout.')+'</p>')
+        ?'<p class="sub">Inscrição simulada de R$ 10,00. No avulso, R$ 0,30 de comissão para o Colanessa. Nos pacotes, sem comissão por inscrição.</p>'+(estado.estado==='aguardando'?'':'<label for="asaas-plano">Modalidade simulada</label><select id="asaas-plano"><option value="avulso">Avulso integrado</option><option value="essencial">Essencial</option><option value="pro">Pro</option></select><label><input type="checkbox" id="asaas-repassar"> Repassar a comissão ao expositor no avulso</label>')+'<button class="btn pri" data-asaas="checkout">'+(estado.estado==='aguardando'?'Abrir checkout de teste':'Criar checkout de teste')+'</button>'
+        :estado.estado==='pago'?'':'<p class="sub">'+(estado.configurado?'Salve a carteira de teste para criar o checkout.':'Configure a credencial Sandbox do organizador e o Wallet ID do Colanessa para criar o checkout.')+'</p>')
       +'<p id="asaas-resultado" role="status"></p></section>';
   }catch(error){return volta+'<p class="erro" role="status">'+esc(error.message)+'</p>'}
 };
@@ -3066,7 +3066,7 @@ document.addEventListener('click',async ev=>{
     if(!resultado||!podeGerenciarAsaas())return;
     b.disabled=true;resultado.textContent='';
     try{
-      const data=await conexaoAsaas(d.asaas,$('#asaas-carteira')?.value);
+      const data=await conexaoAsaas(d.asaas,$('#asaas-carteira')?.value,$('#asaas-plano')?.value,$('#asaas-repassar')?.checked);
       if(d.asaas==='salvar'){await renderMantendo();return}
       const url=new URL('https://sandbox.asaas.com/checkoutSession/show');
       url.searchParams.set('id',data.checkout);
