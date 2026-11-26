@@ -1,5 +1,5 @@
-const appOrigin = "https://testandotesteslua-ai.github.io";
-const app = appOrigin + "/feiras/";
+const appOrigin = "https://colanessa.pages.dev";
+const app = appOrigin + "/";
 const db = Deno.env.get("SUPABASE_URL")!;
 const callback = "https://guiieswqphjixidbtzvs.supabase.co/functions/v1/mercado-pago-oauth-retorno";
 const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -128,6 +128,7 @@ async function receive(url: URL) {
       token_cifrado: "orders:" + await encryptToken(token.access_token, attempt.organizacao_id),
       expira_em: new Date(Date.now() + token.expires_in * 1000).toISOString(),
       tentativa: crypto.randomUUID(), order_id: null, checkout_url: null,
+      controle_preferencia_id: null, controle_checkout_url: null,
     }),
   });
   return back("conectada");
@@ -181,7 +182,96 @@ async function testSplit(row: any, org: string) {
       method: "PATCH", body: JSON.stringify({ order_id: order.id, checkout_url: checkout }),
     });
   }
-  return json({ checkout, id: order.id, status: order.status, pago: Number(order.total_paid_amount) === 10 });
+  const code = (value: unknown) => typeof value === "string" && /^[a-z0-9_]{1,80}$/i.test(value) ? value : undefined;
+  const payments = Array.isArray(order.transactions?.payments) ? order.transactions.payments : [];
+  const details = [...new Set([
+    code(order.status), code(order.status_detail),
+    ...payments.slice(-5).flatMap((p: any) => [code(p?.status), code(p?.status_detail)]),
+  ].filter(Boolean))];
+  const paid = Number(order.total_paid_amount) === 10;
+  if (!paid && row.order_id) {
+    console.info("Consulta da divisão de teste", { status: details });
+    if (["failed", "rejected", "expired", "canceled", "cancelled"].includes(order.status)) {
+      return json({ erro: "Mercado Pago: " + details.join(" · ") }, 409);
+    }
+  }
+  return json({ checkout, id: order.id, status: order.status, pago: paid });
+}
+
+const feiraA = "efbef4e2-687c-4d21-9dd6-502fc377bd71";
+const preferenceId = /^[0-9]+-[a-z0-9-]+$/i;
+
+async function testPreference(row: any, org: string, controle: boolean) {
+  const token = await decryptToken(row.token_cifrado.slice("orders:".length), org);
+  if (!await isOrdersTestSeller(token, row.vendedor_id)) {
+    return json({ erro: "O Mercado Pago não confirmou esta conta como vendedor de teste." }, 409);
+  }
+  const headers = { Authorization: "Bearer " + token };
+  const idColumn = controle ? "controle_preferencia_id" : "order_id";
+  const urlColumn = controle ? "controle_checkout_url" : "checkout_url";
+  const id = row[idColumn];
+  const fee = controle ? 0 : 1;
+  const key = controle ? row.tentativa + "-controle" : row.tentativa;
+  const ref = "colanessa-split-preference-teste-" + key;
+  if (preferenceId.test(id ?? "")) {
+    const search = new URLSearchParams({ external_reference: ref, limit: "30" });
+    const result = await requestJson(mercadoPago + "/v1/payments/search?" + search, { headers });
+    const matches = (Array.isArray(result?.results) ? result.results : []).filter((payment: any) =>
+      payment.external_reference === ref && String(payment.collector_id) === row.vendedor_id &&
+      payment.currency_id === "BRL" && Number(payment.transaction_amount) === 10 && payment.live_mode === false
+    );
+    const approved = matches.some((payment: any) => payment.status === "approved");
+    if (!matches.length) {
+      const ordersQuery = new URLSearchParams({ preference_id: id });
+      try {
+        const orders = await requestJson(mercadoPago + "/merchant_orders/search?" + ordersQuery, { headers });
+        const list = Array.isArray(orders?.elements) ? orders.elements : [];
+        console.info("Pedidos do Checkout Pro de teste", {
+          controle, orders: list.length,
+          payments: list.reduce((count: number, order: any) =>
+            count + (Array.isArray(order?.payments) ? order.payments.length : 0), 0),
+        });
+      } catch (error) {
+        console.info("Consulta de pedidos do Checkout Pro indisponível", {
+          status: error instanceof OrderError ? error.status : undefined,
+        });
+      }
+    }
+    const status = matches[0]?.status;
+    const detail = matches[0]?.status_detail;
+    console.info("Consulta do split Checkout Pro de teste", {
+      returned: Array.isArray(result?.results) ? result.results.length : 0,
+      matched: matches.length,
+      controle, approved, status, detail,
+    });
+    return json({ checkout: checkoutUrl(row[urlColumn]), id, status, pago: approved });
+  }
+
+  const returnPage = app + "?mp-conexao=conectada";
+  const preference = await requestJson(mercadoPago + "/checkout/preferences", {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json", "X-Idempotency-Key": key },
+    body: JSON.stringify({
+      external_reference: ref,
+      ...(controle ? {} : { marketplace_fee: fee }),
+      items: [{ title: "Teste de divisão Cola Nessa", quantity: 1, currency_id: "BRL", unit_price: 10 }],
+      back_urls: { success: returnPage, pending: returnPage, failure: returnPage },
+      auto_return: "approved",
+    }),
+  });
+  if (!preferenceId.test(preference?.id ?? "") || preference.external_reference !== ref ||
+      String(preference.collector_id) !== row.vendedor_id || Number(preference.marketplace_fee ?? 0) !== fee) {
+    return json({ erro: "O Mercado Pago não confirmou a preferência de teste com a comissão esperada." }, 502);
+  }
+  const checkout = checkoutUrl(preference.init_point);
+  const previous = id ? "eq." + id : "is.null";
+  const [saved] = await database(connections + "?organizacao_id=eq." + org +
+    "&tentativa=eq." + row.tentativa + "&" + idColumn + "=" + previous, {
+    method: "PATCH", headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ [idColumn]: preference.id, [urlColumn]: checkout }),
+  });
+  if (!saved) return json({ erro: "A cobrança de teste mudou. Consulta de novo no painel." }, 409);
+  return json({ checkout, id: preference.id, status: "created", pago: false });
 }
 
 async function operate(req: Request) {
@@ -195,11 +285,13 @@ async function operate(req: Request) {
   if (!uuid.test(user.id ?? "") || user.is_anonymous) return json({ erro: "Entre no Cola Nessa." }, 401);
   const body = await req.json().catch(() => null);
   const org = body?.organizacao;
-  if (typeof org !== "string" || !uuid.test(org) || !["status", "conectar", "cobranca"].includes(body.acao)) {
+  if (typeof org !== "string" || !uuid.test(org) || !["status", "conectar", "cobranca", "cobranca-sem-comissao"].includes(body.acao)) {
     return json({ erro: "Dados do teste inválidos." }, 400);
   }
   if (!await canConnect(user.id, org)) return json({ erro: "Teste disponível à administração na própria organização ativa." }, 403);
   if (!clientId || !clientSecret) return json({ erro: "Client ID ou Client Secret ainda ausente no Supabase." }, 503);
+  const controle = body.acao === "cobranca-sem-comissao";
+  if (controle && org !== feiraA) return json({ erro: "Teste sem comissão disponível na Feira A." }, 403);
   const filter = "?organizacao_id=eq." + org;
   if (body.acao === "conectar") {
     const state = crypto.randomUUID() + crypto.randomUUID();
@@ -217,14 +309,20 @@ async function operate(req: Request) {
     return json({ autorizacao: url.href });
   }
 
-  const fields = body.acao === "status" ? "&select=vendedor_id,expira_em,order_id,token_cifrado" : "";
+  const fields = body.acao === "status" ? "&select=vendedor_id,expira_em,order_id,token_cifrado,controle_preferencia_id" : "";
   const [row] = await database(connections + filter + fields);
   const active = row?.token_cifrado?.startsWith("orders:") && Date.parse(row.expira_em) > Date.now();
   if (body.acao === "status") {
-    return json({ conectada: !!active, vendedor: active ? row.vendedor_id : null, order_id: active ? row.order_id : null });
+    return json({
+      conectada: !!active,
+      vendedor: active ? row.vendedor_id : null,
+      order_id: active && (org !== feiraA || preferenceId.test(row.order_id ?? "")) ? row.order_id : null,
+      controle_disponivel: !!active && org === feiraA,
+      controle_criado: !!active && org === feiraA && preferenceId.test(row.controle_preferencia_id ?? ""),
+    });
   }
   if (!active) return json({ erro: "Conecta uma conta de vendedor de teste primeiro." }, 409);
-  return testSplit(row, org);
+  return org === feiraA ? testPreference(row, org, controle) : testSplit(row, org);
 }
 
 Deno.serve(async (req) => {

@@ -1881,7 +1881,10 @@ TELAS['org-mercado-pago']=async()=>{
     ${aviso?`<p class="erro" role="status">${esc(aviso)}</p>`:''}
     ${estado.conectada?`<p>Vendedor de teste conectado · ${esc(estado.vendedor)}</p>
       <p class="sub">Cobrança simulada de R$ 10,00 com comissão de R$ 1,00.</p>
-      <button class="btn pri" data-mp-oauth="cobranca">${estado.order_id?'Consultar cobrança de teste':'Criar cobrança de teste'}</button>`
+      <button class="btn pri" data-mp-oauth="cobranca">${estado.order_id?'Consultar cobrança de teste':'Criar cobrança de teste'}</button>
+      ${estado.controle_disponivel?`<p class="sub">Cobrança simulada de R$ 10,00 sem comissão.</p>
+      <button class="btn sec" data-mp-oauth="cobranca-sem-comissao">${estado.controle_criado?'Consultar teste sem comissão':'Criar teste sem comissão'}</button>
+      <div id="mp-controle-resultado" role="status"></div>`:''}`
       :'<p>Autoriza uma conta de vendedor de teste no Mercado Pago.</p><button class="btn pri" data-mp-oauth="conectar">Conectar Mercado Pago</button>'}
     <div id="mp-oauth-resultado" role="status"></div></section>`;
 };
@@ -3097,7 +3100,8 @@ document.addEventListener('click',async ev=>{
   if(d.admsec&&S.admin&&S.tela==='admin'){document.getElementById(d.admsec)?.scrollIntoView({behavior:'smooth',block:'start'});return}
   if(d.admf){S.admFiltro=d.admf;await render();document.getElementById('adm-organizacoes')?.scrollIntoView({block:'start'});return}
   if(d.mpOauth){
-    const resultado=$('#mp-oauth-resultado');
+    const controle=d.mpOauth==='cobranca-sem-comissao';
+    const resultado=$(controle?'#mp-controle-resultado':'#mp-oauth-resultado');
     if(!resultado||!podeTestarConexaoMP())return;
     b.disabled=true;resultado.textContent='';
     try{
@@ -3108,16 +3112,18 @@ document.addEventListener('click',async ev=>{
         location.assign(url.href);return;
       }
       const mensagem=document.createElement('p');mensagem.className='sub';
-      mensagem.textContent=r.pago?'Pagamento de teste confirmado. Confere o repasse e a comissão no Mercado Pago.':'Entra no checkout com a conta de comprador de teste.';
+      mensagem.textContent=r.pago
+        ?(controle?'Pagamento de teste sem comissão confirmado.':'Pagamento de teste confirmado. Confere o repasse e a comissão no Mercado Pago.')
+        :'Entra no checkout com a conta de comprador de teste.';
       resultado.append(mensagem);
       if(!r.pago){
         const url=new URL(r.checkout);
         if(url.origin!=='https://www.mercadopago.com.br')throw new Error('Endereço de checkout inválido.');
         const link=document.createElement('a');link.className='btn sec';link.href=url.href;
-        link.target='_blank';link.rel='noopener noreferrer';link.textContent='Abrir checkout de teste';
+        link.target='_blank';link.rel='noopener noreferrer';link.textContent=controle?'Abrir checkout sem comissão':'Abrir checkout de teste';
         resultado.append(link);
       }
-      b.textContent='Consultar cobrança de teste';
+      b.textContent=controle?'Consultar teste sem comissão':'Consultar cobrança de teste';
     }catch(error){resultado.textContent=erroMsg(error)}
     finally{b.disabled=false}
     return;
