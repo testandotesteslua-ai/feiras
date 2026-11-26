@@ -356,10 +356,18 @@ async function inscriptionCheckout(user: string, body: any) {
   if (charge?.preferencia_id) {
     const query = new URLSearchParams({ external_reference: charge.referencia, limit: "50" });
     const payments = await requestJson(mercadoPago + "/v1/payments/search?" + query, { headers });
-    const payment = Array.isArray(payments?.results) && payments.results.find((entry: any) =>
-      entry.live_mode === false && entry.status === "approved" && entry.currency_id === "BRL" &&
+    const matches = (Array.isArray(payments?.results) ? payments.results : []).filter((entry: any) =>
+      entry.live_mode === false && entry.currency_id === "BRL" &&
       entry.external_reference === charge.referencia && String(entry.collector_id) === charge.vendedor_id &&
       Math.round(Number(entry.transaction_amount) * 100) === charge.total_centavos && /^[0-9]+$/.test(String(entry.id)));
+    const payment = matches.find((entry: any) => entry.status === "approved");
+    const safeCode = (value: unknown) => typeof value === "string" && /^[a-z0-9_]{1,64}$/i.test(value) ? value : null;
+    console.info("Consulta pagamento da inscrição de teste", {
+      referencia: charge.referencia,
+      resultados: Array.isArray(payments?.results) ? payments.results.length : 0,
+      correspondentes: matches.length,
+      situacoes: matches.slice(0, 10).map((entry: any) => [safeCode(entry.status), safeCode(entry.status_detail)]),
+    });
     if (payment) {
       await database(chargeTable + filter + "&aprovado_em=is.null", {
         method: "PATCH", body: JSON.stringify({ pagamento_id: String(payment.id), aprovado_em: new Date().toISOString() }),
