@@ -217,7 +217,15 @@ async function testSplit(row: any, org: string, controle: boolean, direta: boole
   ].filter(Boolean))];
   const paid = Number(order.total_paid_amount) === 10;
   if (id) {
-    console.info("Consulta de Orders de teste", { controle, direta, status: details, pagamentos: payments.length, pago: paid });
+    const applicationId = String(order.integration_data?.application_id ?? "");
+    const sponsorId = String(order.integration_data?.sponsor?.id ?? "");
+    console.info("Consulta de Orders de teste", {
+      order_id: order.id, controle, direta, status: details, pagamentos: payments.length, pago: paid,
+      marketplace_fee: Number(order.marketplace_fee ?? 0),
+      aplicacao: /^[0-9]{1,30}$/.test(applicationId) ? applicationId : null,
+      mesma_aplicacao_oauth: applicationId ? applicationId === clientId : null,
+      patrocinador: /^[0-9]{1,30}$/.test(sponsorId) ? sponsorId : null,
+    });
     if (["failed", "rejected", "expired", "canceled", "cancelled"].includes(order.status)) {
       return json({ erro: "Mercado Pago: " + details.join(" · ") }, 409);
     }
