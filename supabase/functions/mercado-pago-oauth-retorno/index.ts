@@ -318,8 +318,9 @@ function quote(base: number, plan: string, exempt: boolean, pass: boolean) {
 async function inscriptionCheckout(user: string, body: any) {
   const id = body.inscricao;
   if (typeof id !== "string" || !uuid.test(id)) return json({ erro: "Inscrição inválida." }, 400);
-  const [ins] = await database("/rest/v1/inscricoes?id=eq." + id + "&dono=eq." + user +
-    "&select=id,edicao_id,status,isento,pago,pago_sinal,valor_pago,credito_usado,comprovante_path,tamanho,dia_unico,valor_combinado,edicoes(organizacao_id,gratuita,cancelada_em,preco_dia,preco_2m,preco_3m,preco_unico)");
+  const ins = await database("/rest/v1/rpc/mp_dados_inscricao_teste", {
+    method: "POST", body: JSON.stringify({ p_inscricao: id, p_dono: user }),
+  });
   if (!ins?.edicoes) return json({ erro: "Inscrição indisponível." }, 404);
   const edition = ins.edicoes;
   const org = edition.organizacao_id;
@@ -334,7 +335,7 @@ async function inscriptionCheckout(user: string, body: any) {
     ? edition.preco_dia : ({ unico: edition.preco_unico, "2m": edition.preco_2m, "3m": edition.preco_3m } as Record<string, unknown>)[ins.tamanho]);
   const base = Math.round(Number(price) * 100);
   const eligible = !!organization && ins.status === "confirmada" && !ins.isento && !ins.pago && !ins.pago_sinal &&
-    !(Number(ins.valor_pago) > 0) && !(Number(ins.credito_usado) > 0) && !ins.comprovante_path &&
+    !(Number(ins.valor_pago) > 0) && !(Number(ins.credito_usado) > 0) && !ins.tem_comprovante &&
     !edition.gratuita && !edition.cancelada_em && Number.isSafeInteger(base) && base > 0 && base <= 2147483000;
   const active = !!connection?.token_cifrado?.startsWith("orders:") && Date.parse(connection.expira_em) > Date.now();
   const available = eligible && active && !!plan && plan.plano !== "gestao";
@@ -423,7 +424,9 @@ async function operate(req: Request) {
       return json({ erro: "Configuração de teste inválida." }, 400);
     }
     if (body.primeira) {
-      const [edition] = await database("/rest/v1/edicoes?select=id&id=eq." + body.primeira + "&organizacao_id=eq." + org);
+      const [edition] = await database("/rest/v1/edicoes?select=id&id=eq." + body.primeira + "&organizacao_id=eq." + org, {
+        headers: { apikey: anon, Authorization: authorization },
+      });
       if (!edition) return json({ erro: "A edição não pertence à organização." }, 400);
     }
     await database(planTable + "?on_conflict=organizacao_id", {
