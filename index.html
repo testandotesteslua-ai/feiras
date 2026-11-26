@@ -1390,10 +1390,10 @@ async function carregarUsuario(){
     if(ab==='ed'&&abId){try{history.replaceState(null,'',location.pathname)}catch{}const {data:edA}=await sb.from('edicoes').select('*').eq('id',abId).maybeSingle();if(edA&&S.marca){S.edicao=edA;S.tela='edicao'}}}
   if(S.papel==='organizadora'){await contaComprovantes();ouveComprovantes();if(S.pushOk&&pushSuporta()&&Notification.permission==='granted')await assinaPush(false).catch(()=>false);
     if(ab){try{history.replaceState(null,'',location.pathname)}catch{}if(ab==='ed'&&abId){S.orgEdicao=abId;S.gAbertos=new Set();S.tela='org-selecao'}S.gAbertos=new Set();if(ab==='reembolso'&&abId){S.cancelEd=abId;S.tela='org-cancel'}else if(ab==='comprovantes'){S.irComp=true;S.tela='org-selecao'}else if(ab==='selecao'){const eN=Object.keys(S.novasEd||{})[0];if(eN)S.orgEdicao=eN;S.filtroSel='novas';S.tela='org-selecao'}}}
-  if(qs.has('asaas')&&podeGerenciarAsaas()){
-    qs.delete('asaas');
+  if(qs.has('mp-conexao')&&podeGerenciarMP()){
+    S.retornoMP=qs.get('mp-conexao');qs.delete('mp-conexao');
     history.replaceState(null,'',location.pathname+(qs.size?'?'+qs:'')+location.hash);
-    S.tela='org-asaas';
+    S.tela='org-mp';
   }
   render();
 }
@@ -1679,6 +1679,7 @@ async function inicioBase(){
   const ag=passos.findIndex(p=>!p[2]);
   let acao='';
   if(precisaRespMonta(ins,e))acao+=`<div class="painel mr-card"><b class="secao">Quando você vai montar? 🛠️</b><p style="margin:4px 0 8px">${parcial(ins)?'Você vem <b>'+diasTxt(diasIns(ins))+'</b>. ':''}Escolha uma opção:</p>${NOTA_MONTA}${opcoesMonta(e,ins)}</div>`;
+  if(conf&&!ins.pago&&!e.gratuita&&ins.dono===S.sessao?.user.id)acao+=await painelMPInscricao(ins);
   if(conf&&!ins.pago){const valor=precoIns(e,ins);const metade=valor!=null?Math.round(valor*50)/100:null;const venc=prazoRestante(e);if(+ins.credito_usado>0&&valor!=null)acao+=`<div class="painel" style="border-color:var(--laranja)"><b>🎟️ ${money(+ins.credito_usado)} de crédito já descontado</b><p style="margin:4px 0 0">Falta pagar <b>${money(Math.max(0,valor-(+ins.valor_pago||0)))}</b>.</p></div>`;
     const parte=ins.pago_sinal?`o restante (segunda metade)${metade!=null?', '+money(metade):''}`:`${e.permite_sinal?'(total '+(valor!=null?money(valor):'')+' ou metade '+(metade!=null?money(metade):'')+')':valor!=null?money(valor):''}`;
     const msgLink=`Oi! Sou da marca ${S.marca.nome}, com presença confirmada na ${nomeEd(e)} (${periodo(e)}). Gostaria do link de pagamento do meu espaço: ${tamLabel(ins.tamanho)}${ins.dia_unico?', só '+dataBR(ins.dia_unico):''}, ${parte}. Estou ciente de que a taxa do link é por minha conta.`;
@@ -1849,35 +1850,52 @@ TELAS['nova-feira']=()=>`<button class="mini" data-go="conta" style="border:0;ba
 
 /* ================= DADOS DA EVENTO ================= */
 const PALETAS=[['#17161C','#5B3DF5'],['#0F172A','#0EA5E9'],['#1C1917','#F97316'],['#052E16','#16A34A'],['#3B0764','#DB2777'],['#111827','#CA8A04']];
-function podeGerenciarAsaas(){
-  return S.papel==='organizadora'&&S.org?.status==='ativa'&&S.org.criado_por===S.sessao?.user.id;
+function podeGerenciarMP(){
+  return S.admin&&S.papel==='organizadora'&&S.org?.status==='ativa'&&S.org.criado_por===S.sessao?.user.id;
 }
 
-async function conexaoAsaas(acao,carteira,plano,repassar){
-  const {data,error}=await sb.functions.invoke('asaas-sandbox',{body:{organizacao:S.org.id,acao,carteira,plano,repassar}});
+async function mercadoPagoTeste(acao,campos={}){
+  const {data,error}=await sb.functions.invoke('mercado-pago-oauth-retorno',{body:{organizacao:S.org?.id,acao,...campos}});
   if(error){
     const detalhe=await error.context?.json?.().catch(()=>null);
-    throw new Error(detalhe?.erro||'Não foi possível acessar o Asaas de teste.');
+    throw new Error(detalhe?.erro||'Não foi possível acessar o Mercado Pago de teste.');
   }
   return data;
 }
 
-TELAS['org-asaas']=async()=>{
-  if(!podeGerenciarAsaas())return TELAS.conta();
-  const volta='<button class="mini" data-go="org-config">← Dados do evento</button><h1>Asaas</h1>';
+const mpModalidades={avulso:'Avulso integrado',gestao:'Gestão por edição, sem checkout',essencial:'Essencial',pro:'Pro'};
+const mpReais=centavos=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(centavos/100);
+TELAS['org-mp']=async()=>{
+  if(!podeGerenciarMP())return TELAS.conta();
+  const volta='<button class="mini" data-go="org-config">← Dados do evento</button><h1>Mercado Pago</h1>';
   try{
-    const estado=await conexaoAsaas('status');
+    const [estado,edicoes]=await Promise.all([mercadoPagoTeste('status'),sb.from('edicoes').select('id,titulo,data').eq('organizacao_id',S.org.id).order('data')]);
+    if(edicoes.error)throw edicoes.error;
+    const plano=estado.plano_teste;
+    const retorno=S.retornoMP;S.retornoMP=null;
+    const opcoes=Object.entries(mpModalidades).map(([id,nome])=>'<option value="'+id+'"'+(plano?.plano===id?' selected':'')+'>'+nome+'</option>').join('');
+    const primeiras=(edicoes.data||[]).map(e=>'<option value="'+esc(e.id)+'"'+(plano?.primeira_edicao_id===e.id?' selected':'')+'>'+esc(e.titulo||e.data)+'</option>').join('');
     return volta+'<section class="painel"><p class="sub">Ambiente de teste · '+esc(S.org.nome)+'</p>'
-      +'<label for="asaas-carteira">Wallet ID da conta Asaas de teste do organizador</label>'
-      +'<input id="asaas-carteira" autocomplete="off" maxlength="36" value="'+esc(estado.carteira||'')+'">'
-      +'<button class="btn sec" data-asaas="salvar">Salvar carteira de teste</button>'
-      +(estado.estado==='pago'?'<p class="sub">Pagamento de teste confirmado pelo Asaas.</p>':'')
-      +(estado.configurado&&estado.carteira&&estado.estado!=='pago'
-        ?'<p class="sub">Inscrição simulada de R$ 10,00. No avulso, R$ 0,30 de comissão para o Colanessa. Nos pacotes, sem comissão por inscrição.</p>'+(estado.estado==='aguardando'?'':'<label for="asaas-plano">Modalidade simulada</label><select id="asaas-plano"><option value="avulso">Avulso integrado</option><option value="essencial">Essencial</option><option value="pro">Pro</option></select><label><input type="checkbox" id="asaas-repassar"> Repassar a comissão ao expositor no avulso</label>')+'<button class="btn pri" data-asaas="checkout">'+(estado.estado==='aguardando'?'Abrir checkout de teste':'Criar checkout de teste')+'</button>'
-        :estado.estado==='pago'?'':'<p class="sub">'+(estado.configurado?'Salve a carteira de teste para criar o checkout.':'Configure a credencial Sandbox do organizador e o Wallet ID do Colanessa para criar o checkout.')+'</p>')
-      +'<p id="asaas-resultado" role="status"></p></section>';
-  }catch(error){return volta+'<p class="erro" role="status">'+esc(error.message)+'</p>'}
+      +(retorno?'<p role="status">'+(retorno==='conectada'?'Vendedor de teste conectado.':'Autorização do vendedor não concluída ('+esc(retorno)+').')+'</p>':'')
+      +(estado.conectada?'<p>Vendedor de teste conectado · '+esc(estado.vendedor)+'</p>':'')
+      +'<button class="btn sec" data-mp-fluxo="conectar">'+(estado.conectada?'Reconectar vendedor de teste':'Conectar vendedor de teste')+'</button>'
+      +'<label for="mp-plano">Plano de teste da organização</label><select id="mp-plano">'+opcoes+'</select>'
+      +'<label><input type="checkbox" id="mp-repassar"'+(plano?.repassar?' checked':'')+'> Repassar comissão ao expositor no avulso</label>'
+      +'<label for="mp-primeira">Edição com benefício de primeira edição</label><select id="mp-primeira"><option value="">Nenhuma</option>'+primeiras+'</select>'
+      +'<button class="btn pri" data-mp-fluxo="plano">Salvar plano de teste</button><p id="mp-config-resultado" role="status"></p></section>';
+  }catch(error){return volta+'<p class="erro" role="status">'+esc(erroMsg(error))+'</p>'}
 };
+
+async function painelMPInscricao(ins){
+  try{
+    const r=await mercadoPagoTeste('inscricao-status',{inscricao:ins.id});
+    if(!r.disponivel)return '';
+    const valores='Inscrição '+mpReais(r.base_centavos)+' · Comissão '+mpReais(r.comissao_centavos)+' · Total '+mpReais(r.total_centavos);
+    return '<section class="painel"><b>Mercado Pago · teste</b><p class="sub">'+esc(valores)+'</p>'
+      +(r.aprovado?'<p>Pagamento simulado confirmado.</p>':'<button class="btn sec" data-mp-fluxo="inscricao-checkout" data-id="'+esc(ins.id)+'">Abrir ou consultar checkout de teste</button>')
+      +'<p id="mp-inscricao-resultado" role="status"></p></section>';
+  }catch{return ''}
+}
 
 const podeGerenciarEquipe=()=>S.papel==='organizadora'&&S.org?.papel==='dona';
 const mensagemEquipe=()=>`Oi! Acesse o Colanessa para trabalhar na equipe de ${S.org.nome}.\n${baseLink()}\nEntre com o e-mail que a organização cadastrou na equipe. Se ainda não tiver conta, crie e confirme seu e-mail e informe a organização para liberar seu acesso.`;
@@ -1891,7 +1909,7 @@ TELAS['org-equipe']=async()=>{
 TELAS['org-config']=async()=>{const o=S.org;if(!o)return TELAS.conta();if(!podeGerenciarEquipe()){const {data:ok}=await sb.rpc('equipe_pode',{p_org:o.id,p_permissao:'editar_dados'});if(!ok)return '<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Dados do evento</h1><p class="sub">A proprietária ainda não liberou a edição dos dados deste evento para sua conta.</p>';} if(S.cfgDe!==o.id){S.cfgDe=o.id;S.cfg={cor_primaria:coresDe(o)?o.cor_primaria:'#17161C',cor_destaque:coresDe(o)?o.cor_destaque:'#5B3DF5',logo_url:o.logo_url}}const c=S.cfg;
   return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Dados do evento</h1><p class="sub">O que aparece pros expositores. <button class="mini" data-divulga="" style="min-height:36px;margin-left:4px">🔗 Link do evento</button></p><div class="painel">
   ${podeGerenciarEquipe()?'<button class="btn sec" data-go="org-equipe" style="margin-bottom:14px">Equipe · gerenciar colaboradores</button>':''}
-  ${podeGerenciarAsaas()?'<button class="btn sec" data-go="org-asaas" style="margin-bottom:14px">Asaas · teste</button>':''}
+  ${podeGerenciarMP()?'<button class="btn sec" data-go="org-mp" style="margin-bottom:14px">Mercado Pago · teste</button>':''}
   <label style="margin-top:0">Logo</label><div class="logo-up"><span id="cfg-logo-prev">${c.logo_url?`<img class="logo" src="${esc(c.logo_url)}" alt="Logo" width="84" height="84" style="width:84px;height:84px">`:`<span class="logo-vazio">${berg(40,null)}</span>`}</span><div style="flex:1"><label class="btn sec" for="cfg-logo" style="font-weight:700">${c.logo_url?'Trocar logo':'Escolher logo'}</label><input id="cfg-logo" type="file" accept="image/png,image/jpeg,image/webp" hidden></div></div>
   <label for="cfg-nome">Nome do evento</label><input id="cfg-nome" value="${esc(o.nome)}" maxlength="80">
   <label for="cfg-tipo">Tipo de evento</label><select id="cfg-tipo">${tipoOpcoes(o.tipo||'feira')}</select><p class="sub" style="margin:4px 0 0;font-size:12px">Os expositores filtram os eventos por tipo. Cada edição pode trocar.</p>
@@ -3061,18 +3079,29 @@ document.addEventListener('click',async ev=>{
   if(d.modo==='expositor'){b.disabled=true;await trocarModo('expositor');return}
   if(d.admsec&&S.admin&&S.tela==='admin'){document.getElementById(d.admsec)?.scrollIntoView({behavior:'smooth',block:'start'});return}
   if(d.admf){S.admFiltro=d.admf;await render();document.getElementById('adm-organizacoes')?.scrollIntoView({block:'start'});return}
-  if(d.asaas){
-    const resultado=$('#asaas-resultado');
-    if(!resultado||!podeGerenciarAsaas())return;
+  if(d.mpFluxo){
+    const inscricao=d.mpFluxo==='inscricao-checkout';
+    const resultado=$(inscricao?'#mp-inscricao-resultado':'#mp-config-resultado');
+    if(!resultado||(!inscricao&&!podeGerenciarMP()))return;
     b.disabled=true;resultado.textContent='';
     try{
-      const data=await conexaoAsaas(d.asaas,$('#asaas-carteira')?.value,$('#asaas-plano')?.value,$('#asaas-repassar')?.checked);
-      if(d.asaas==='salvar'){await renderMantendo();return}
-      const url=new URL('https://sandbox.asaas.com/checkoutSession/show');
-      url.searchParams.set('id',data.checkout);
-      const link=document.createElement('a');
-      link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Abrir checkout no Asaas';
-      resultado.append(link);
+      const campos=inscricao?{inscricao:d.id}:{plano:$('#mp-plano')?.value,repassar:$('#mp-repassar')?.checked,primeira:$('#mp-primeira')?.value};
+      const data=await mercadoPagoTeste(d.mpFluxo,campos);
+      if(data.autorizacao){
+        const url=new URL(data.autorizacao);
+        if(url.origin!=='https://auth.mercadopago.com.br')throw new Error('Endereço de autorização inválido.');
+        location.assign(url.href);return;
+      }
+      if(data.salvo){resultado.textContent='Plano de teste salvo.';return}
+      if(data.aprovado){await renderMantendo();return}
+      if(data.checkout){
+        const url=new URL(data.checkout);
+        if(url.origin!=='https://www.mercadopago.com.br')throw new Error('Endereço de checkout inválido.');
+        const link=document.createElement('a');
+        link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Abrir checkout do Mercado Pago';
+        resultado.append(link);return;
+      }
+      resultado.textContent='Pagamento de teste ainda não confirmado.';
     }catch(error){resultado.textContent=erroMsg(error)}
     finally{b.disabled=false}
     return;
