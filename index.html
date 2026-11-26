@@ -1880,6 +1880,7 @@ TELAS['org-mercado-pago']=async()=>{
   return volta+`<section class="painel"><p class="sub">Ambiente de teste · ${esc(S.org.nome)}</p>
     ${aviso?`<p class="erro" role="status">${esc(aviso)}</p>`:''}
     ${estado.conectada?`<p>Vendedor de teste conectado · ${esc(estado.vendedor)}</p>
+      <button class="btn sec" data-mp-oauth="conectar">Reconectar vendedor de teste</button>
       <p class="sub">Cobrança simulada de R$ 10,00 com comissão de R$ 1,00.</p>
       <button class="btn pri" data-mp-oauth="cobranca">${estado.order_id?'Consultar cobrança de teste':'Criar cobrança de teste'}</button>
       ${estado.controle_disponivel?`<p class="sub">Cobrança simulada de R$ 10,00 sem comissão.</p>
