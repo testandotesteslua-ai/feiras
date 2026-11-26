@@ -159,6 +159,12 @@ async function testSplit(row: any, org: string) {
   }
   const headers = { Authorization: "Bearer " + token };
   const ref = "colanessa-split-teste-" + row.tentativa;
+  const returnUrls = {
+    success_url: app + "?mp-conexao=pedido-aprovado",
+    failure_url: app + "?mp-conexao=pedido-rejeitado",
+    pending_url: app + "?mp-conexao=pedido-pendente",
+    auto_return: "approved",
+  };
   const order = row.order_id
     ? await requestJson(mercadoPago + "/v1/orders/" + row.order_id, { headers })
     : await requestJson(mercadoPago + "/v1/orders", {
@@ -166,6 +172,7 @@ async function testSplit(row: any, org: string) {
       body: JSON.stringify({
         type: "online", processing_mode: "manual", total_amount: "10.00", marketplace_fee: "1.00",
         external_reference: ref, items: [{ title: "Teste de divisão Cola Nessa", quantity: 1, unit_price: "10.00" }],
+        config: { online: returnUrls },
       }),
     });
   if (!sandboxOrder.test(order?.id ?? "") || order.external_reference !== ref ||
@@ -178,6 +185,9 @@ async function testSplit(row: any, org: string) {
   }
   const checkout = checkoutUrl(row.checkout_url ?? order.checkout_url);
   if (!row.order_id) {
+    console.info("Retorno da cobrança Orders de teste", {
+      confirmado: Object.entries(returnUrls).every(([key, value]) => order.config?.online?.[key] === value),
+    });
     await database(connections + "?organizacao_id=eq." + org + "&tentativa=eq." + row.tentativa, {
       method: "PATCH", body: JSON.stringify({ order_id: order.id, checkout_url: checkout }),
     });
