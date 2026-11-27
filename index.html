@@ -1387,7 +1387,16 @@ async function carregarUsuario(){
   if(S.alvo){if(S.papel!=='organizadora'&&S.alvo.e){if(!S.marca){S.tela='marca';setTimeout(()=>toast('Antes, cadastre sua marca. Depois o app volta pro evento.'),600)}else{const {data:edL}=await sb.from('edicoes').select(`*,organizacoes(${ORGCOLS}),edicao_colabs(status,organizacoes(${ORGCOLS}))`).eq('id',S.alvo.e).maybeSingle();limpaAlvo();if(edL){S.edicao=edL;S.tela='edicao'}}}else S.tela='feira-pub'}
   const qs=new URLSearchParams(location.search),ab=qs.get('abrir'),abId=qs.get('id');
   if(S.papel!=='organizadora'){if(S.pushOk&&pushSuporta()&&Notification.permission==='granted')await assinaPush(false).catch(()=>false);
-    if(ab==='ed'&&abId){try{history.replaceState(null,'',location.pathname)}catch{}const {data:edA}=await sb.from('edicoes').select('*').eq('id',abId).maybeSingle();if(edA&&S.marca){S.edicao=edA;S.tela='edicao'}}}
+    if(ab==='ed'&&abId){
+      const pagamento=qs.get('payment_id')||qs.get('collection_id')||'';
+      const retorno=qs.get('mp-inscricao')==='1';
+      try{history.replaceState(null,'',location.pathname)}catch{}
+      const {data:edA}=await sb.from('edicoes').select('*').eq('id',abId).maybeSingle();
+      if(edA&&S.marca){
+        S.edicao=edA;S.tela='edicao';
+        if(retorno)S.mpRetorno={edicao:edA.id,pagamento:/^\d{1,30}$/.test(pagamento)?pagamento:null,tentativas:4};
+      }
+    }}
   if(S.papel==='organizadora'){await contaComprovantes();ouveComprovantes();if(S.pushOk&&pushSuporta()&&Notification.permission==='granted')await assinaPush(false).catch(()=>false);
     if(ab){try{history.replaceState(null,'',location.pathname)}catch{}if(ab==='ed'&&abId){S.orgEdicao=abId;S.gAbertos=new Set();S.tela='org-selecao'}S.gAbertos=new Set();if(ab==='reembolso'&&abId){S.cancelEd=abId;S.tela='org-cancel'}else if(ab==='comprovantes'){S.irComp=true;S.tela='org-selecao'}else if(ab==='selecao'){const eN=Object.keys(S.novasEd||{})[0];if(eN)S.orgEdicao=eN;S.filtroSel='novas';S.tela='org-selecao'}}}
   if(qs.has('mp-conexao')&&podeGerenciarMP()){
@@ -1679,8 +1688,9 @@ async function inicioBase(){
   const ag=passos.findIndex(p=>!p[2]);
   let acao='';
   if(precisaRespMonta(ins,e))acao+=`<div class="painel mr-card"><b class="secao">Quando você vai montar? 🛠️</b><p style="margin:4px 0 8px">${parcial(ins)?'Você vem <b>'+diasTxt(diasIns(ins))+'</b>. ':''}Escolha uma opção:</p>${NOTA_MONTA}${opcoesMonta(e,ins)}</div>`;
-  if(conf&&!ins.pago&&!e.gratuita&&ins.dono===S.sessao?.user.id)acao+=await painelMPInscricao(ins);
-  if(conf&&!ins.pago){const valor=precoIns(e,ins);const metade=valor!=null?Math.round(valor*50)/100:null;const venc=prazoRestante(e);if(+ins.credito_usado>0&&valor!=null)acao+=`<div class="painel" style="border-color:var(--laranja)"><b>🎟️ ${money(+ins.credito_usado)} de crédito já descontado</b><p style="margin:4px 0 0">Falta pagar <b>${money(Math.max(0,valor-(+ins.valor_pago||0)))}</b>.</p></div>`;
+  const checkoutMP=conf&&!ins.pago&&!e.gratuita&&ins.dono===S.sessao?.user.id?await painelMPInscricao(ins):'';
+  acao+=checkoutMP;
+  if(conf&&!ins.pago&&!checkoutMP){const valor=precoIns(e,ins);const metade=valor!=null?Math.round(valor*50)/100:null;const venc=prazoRestante(e);if(+ins.credito_usado>0&&valor!=null)acao+=`<div class="painel" style="border-color:var(--laranja)"><b>🎟️ ${money(+ins.credito_usado)} de crédito já descontado</b><p style="margin:4px 0 0">Falta pagar <b>${money(Math.max(0,valor-(+ins.valor_pago||0)))}</b>.</p></div>`;
     const parte=ins.pago_sinal?`o restante (segunda metade)${metade!=null?', '+money(metade):''}`:`${e.permite_sinal?'(total '+(valor!=null?money(valor):'')+' ou metade '+(metade!=null?money(metade):'')+')':valor!=null?money(valor):''}`;
     const msgLink=`Oi! Sou da marca ${S.marca.nome}, com presença confirmada na ${nomeEd(e)} (${periodo(e)}). Gostaria do link de pagamento do meu espaço: ${tamLabel(ins.tamanho)}${ins.dia_unico?', só '+dataBR(ins.dia_unico):''}, ${parte}. Estou ciente de que a taxa do link é por minha conta.`;
     acao+=`<div class="painel" style="background:var(--laranja-soft);border-color:transparent">${ins.pago_sinal?`<b>Falta o restante${metade!=null?': '+money(metade):''}</b><p style="margin:4px 0 0">Você já pagou a metade e garantiu sua vaga. Pague o restante até <b>${dataBR(venc)}</b>.</p>`:`<b>Pagamento ${ins.tamanho==='unico'?'do espaço':'do espaço '+tamLabel(ins.tamanho)}${valor!=null?': '+money(valor):''}</b>${e.permite_sinal?`<p style="margin:6px 0 0">Nessa edição dá pra pagar <b>metade agora${metade!=null?' ('+money(metade)+')':''}</b> pra garantir a vaga e já escolher seu lugar no mapa. O restante vence em <b>${dataBR(venc)}</b>.</p>`:''}`}
@@ -1863,39 +1873,55 @@ async function mercadoPagoTeste(acao,campos={}){
   return data;
 }
 
-const mpModalidades={avulso:'Avulso integrado',gestao:'Gestão por edição, sem checkout',essencial:'Essencial',pro:'Pro'};
 const mpReais=centavos=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(centavos/100);
+const mpSituacao={
+  pendente:'Pagamento aguardando aprovação no Mercado Pago.',
+  recusado:'Pagamento recusado. Você pode tentar novamente no mesmo checkout.',
+  cancelado:'Pagamento cancelado. Você pode tentar novamente no mesmo checkout.',
+  revisao:'O pagamento precisa ser conferido pela organização.',
+};
 TELAS['org-mp']=async()=>{
   if(!podeGerenciarMP())return TELAS.conta();
   const volta='<button class="mini" data-go="org-config">← Dados do evento</button><h1>Mercado Pago</h1>';
   try{
-    const [estado,edicoes]=await Promise.all([mercadoPagoTeste('status'),sb.from('edicoes').select('id,titulo,data').eq('organizacao_id',S.org.id).order('data')]);
-    if(edicoes.error)throw edicoes.error;
-    const plano=estado.plano_teste;
+    const estado=await mercadoPagoTeste('status');
     const retorno=S.retornoMP;S.retornoMP=null;
-    const opcoes=Object.entries(mpModalidades).map(([id,nome])=>'<option value="'+id+'"'+(plano?.plano===id?' selected':'')+'>'+nome+'</option>').join('');
-    const primeiras=(edicoes.data||[]).map(e=>'<option value="'+esc(e.id)+'"'+(plano?.primeira_edicao_id===e.id?' selected':'')+'>'+esc(e.titulo||e.data)+'</option>').join('');
     return volta+'<section class="painel"><p class="sub">Ambiente de teste · '+esc(S.org.nome)+'</p>'
       +(retorno?'<p role="status">'+(retorno==='conectada'?'Vendedor de teste conectado.':'Autorização do vendedor não concluída ('+esc(retorno)+').')+'</p>':'')
       +(estado.conectada?'<p>Vendedor de teste conectado · '+esc(estado.vendedor)+'</p>':'')
       +'<button class="btn sec" data-mp-fluxo="conectar">'+(estado.conectada?'Reconectar vendedor de teste':'Conectar vendedor de teste')+'</button>'
-      +'<label for="mp-plano">Plano de teste da organização</label><select id="mp-plano">'+opcoes+'</select>'
-      +'<label><input type="checkbox" id="mp-repassar"'+(plano?.repassar?' checked':'')+'> Repassar comissão ao expositor no avulso</label>'
-      +'<label for="mp-primeira">Edição com benefício de primeira edição</label><select id="mp-primeira"><option value="">Nenhuma</option>'+primeiras+'</select>'
-      +'<button class="btn pri" data-mp-fluxo="plano">Salvar plano de teste</button><p id="mp-config-resultado" role="status"></p></section>';
+      +'<p id="mp-config-resultado" role="status"></p></section>';
   }catch(error){return volta+'<p class="erro" role="status">'+esc(erroMsg(error))+'</p>'}
 };
+
+function agendaConsultaMP(ins){
+  const retorno=S.mpRetorno;
+  if(retorno?.edicao!==ins.edicao_id||retorno.tentativas<=0||retorno.timer)return;
+  retorno.timer=setTimeout(async()=>{
+    retorno.timer=null;
+    if(S.tela!=='edicao'||S.ins?.id!==ins.id||S.sessao?.user.id!==ins.dono||S.mpRetorno!==retorno){
+      if(S.mpRetorno===retorno)S.mpRetorno=null;
+      return;
+    }
+    retorno.tentativas--;
+    try{
+      const r=await mercadoPagoTeste('inscricao-consultar',{inscricao:ins.id,pagamento:retorno.pagamento});
+      if(r.aprovado||['recusado','cancelado','revisao'].includes(r.situacao))S.mpRetorno=null;
+      if(S.tela==='edicao'&&S.ins?.id===ins.id)await renderMantendo();
+    }catch{agendaConsultaMP(ins)}
+  },1200*(5-retorno.tentativas));
+}
 
 async function painelMPInscricao(ins){
   try{
     const r=await mercadoPagoTeste('inscricao-status',{inscricao:ins.id});
     if(!r.disponivel)return '';
-    const taxa=r.total_centavos-r.base_centavos;
-    const valores=(taxa>0?'Inscrição '+mpReais(r.base_centavos)+' · Taxa de transação '+mpReais(taxa)+' · ':'')
-      +'Total a pagar '+mpReais(r.total_centavos);
-    return '<section class="painel"><b>Mercado Pago · teste</b><p class="sub">'+esc(valores)+'</p>'
-      +(r.aprovado?'<p>Pagamento simulado confirmado.</p>':'<button class="btn sec" data-mp-fluxo="inscricao-checkout" data-id="'+esc(ins.id)+'">Abrir ou consultar checkout de teste</button>')
-      +'<p id="mp-inscricao-resultado" role="status"></p></section>';
+    agendaConsultaMP(ins);
+    const aguardando=S.mpRetorno?.edicao===ins.edicao_id&&S.mpRetorno.tentativas>0;
+    const consultar=aguardando||r.situacao==='pendente'||r.situacao==='revisao';
+    return '<section class="painel"><b>Mercado Pago · teste</b><p class="sub">Total a pagar '+esc(mpReais(r.total_centavos))+'</p>'
+      +'<button class="btn sec" data-mp-fluxo="'+(consultar?'inscricao-consultar':'inscricao-checkout')+'" data-id="'+esc(ins.id)+'">'+(consultar?'Consultar pagamento':'Abrir checkout de teste')+'</button>'
+      +'<p id="mp-inscricao-resultado" role="status">'+esc(mpSituacao[r.situacao]||(aguardando?'Consultando o Mercado Pago…':''))+'</p></section>';
   }catch{return ''}
 }
 
@@ -3082,28 +3108,27 @@ document.addEventListener('click',async ev=>{
   if(d.admsec&&S.admin&&S.tela==='admin'){document.getElementById(d.admsec)?.scrollIntoView({behavior:'smooth',block:'start'});return}
   if(d.admf){S.admFiltro=d.admf;await render();document.getElementById('adm-organizacoes')?.scrollIntoView({block:'start'});return}
   if(d.mpFluxo){
-    const inscricao=d.mpFluxo==='inscricao-checkout';
+    const inscricao=d.mpFluxo.startsWith('inscricao-');
     const resultado=$(inscricao?'#mp-inscricao-resultado':'#mp-config-resultado');
     if(!resultado||(!inscricao&&!podeGerenciarMP()))return;
     b.disabled=true;resultado.textContent='';
     try{
-      const campos=inscricao?{inscricao:d.id}:{plano:$('#mp-plano')?.value,repassar:$('#mp-repassar')?.checked,primeira:$('#mp-primeira')?.value};
+      const campos=inscricao?{inscricao:d.id,pagamento:S.mpRetorno?.pagamento}:{};
       const data=await mercadoPagoTeste(d.mpFluxo,campos);
       if(data.autorizacao){
         const url=new URL(data.autorizacao);
         if(url.origin!=='https://auth.mercadopago.com.br')throw new Error('Endereço de autorização inválido.');
         location.assign(url.href);return;
       }
-      if(data.salvo){resultado.textContent='Plano de teste salvo.';return}
       if(data.aprovado){await renderMantendo();return}
       if(data.checkout){
         const url=new URL(data.checkout);
         if(url.origin!=='https://www.mercadopago.com.br')throw new Error('Endereço de checkout inválido.');
         const link=document.createElement('a');
-        link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Abrir checkout do Mercado Pago';
+        link.href=url.href;link.rel='noopener noreferrer';link.textContent='Continuar no Mercado Pago';
         resultado.append(link);return;
       }
-      resultado.textContent='Pagamento de teste ainda não confirmado.';
+      resultado.textContent=mpSituacao[data.situacao]||'Pagamento de teste ainda não confirmado.';
     }catch(error){resultado.textContent=erroMsg(error)}
     finally{b.disabled=false}
     return;
