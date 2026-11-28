@@ -143,8 +143,8 @@ async function isOrdersTestSeller(token: unknown, seller: string) {
 const chargeTable = "/rest/v1/mp_checkout_inscricoes";
 const legacyChargeTable = "/rest/v1/mp_inscricoes_checkout_teste";
 const webhookUrl = callback + "/pagamentos";
-const webhookSecret = Deno.env.get("MERCADO_PAGO_CHECKOUT_WEBHOOK_SECRET") ||
-  Deno.env.get("MERCADO_PAGO_WEBHOOK_TEST_SECRET");
+const checkoutWebhookSecret = Deno.env.get("MERCADO_PAGO_CHECKOUT_WEBHOOK_SECRET")?.trim();
+const webhookSecret = checkoutWebhookSecret || Deno.env.get("MERCADO_PAGO_WEBHOOK_TEST_SECRET")?.trim();
 // The existing Feira A is the pilot organization. Sandbox payments never update other events.
 const pilotOrganization = "efbef4e2-687c-4d21-9dd6-502fc377bd71";
 const preferenceId = /^[0-9]+-[a-z0-9-]+$/i;
@@ -242,7 +242,10 @@ async function paymentWebhook(req: Request, url: URL) {
   const id = ids[0] ?? "";
   const requestId = req.headers.get("x-request-id") ?? "";
   const signature = req.headers.get("x-signature") ?? "";
-  if (ids.length !== 1 || !numericId.test(id) || !/^[a-z0-9_-]{1,128}$/i.test(requestId) || signature.length > 512) {
+  const validId = ids.length === 1 && numericId.test(id);
+  const validRequestId = /^[a-z0-9_-]{1,128}$/i.test(requestId);
+  if (!validId || !validRequestId || signature.length > 512) {
+    console.warn("MP checkout webhook: metadados invalidos", { validId, validRequestId, signaturePresent: !!signature });
     return new Response(null, { status: 401 });
   }
   const fields = signature.split(",").map((part) => part.trim());
@@ -251,12 +254,14 @@ async function paymentWebhook(req: Request, url: URL) {
   const ts = timestamps[0]?.slice(3) ?? "";
   const hash = hashes[0]?.slice(3) ?? "";
   if (timestamps.length !== 1 || hashes.length !== 1 || !/^\d{10,13}$/.test(ts) || !/^[a-f0-9]{64}$/i.test(hash)) {
+    console.warn("MP checkout webhook: formato de assinatura invalido", { signaturePresent: !!signature });
     return new Response(null, { status: 401 });
   }
   const key = await crypto.subtle.importKey("raw", encoder.encode(webhookSecret),
     { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
   const bytes = Uint8Array.from(hash.match(/../g)!, (byte) => parseInt(byte, 16));
   if (!await crypto.subtle.verify("HMAC", key, bytes, encoder.encode(`id:${id};request-id:${requestId};ts:${ts};`))) {
+    console.warn("MP checkout webhook: assinatura nao confere", { checkoutSecretConfigured: !!checkoutWebhookSecret });
     return new Response(null, { status: 401 });
   }
 
