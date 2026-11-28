@@ -143,8 +143,13 @@ async function isOrdersTestSeller(token: unknown, seller: string) {
 const chargeTable = "/rest/v1/mp_checkout_inscricoes";
 const legacyChargeTable = "/rest/v1/mp_inscricoes_checkout_teste";
 const webhookUrl = callback + "/pagamentos";
-const checkoutWebhookSecret = Deno.env.get("MERCADO_PAGO_CHECKOUT_WEBHOOK_SECRET")?.trim();
-const webhookSecret = checkoutWebhookSecret || Deno.env.get("MERCADO_PAGO_WEBHOOK_TEST_SECRET")?.trim();
+function readWebhookSecret(name: string) {
+  const value = Deno.env.get(name)?.trim();
+  return value && !/^[*•●·.]+$/u.test(value) ? value : undefined;
+}
+
+const checkoutWebhookSecret = readWebhookSecret("MERCADO_PAGO_CHECKOUT_WEBHOOK_SECRET");
+const webhookSecret = checkoutWebhookSecret || readWebhookSecret("MERCADO_PAGO_WEBHOOK_TEST_SECRET");
 // The existing Feira A is the pilot organization. Sandbox payments never update other events.
 const pilotOrganization = "efbef4e2-687c-4d21-9dd6-502fc377bd71";
 const preferenceId = /^[0-9]+-[a-z0-9-]+$/i;
