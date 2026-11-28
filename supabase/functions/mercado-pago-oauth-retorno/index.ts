@@ -96,24 +96,44 @@ async function receive(url: URL) {
   if (!code || url.searchParams.has("error")) return back("cancelada");
   if (!clientId || !clientSecret) return back("configuracao");
 
+  const sandbox = attempt.organizacao_id === pilotOrganization;
+  const connectionFilter = "?organizacao_id=eq." + attempt.organizacao_id;
+  const [current] = sandbox ? await database(connections + connectionFilter + "&select=vendedor_id") : [];
   const token = await requestJson(mercadoPago + "/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       client_id: clientId, client_secret: clientSecret, grant_type: "authorization_code",
-      code, redirect_uri: callback, test_token: false,
+      code, redirect_uri: callback, test_token: sandbox,
     }),
   });
   const seller = String(token?.user_id ?? "");
+  if (sandbox && (token?.live_mode !== false || (current && seller !== current.vendedor_id))) {
+    console.warn("MP OAuth sandbox: credencial incompatível", {
+      modoTeste: token?.live_mode === false,
+      vendedorConfere: !current || seller === current.vendedor_id,
+    });
+    return back("ambiente");
+  }
   if (!/^[0-9]+$/.test(seller) || !Number.isFinite(token?.expires_in) || token.expires_in <= 0 ||
       !await isOrdersTestSeller(token?.access_token, seller)) return back("ambiente");
+
+  const credentials = {
+    token_cifrado: "orders:" + await encryptToken(token.access_token, attempt.organizacao_id),
+    expira_em: new Date(Date.now() + token.expires_in * 1000).toISOString(),
+  };
+  if (current) {
+    await database(connections + connectionFilter + "&vendedor_id=eq." + seller, {
+      method: "PATCH", body: JSON.stringify(credentials),
+    });
+    return back("conectada");
+  }
 
   await database(connections + "?on_conflict=organizacao_id", {
     method: "POST", headers: { Prefer: "resolution=merge-duplicates" },
     body: JSON.stringify({
       organizacao_id: attempt.organizacao_id, vendedor_id: seller,
-      token_cifrado: "orders:" + await encryptToken(token.access_token, attempt.organizacao_id),
-      expira_em: new Date(Date.now() + token.expires_in * 1000).toISOString(),
+      ...credentials,
       tentativa: crypto.randomUUID(), order_id: null, checkout_url: null,
       controle_preferencia_id: null, controle_checkout_url: null,
       direta_order_id: null, direta_checkout_url: null,
