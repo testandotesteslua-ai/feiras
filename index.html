@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#10083D">
-<meta name="app-versao" content="202611252030">
+<meta name="app-versao" content="202611281039">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Colanessa · expositores e eventos</title>
 <link rel="icon" type="image/svg+xml" href="colanessa-icon.svg?v=20261124-official"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-2026.png?v=20261124-cn"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Colanessa"><meta name="application-name" content="Colanessa">
@@ -1985,10 +1985,15 @@ TELAS.admin=async()=>{if(!S.admin)return `<h1>Administração</h1><p class="sub"
   const f=S.admFiltro||(totais.pendente?'pendente':'ativa');
   const data=f==='todas'?lista:lista.filter(o=>o.status===f);
   const st={pendente:['Aguardando aprovação',''],ativa:['Aprovada','ok'],suspensa:['Suspensa','t']};
-  return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Administração</h1><div class="painel"><b>Central administrativa</b><button class="btn sec" data-go="admin-central" style="margin-top:8px">Chamados, denúncias e incidentes</button></div><div class="painel"><b>Notificações da plataforma</b><button class="btn sec" data-go="admin-avisos" style="margin-top:8px">Gerenciar notificações</button></div>${resumoAdmin(resumo)}<h2 style="margin:18px 0 0" id="adm-organizacoes">Organizações</h2>
+  if(S.tela==='admin')return `<button class="mini" data-go="conta" style="border:0;background:none">← Conta</button><h1>Administração</h1>${resumoAdmin(resumo)}`;
+  return `<button class="mini" data-go="admin">← Painel</button><h2 style="margin:18px 0 0" id="adm-organizacoes">Organizações</h2>
   <div class="adm-tabs" role="group" aria-label="Filtrar organizações">${[['pendente','Pendentes'],['ativa','Aprovadas'],['suspensa','Suspensas'],['todas','Todas']].map(([k,l])=>`<button class="adm-tab" data-admf="${k}" aria-pressed="${f===k}"><span>${l}</span><span class="adm-tab-count">${totais[k]}</span></button>`).join('')}</div>
   ${(data||[]).map(o=>{const [t,c]=st[o.status]||[o.status,'n'];return `<div class="painel"><div class="org-it">${o.logo_url?`<img src="${esc(o.logo_url)}" alt="">`:`<span class="org-ph">${esc(String(o.nome).charAt(0).toUpperCase())}</span>`}<div style="flex:1;min-width:0"><b>${esc(o.nome)}</b><div class="sub" style="margin:0;font-size:13px">${esc(o.slug)}${o.cidade?' · '+esc(o.cidade):''} · pedido em ${new Date(o.criado_em).toLocaleDateString('pt-BR')}</div></div><span class="status ${c}">${t}</span></div>
     <p class="sub" style="margin:8px 0 0">${gNum(detalhes.get(o.id)?.edicoes)} edições · ${gNum(detalhes.get(o.id)?.inscricoes)} inscrições</p><div class="row" style="margin-top:10px">${o.status!=='ativa'?`<button class="mini pri" data-admst="ativa" data-id="${o.id}" style="min-height:44px">Aprovar</button>`:''}${o.status!=='suspensa'?`<button class="mini" data-admst="suspensa" data-id="${o.id}" style="min-height:44px">Suspender</button>`:`<button class="mini" data-admst="pendente" data-id="${o.id}" style="min-height:44px">Voltar pra esperando</button>`}</div></div>`}).join('')||`<div class="adm-empty">${f==='pendente'?'Nenhuma organização aguardando aprovação.':f==='ativa'?'Nenhuma organização aprovada ainda.':f==='suspensa'?'Nenhuma organização suspensa.':'Nenhuma organização cadastrada.'}</div>`}`};
+
+TELAS['admin-organizacoes']=TELAS.admin;
+for(const t of ['admin-edicoes','admin-financeiro','admin-inscricoes','admin-cadastros'])TELAS[t]=async()=>{if(!S.admin)return '';const {data,error}=await sb.rpc('painel_administrativo');if(error)throw error;return resumoAdmin(data)};
+TELAS['admin-integracoes']=()=>`<button class="mini" data-go="admin">← Painel</button><h1>Integrações</h1><div class="painel"><b>Mercado Pago</b><p class="sub">Consultar andamento da integração de pagamentos.</p><a class="btn sec" href="https://www.mercadopago.com.br/developers/pt/support/center" target="_blank" rel="noopener noreferrer">Abrir suporte do Mercado Pago</a></div>`;
 
 
 TELAS.mapa=async()=>{
@@ -3106,7 +3111,7 @@ document.addEventListener('click',async ev=>{
   if(d.abrirorg){b.disabled=true;await trocarModo('organizacao',d.abrirorg);return}
   if(d.modo==='expositor'){b.disabled=true;await trocarModo('expositor');return}
   if(d.admsec&&S.admin&&S.tela==='admin'){document.getElementById(d.admsec)?.scrollIntoView({behavior:'smooth',block:'start'});return}
-  if(d.admf){S.admFiltro=d.admf;await render();document.getElementById('adm-organizacoes')?.scrollIntoView({block:'start'});return}
+  if(d.admf&&S.admin){S.admFiltro=d.admf;if(S.tela!=='admin-organizacoes'){go('admin-organizacoes');return}await render();return}
   if(d.mpFluxo){
     const inscricao=d.mpFluxo.startsWith('inscricao-');
     const resultado=$(inscricao?'#mp-inscricao-resultado':'#mp-config-resultado');
@@ -3134,7 +3139,7 @@ document.addEventListener('click',async ev=>{
     return;
   }
   if(d.mpMapa){abrirMapaTeste(d.mpMapa);return}
-  if(d.admst){if(!S.admin||S.tela!=='admin'){toast('Aprovações são feitas apenas na administração da plataforma.');return}if(d.admst==='suspensa'&&!confirm('Suspender esse evento? Ela sai do ar pros expositores.'))return;b.disabled=true;const r=await sb.rpc('definir_status_organizacao',{p_org:d.id,p_status:d.admst});b.disabled=false;if(r.error){toast(erroMsg(r.error));return}toast(d.admst==='ativa'?'Evento aprovado':d.admst==='suspensa'?'Evento suspenso':'Evento voltou pra esperando');if(S.org?.id===d.id)S.org.status=d.admst;render();return}
+  if(d.admst){if(!S.admin||S.tela!=='admin-organizacoes'){toast('Aprovações são feitas apenas na administração da plataforma.');return}if(d.admst==='suspensa'&&!confirm('Suspender esse evento? Ela sai do ar pros expositores.'))return;b.disabled=true;const r=await sb.rpc('definir_status_organizacao',{p_org:d.id,p_status:d.admst});b.disabled=false;if(r.error){toast(erroMsg(r.error));return}toast(d.admst==='ativa'?'Evento aprovado':d.admst==='suspensa'?'Evento suspenso':'Evento voltou pra esperando');if(S.org?.id===d.id)S.org.status=d.admst;render();return}
   if(d.paleta!==undefined){const [p,dd]=PALETAS[+d.paleta];$('#cfg-p').value=p;$('#cfg-d').value=dd;previaCores();return}
   if(b.id==='nf-ok'){const nome=$('#nf-nome').value.trim(),slug=$('#nf-slug').value.trim(),err=$('#nf-err');err.textContent='';if(!nome){err.textContent='Dê um nome pro evento.';return}
     if(!/^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/.test(slug)){err.textContent='O link precisa ter de 3 a 40 letras minúsculas, números ou hífen, sem hífen no começo ou no fim.';return}
@@ -3627,32 +3632,33 @@ function resumoAdmin(r){
   const meses=(r.por_mes||[]).map(x=>{const d=new Date(x.mes+'-15T12:00:00');return {rot:d.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''),nomeLongo:d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}),v:x.n,tip:`${d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}\n${x.n} ${x.n===1?'inscrição':'inscrições'}`}});
   const temMovimento=meses.some(m=>Number(m.v)>0);
   const pendentes=Number(r.pendentes)||0;
-  return `<section class="adm-dashboard" aria-label="Resumo administrativo">
-  <div class="adm-dashboard-head"><div><h2>Visão geral</h2></div></div><div class="adm-nav" aria-label="Seções da administração"><button class="mini" data-admsec="adm-organizacoes">Organizações</button><button class="mini" data-admsec="adm-edicoes">Edições</button><button class="mini" data-admsec="adm-financeiro">Financeiro</button><button class="mini" data-admsec="adm-suporte">Suporte</button></div>
-  <div class="adm-stats">
-    <div class="adm-stat"><span>Organizações ativas</span><strong>${gNum(r.ativas)}</strong><small>Aprovadas na plataforma</small></div>
-    <div class="adm-stat"><span>Para aprovar</span><strong>${gNum(r.pendentes)}</strong><small>${pendentes?'Solicitações aguardando':'Tudo em dia'}</small></div>
-    <div class="adm-stat"><span>Marcas</span><strong>${gNum(r.marcas)}</strong><small>Expositores cadastrados</small></div>
-    <div class="adm-stat"><span>Inscrições no mês</span><strong>${gNum(r.mes)}</strong><small>Todos os status</small></div>
-    <div class="adm-stat"><span>Usuários cadastrados</span><strong>${gNum(r.usuarios)}</strong><small>Contas da plataforma</small></div>
-    <div class="adm-stat"><span>Edições</span><strong>${gNum(r.edicoes)}</strong><small>${gNum(r.edicoes_abertas)} com inscrições abertas</small></div>
-    <div class="adm-stat"><span>Inscrições totais</span><strong>${gNum(r.inscricoes)}</strong><small>${gNum(r.confirmadas)} confirmadas</small></div>
-    <div class="adm-stat"><span>Pagas registradas</span><strong>${gNum(r.pagas_registradas)}</strong><small>Inscrições marcadas como pagas</small></div>
-  </div>
-  ${pendentes?`<button type="button" class="adm-action" data-admf="pendente"><span><b>${pendentes} ${pendentes===1?'solicitação precisa':'solicitações precisam'} da tua aprovação</b><small>Confira os novos cadastros de organizações</small></span><span class="adm-action-arrow" aria-hidden="true">→</span></button>`:''}
-  ${temMovimento?`<details class="adm-detalhes"><summary>Ver desempenho das inscrições <span>Últimos 6 meses</span></summary><div class="g-par">${grafColunas({titulo:'Inscrições por mês',desc:'Inscrições recebidas nos últimos 6 meses',itens:meses})}${(r.por_feira||[]).length?grafRanking({titulo:'Organizações com mais inscrições (90 dias)',itens:r.por_feira.map(x=>({rot:x.nome,v:x.n}))}):''}</div></details>`:''}
+  const voltar='<button class="mini" data-go="admin">← Painel</button>';
+  const stat=(label,value,extra,dest)=>`<button type="button" class="adm-stat" data-go="${dest}" style="text-align:left;cursor:pointer;font:inherit"><span>${label} ›</span><strong>${value}</strong><small>${extra}</small></button>`;
+  if(S.tela==='admin-financeiro')return `<section class="adm-dashboard">${voltar}
   <h2 id="adm-financeiro" style="margin:24px 0 12px">Financeiro</h2>
   <div class="adm-stats adm-fin-stats">
     <div class="adm-stat"><span>Valores informados nas inscrições</span><strong>${money(r.valor_registrado)}</strong><small>Valor explicitamente registrado pelas organizações</small></div>
     <div class="adm-stat"><span>Pagamentos simulados</span><strong>${gNum(r.pagamentos_teste)}</strong><small>Testes confirmados, sem receita real</small></div>
   </div>
-  <div class="painel" style="margin-top:12px"><b>Comissões e planos</b><p class="sub" style="margin:6px 0 0">Cobrança da plataforma ainda não ativada. Split em análise; regras comerciais aguardam implementação.</p></div>
+  <div class="painel" style="margin-top:12px"><b>Comissões e planos</b><p class="sub" style="margin:6px 0 0">Cobrança da plataforma ainda não ativada. Regras comerciais aguardam implementação.</p></div>
+</section>`;
+  if(S.tela==='admin-edicoes')return `<section class="adm-dashboard">${voltar}<div class="adm-stats">${stat('Edições',gNum(r.edicoes),gNum(r.edicoes_abertas)+' abertas','admin-edicoes')}${stat('Inscrições',gNum(r.inscricoes),gNum(r.confirmadas)+' confirmadas','admin-inscricoes')}</div>
   <h2 id="adm-edicoes" style="margin:24px 0 12px">Edições recentes</h2>
   <div class="adm-edicoes">${(r.edicoes_recentes||[]).map(e=>`<div class="painel adm-edicao"><div><b>${esc(e.titulo||'Edição')}</b><div class="sub" style="margin:4px 0">${esc(e.organizacao)} · ${dataBR(e.data)}</div><small>${gNum(e.inscricoes)} inscrições · ${gNum(e.confirmadas)} confirmadas</small></div><span class="status">${e.cancelada?'Cancelada':e.inscricoes_abertas?'Inscrições abertas':'Inscrições fechadas'}</span></div>`).join('')||'<p class="sub">Nenhuma edição cadastrada.</p>'}</div>
-  <h2 id="adm-suporte" style="margin:24px 0 12px">Suporte e integrações</h2>
-  <div class="painel"><b>Mercado Pago</b><p class="sub" style="margin:6px 0 12px">Consultar andamento da integração e do split de pagamentos.</p><a class="btn sec" href="https://www.mercadopago.com.br/developers/pt/support/center" target="_blank" rel="noopener noreferrer">Abrir suporte do Mercado Pago</a></div>
-  </section>` }
-
+</section>`;
+  if(S.tela==='admin-inscricoes')return `<section class="adm-dashboard">${voltar}<h1>Inscrições</h1><div class="adm-stats"><div class="adm-stat"><span>No mês</span><strong>${gNum(r.mes)}</strong></div><div class="adm-stat"><span>Total</span><strong>${gNum(r.inscricoes)}</strong><small>${gNum(r.confirmadas)} confirmadas</small></div></div>
+  ${temMovimento?`<details class="adm-detalhes"><summary>Ver desempenho das inscrições <span>Últimos 6 meses</span></summary><div class="g-par">${grafColunas({titulo:'Inscrições por mês',desc:'Inscrições recebidas nos últimos 6 meses',itens:meses})}${(r.por_feira||[]).length?grafRanking({titulo:'Organizações com mais inscrições (90 dias)',itens:r.por_feira.map(x=>({rot:x.nome,v:x.n}))}):''}</div></details>`:''}
+</section>`;
+  if(S.tela==='admin-cadastros')return `<section class="adm-dashboard">${voltar}<h1>Cadastros</h1><div class="adm-stats"><div class="adm-stat"><span>Marcas</span><strong>${gNum(r.marcas)}</strong></div><div class="adm-stat"><span>Usuários</span><strong>${gNum(r.usuarios)}</strong></div></div></section>`;
+  return `<section class="adm-dashboard" aria-label="Resumo administrativo"><h2>Visão geral</h2>
+  ${pendentes?`<button type="button" class="adm-action" data-admf="pendente"><span><b>${pendentes} aguardando aprovação</b><small>Ver solicitações</small></span><span>→</span></button>`:''}
+  <div class="adm-stats" style="margin-top:12px">
+  ${stat('Organizações',gNum(r.ativas), 'Ativas na plataforma','admin-organizacoes')}
+  ${stat('Edições',gNum(r.edicoes_abertas),'Com inscrições abertas','admin-edicoes')}
+  ${stat('Inscrições',gNum(r.mes),'Neste mês','admin-inscricoes')}
+  </div><h2 style="margin:20px 0 10px">Gerenciar</h2>
+  <div class="adm-nav" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr))">
+  <button class="mini" data-go="admin-organizacoes">Organizações ›</button><button class="mini" data-go="admin-edicoes">Edições ›</button><button class="mini" data-go="admin-inscricoes">Inscrições ›</button><button class="mini" data-go="admin-cadastros">Cadastros ›</button><button class="mini" data-go="admin-financeiro">Financeiro ›</button><button class="mini" data-go="admin-central">Atendimento ›</button><button class="mini" data-go="admin-avisos">Notificações ›</button><button class="mini" data-go="admin-integracoes">Integrações ›</button></div></section>` }
 /* dica ao passar o dedo/mouse */
 (()=>{let tip=null;const mostra=el=>{if(!tip){tip=document.createElement('div');tip.className='g-tip';tip.setAttribute('role','tooltip');document.body.appendChild(tip)}tip.textContent=el.dataset.tip;tip.style.display='block';
     const r=el.getBoundingClientRect(),tw=tip.offsetWidth,th=tip.offsetHeight;let x=r.left+r.width/2-tw/2;x=Math.max(8,Math.min(innerWidth-tw-8,x));let y=r.top-th-8;if(y<8)y=r.bottom+8;tip.style.left=x+'px';tip.style.top=y+'px'};
